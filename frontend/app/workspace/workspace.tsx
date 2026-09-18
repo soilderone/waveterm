@@ -23,13 +23,13 @@ import {
     PanelResizeHandle,
 } from "react-resizable-panels";
 
-const MacOSTabBarSpacer = memo(() => {
+const MacOSTabBarSpacer = memo(({ tall }: { tall?: boolean }) => {
     return (
         <div
             className="w-full shrink-0"
             style={
                 {
-                    height: "calc(8px * var(--zoomfactor-inv))",
+                    height: tall ? "calc(28px * var(--zoomfactor-inv))" : "calc(8px * var(--zoomfactor-inv))",
                     WebkitAppRegion: "drag",
                     backdropFilter: "blur(20px)",
                     background: "rgba(0, 0, 0, 0.35)",
@@ -113,7 +113,7 @@ const WorkspaceElem = memo(() => {
     return (
         <div className="flex flex-col w-full flex-grow overflow-hidden">
             {!(showLeftTabBar && isMacOS()) && <TabBar key={ws.oid} workspace={ws} noTabs={showLeftTabBar} />}
-            {showLeftTabBar && isMacOS() && <MacOSTabBarSpacer />}
+            {showLeftTabBar && isMacOS() && <MacOSTabBarSpacer tall={vtabCollapsed} />}
             <div ref={panelContainerRef} className="flex flex-row flex-grow overflow-hidden">
                 <ErrorBoundary key={tabId}>
                     <PanelGroup
@@ -164,7 +164,11 @@ const WorkspaceElem = memo(() => {
                         <Panel order={1} defaultSize={100 - leftGroupInitialPct}>
                             <div className="flex flex-row h-full">
                                 {showLeftTabBar && vtabCollapsed && (
-                                    <div className="flex h-full w-6 shrink-0 flex-col items-center border-r border-border bg-panel pt-2">
+                                    <div className="flex h-full w-6 shrink-0 flex-col items-center border-r border-border bg-panel">
+                                        <div
+                                            className="w-full shrink-0"
+                                            style={{ height: "calc(28px * var(--zoomfactor-inv))" }}
+                                        />
                                         <button
                                             type="button"
                                             className="flex h-6 w-5 cursor-pointer items-center justify-center rounded text-secondary transition-colors hover:bg-white/10 hover:text-primary"
