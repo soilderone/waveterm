@@ -191,14 +191,14 @@ tasks:
             - dist/bin/wavesrv.*
 
     build:server:macos:
-        desc: Build the wavesrv component for macOS (Darwin) platforms (generates artifacts for both arm64 and amd64).
+        desc: Build the wavesrv component for macOS (Darwin) platforms (arm64 only).
         platforms: [darwin]
         cmds:
             - cmd: rm -f dist/bin/wavesrv*
               ignore_error: true
             - task: build:server:internal
               vars:
-                  ARCHS: arm64,amd64
+                  ARCHS: arm64
 
     build:server:quickdev:
         desc: Build the wavesrv component for quickdev (arm64 macOS only, no generate).

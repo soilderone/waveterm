@@ -45,14 +45,17 @@ const config = {
         "dist/schema/**/*", // schema files for Monaco editor
     ],
     mac: {
+        // arm64 only. The Intel slice doubles the darwin build without being used; the matching
+        // wavesrv arch list lives in Taskfile.yml build:server:macos and has to stay in sync,
+        // since the files filter below pulls in bin/wavesrv.${arch}.
         target: [
             {
                 target: "zip",
-                arch: ["arm64", "x64"],
+                arch: ["arm64"],
             },
             {
                 target: "dmg",
-                arch: ["arm64", "x64"],
+                arch: ["arm64"],
             },
         ],
         category: "public.app-category.developer-tools",
