@@ -21,6 +21,16 @@ import {
 } from "./emain-util";
 import { ElectronWshClient } from "./emain-wsh";
 
+// Background tabs stay attached and are parked far off-screen rather than hidden, so they keep
+// their real layout and switching back is instant.
+const OffScreenX = -15000;
+const OffScreenY = -15000;
+
+// A cached tab holds a whole renderer process. Eviction used to happen only when the cache
+// overflowed, so tabs opened once and never touched again stayed resident for the life of the app.
+const TabCacheIdleTimeout = 30 * 60 * 1000;
+const TabCacheSweepInterval = 5 * 60 * 1000;
+
 function handleWindowsMenuAccelerators(
     waveEvent: WaveKeyboardEvent,
     tabView: WaveTabView,
@@ -211,9 +221,20 @@ export class WaveTabView extends WebContentsView {
     }
 
     positionTabOffScreen(winBounds: Rectangle) {
+        // Guarded like positionTabOnScreen: the window polls positioning once a second, so without
+        // this every background tab gets a redundant setBounds every second for the life of the app.
+        const curBounds = this.getBounds();
+        if (
+            curBounds.width == winBounds.width &&
+            curBounds.height == winBounds.height &&
+            curBounds.x == OffScreenX &&
+            curBounds.y == OffScreenY
+        ) {
+            return;
+        }
         this.setBounds({
-            x: -15000,
-            y: -15000,
+            x: OffScreenX,
+            y: OffScreenY,
             width: winBounds.width,
             height: winBounds.height,
         });
@@ -290,6 +311,30 @@ function checkAndEvictCache(): void {
     for (let i = 0; i < sorted.length - MaxCacheSize; i++) {
         tryEvictEntry(sorted[i].waveTabId);
     }
+}
+
+function evictIdleTabs(): void {
+    const now = Date.now();
+    for (const tabView of Array.from(wcvCache.values())) {
+        if (tabView.isActiveTab) {
+            continue;
+        }
+        if (now - tabView.lastUsedTs < TabCacheIdleTimeout) {
+            continue;
+        }
+        console.log("evicting idle tab", tabView.waveTabId);
+        tryEvictEntry(tabView.waveTabId);
+    }
+}
+
+let idleSweepInterval: NodeJS.Timeout = null;
+
+export function startTabCacheSweeper(): void {
+    if (idleSweepInterval != null) {
+        return;
+    }
+    idleSweepInterval = setInterval(evictIdleTabs, TabCacheSweepInterval);
+    idleSweepInterval.unref?.();
 }
 
 export function clearTabCache() {
