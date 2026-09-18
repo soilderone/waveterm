@@ -21,6 +21,7 @@ import type * as MonacoTypes from "monaco-editor";
 import { createRef } from "react";
 import { PreviewView } from "./preview";
 import { makeDirectoryDefaultMenuItems, type TreeSortType } from "./preview-directory-utils";
+import { getParentPath, isPathInside, remapPath } from "./preview-path";
 import type { PreviewEnv } from "./previewenv";
 
 // TODO drive this using config
@@ -585,23 +586,61 @@ export class PreviewModel implements ViewModel {
         this.updateOpenFileModalAndError(!modalOpen);
     }
 
-    async openTreeFile(newPath: string) {
+    async openTreeFile(newPath: string, force = false) {
         if (isBlank(newPath) || newPath == globalStore.get(this.metaFilePath)) {
             return;
         }
-        if (globalStore.get(this.newFileContent) != null) {
+        if (!force && globalStore.get(this.newFileContent) != null) {
             globalStore.set(this.errorMsgAtom, {
                 status: t("preview.unsavedChanges"),
                 text: t("preview.unsavedOpenText"),
                 level: "warning",
+                buttons: [
+                    {
+                        text: t("preview.discardAndOpen"),
+                        onClick: () => fireAndForget(() => this.openTreeFile(newPath, true)),
+                    },
+                ],
             });
             return;
         }
         try {
+            if (force) {
+                await this.handleFileRevert();
+            }
             await this.goHistory(newPath);
         } catch (e) {
             globalStore.set(this.errorMsgAtom, { status: t("preview.cannotOpenFile"), text: String(e) });
         }
+    }
+
+    // A rename/delete can hit the file the block is showing, an open tab, or a directory that
+    // contains either of those, so both cases have to look at whole subtrees rather than one path.
+    handlePathRenamed(oldPath: string, newPath: string) {
+        globalStore.set(this.openTabs, (tabs) => [
+            ...new Set(tabs.map((tabPath) => remapPath(tabPath, oldPath, newPath))),
+        ]);
+        const activePath = globalStore.get(this.metaFilePath);
+        if (!isPathInside(activePath, oldPath)) {
+            return;
+        }
+        globalStore.set(this.newFileContent, null);
+        fireAndForget(() => this.goHistory(remapPath(activePath, oldPath, newPath)));
+    }
+
+    handlePathRemoved(path: string) {
+        const remainingTabs = globalStore.get(this.openTabs).filter((tabPath) => !isPathInside(tabPath, path));
+        globalStore.set(this.openTabs, remainingTabs);
+        const activePath = globalStore.get(this.metaFilePath);
+        if (!isPathInside(activePath, path)) {
+            return;
+        }
+        globalStore.set(this.newFileContent, null);
+        const fallback = remainingTabs[remainingTabs.length - 1] ?? getParentPath(path);
+        if (fallback == null) {
+            return;
+        }
+        fireAndForget(() => this.goHistory(fallback));
     }
 
     async closeFileTab(path: string, force = false) {

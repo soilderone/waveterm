@@ -66,15 +66,40 @@ export function isIconValid(icon: string): boolean {
     return icon.match(iconRegex) != null;
 }
 
-export function getMimeTypeIcon(fullConfig: FullConfigType, mimeType: string): string {
-    while (mimeType.length > 0) {
-        const icon = fullConfig.mimetypes?.[mimeType]?.icon ?? null;
+const DefaultFileIcon = "fa fa-solid fa-file fa-fw";
+
+// Resolution walks every prefix of the mimetype, so it is linear in the mimetype length and gets
+// called once per row per render. Cache is keyed on the mimetypes config object so a config
+// reload naturally invalidates it.
+const mimeTypeIconCache = new WeakMap<Record<string, MimeTypeConfigType>, Map<string, string>>();
+
+function resolveMimeTypeIcon(mimeTypes: Record<string, MimeTypeConfigType>, mimeType: string): string {
+    for (let len = mimeType.length; len > 0; len--) {
+        const icon = mimeTypes[mimeType.substring(0, len)]?.icon ?? null;
         if (isIconValid(icon)) {
             return `fa fa-solid fa-${icon} fa-fw`;
         }
-        mimeType = mimeType.slice(0, -1);
     }
-    return "fa fa-solid fa-file fa-fw";
+    return DefaultFileIcon;
+}
+
+export function getMimeTypeIcon(fullConfig: FullConfigType, mimeType: string): string {
+    const mimeTypes = fullConfig?.mimetypes;
+    if (mimeTypes == null) {
+        return DefaultFileIcon;
+    }
+    let cache = mimeTypeIconCache.get(mimeTypes);
+    if (cache == null) {
+        cache = new Map<string, string>();
+        mimeTypeIconCache.set(mimeTypes, cache);
+    }
+    const cached = cache.get(mimeType);
+    if (cached != null) {
+        return cached;
+    }
+    const icon = resolveMimeTypeIcon(mimeTypes, mimeType);
+    cache.set(mimeType, icon);
+    return icon;
 }
 
 export function getMimeTypeColor(fullConfig: FullConfigType, mimeType: string): string {
@@ -130,7 +155,8 @@ export function handleRename(
     newPath: string,
     isDir: boolean,
     setErrorMsg: (msg: ErrorMsg) => void,
-    refresh?: () => void
+    refresh?: () => void,
+    onSuccess?: () => void
 ) {
     fireAndForget(async () => {
         try {
@@ -142,6 +168,7 @@ export function handleRename(
                 srcuri,
                 desturi: await model.formatRemoteUri(newPath, globalStore.get),
             });
+            onSuccess?.();
         } catch (e) {
             const errorText = `${e}`;
             console.warn(`Rename failed: ${errorText}`);
@@ -164,7 +191,8 @@ export function handleFileDelete(
     path: string,
     recursive: boolean,
     setErrorMsg: (msg: ErrorMsg) => void,
-    refresh?: () => void
+    refresh?: () => void,
+    onSuccess?: () => void
 ) {
     fireAndForget(async () => {
         const formattedPath = await model.formatRemoteUri(path, globalStore.get);
@@ -173,6 +201,7 @@ export function handleFileDelete(
                 path: formattedPath,
                 recursive,
             });
+            onSuccess?.();
         } catch (e) {
             const errorText = `${e}`;
             console.warn(`Delete failed: ${errorText}`);
@@ -185,7 +214,7 @@ export function handleFileDelete(
                     buttons: [
                         {
                             text: t("common.deleteRecursively"),
-                            onClick: () => handleFileDelete(model, path, true, setErrorMsg, refresh),
+                            onClick: () => handleFileDelete(model, path, true, setErrorMsg, refresh, onSuccess),
                         },
                     ],
                 };

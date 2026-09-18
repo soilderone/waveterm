@@ -48,9 +48,14 @@ import {
     type TreeSortType,
 } from "./preview-directory-utils";
 import { type PreviewModel } from "./preview-model";
+import { getBaseName, getParentPath, isPathInside } from "./preview-path";
 import type { PreviewEnv } from "./previewenv";
 
 const PageJumpSize = 20;
+
+// The tree is not virtualized, so a directory with thousands of entries would otherwise build
+// thousands of rows on expand. Entries past this count are held back behind a "show more" row.
+const TreeRenderChunkSize = 300;
 
 interface DirectoryTableHeaderCellProps {
     header: Header<FileInfo, unknown>;
@@ -527,7 +532,7 @@ function TableRow({ model, row, focusIndex, setFocusIndex, setSearch, idx, handl
             data-rowindex={idx}
             onDoubleClick={() => {
                 const newFileName = row.getValue("path") as string;
-                model.goHistory(newFileName);
+                fireAndForget(() => model.openTreeFile(newFileName));
                 setSearch("");
                 globalStore.set(model.directorySearchActive, false);
             }}
@@ -605,7 +610,7 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
                 } catch (e) {
                     console.error("Directory Read Error", e);
                     setErrorMsg({
-                        status: "Cannot Read Directory",
+                        status: t("preview.cannotReadDir"),
                         text: `${e}`,
                     });
                 }
@@ -660,7 +665,7 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
                 if (filteredData.length == 0) {
                     return;
                 }
-                model.goHistory(selectedPath);
+                fireAndForget(() => model.openTreeFile(selectedPath));
                 setSearchText("");
                 globalStore.set(model.directorySearchActive, false);
                 return true;
@@ -902,21 +907,37 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
     );
 }
 
-type FileTreeDirectoryProps = {
+type TreeVersionState = {
+    all: number;
+    dirs: Record<string, number>;
+};
+
+// Everything the whole subtree needs that is not per-node. Grouped into one referentially stable
+// object so FileTreeDirectory/FileTreeEntry can be memoized -- selection and refresh are delivered
+// through atoms instead of props so changing them only re-renders the nodes that actually care.
+type FileTreeSharedProps = {
     model: PreviewModel;
-    path: string;
     connection: string;
     showHiddenFiles: boolean;
-    selectedPath: string;
-    refreshVersion: number;
     sort: TreeSortType;
+    versionAtom: PrimitiveAtom<TreeVersionState>;
+    onContextAction: (action: string, entry: FileInfo) => void;
+};
+
+type FileTreeDirectoryProps = {
+    shared: FileTreeSharedProps;
+    path: string;
     onNavigateUp?: () => void;
-    onContextAction?: (action: string, entry: FileInfo) => void;
     root?: boolean;
 };
 
-function FileTreeDirectory(props: FileTreeDirectoryProps) {
-    const { path, connection, showHiddenFiles, refreshVersion, sort, onNavigateUp, root } = props;
+const FileTreeDirectory = React.memo(function FileTreeDirectory({
+    shared,
+    path,
+    onNavigateUp,
+    root,
+}: FileTreeDirectoryProps) {
+    const { connection, showHiddenFiles, sort } = shared;
     const env = useWaveEnv<PreviewEnv>();
     const t = useT();
     const fullConfig = useAtomValue(env.atoms.fullConfigAtom);
@@ -924,6 +945,19 @@ function FileTreeDirectory(props: FileTreeDirectoryProps) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [retryVersion, setRetryVersion] = useState(0);
+    const [renderLimit, setRenderLimit] = useState(TreeRenderChunkSize);
+    // model.refreshVersion is owned by whichever preview is mounted (the listing view for a
+    // directory), so folding it in here lets the block's Refresh button drive both without the
+    // two views fighting over model.refreshCallback.
+    const dirVersionAtom = useMemo(
+        () =>
+            atom((get) => {
+                const version = get(shared.versionAtom);
+                return version.all + (version.dirs[path] ?? 0) + get(shared.model.refreshVersion);
+            }),
+        [shared.versionAtom, shared.model, path]
+    );
+    const refreshVersion = useAtomValue(dirVersionAtom);
 
     useEffect(() => {
         let active = true;
@@ -931,6 +965,7 @@ function FileTreeDirectory(props: FileTreeDirectoryProps) {
         let stream: AsyncGenerator<CommandRemoteListEntriesRtnData, void, boolean>;
         setLoading(true);
         setError("");
+        setRenderLimit(TreeRenderChunkSize);
         fireAndForget(async () => {
             try {
                 stream = env.rpc.FileListStreamCommand(
@@ -986,6 +1021,8 @@ function FileTreeDirectory(props: FileTreeDirectoryProps) {
                 .sort((a, b) => compareTreeEntries(a, b, sort)),
         [entries, showHiddenFiles, sort]
     );
+    const shownEntries = renderLimit < visibleEntries.length ? visibleEntries.slice(0, renderLimit) : visibleEntries;
+    const hiddenCount = visibleEntries.length - shownEntries.length;
 
     return (
         <ul
@@ -1041,33 +1078,99 @@ function FileTreeDirectory(props: FileTreeDirectoryProps) {
                     <span role="status">{entries.length ? t("preview.noVisibleFiles") : t("preview.emptyDirectory")}</span>
                 </li>
             )}
-            {visibleEntries.map((entry) => (
-                <FileTreeEntry key={entry.path} {...props} entry={entry} />
+            {shownEntries.map((entry) => (
+                <FileTreeEntry key={entry.path} shared={shared} entry={entry} />
             ))}
+            {hiddenCount > 0 && (
+                <li role="none">
+                    <button
+                        type="button"
+                        data-tree-row=""
+                        className="flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] text-secondary transition-colors hover:bg-white/5 hover:text-primary focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2"
+                        onClick={() => setRenderLimit((limit) => limit + TreeRenderChunkSize)}
+                    >
+                        <i aria-hidden="true" className="fa-solid fa-ellipsis w-3 shrink-0 text-[10px] opacity-70" />
+                        <span className="truncate">{t("preview.treeShowMore", { count: hiddenCount })}</span>
+                    </button>
+                </li>
+            )}
         </ul>
     );
-}
+});
 
-function FileTreeEntry({ entry, ...props }: FileTreeDirectoryProps & { entry: FileInfo }) {
+FileTreeDirectory.displayName = "FileTreeDirectory";
+
+const FileTreeEntry = React.memo(function FileTreeEntry({
+    shared,
+    entry,
+}: {
+    shared: FileTreeSharedProps;
+    entry: FileInfo;
+}) {
     const env = useWaveEnv<PreviewEnv>();
     const t = useT();
     const fullConfig = useAtomValue(env.atoms.fullConfigAtom);
     const [expanded, setExpanded] = useState(false);
     const itemRef = useRef<HTMLLIElement>(null);
     const labelId = React.useId();
-    const selected = props.selectedPath == entry.path;
+    const selectedAtom = useMemo(
+        () => atom((get) => get(shared.model.metaFilePath) == entry.path),
+        [shared.model, entry.path]
+    );
+    const selected = useAtomValue(selectedAtom);
+    // Per-entry derived atoms rather than one shared subscription: jotai bails out when the
+    // computed boolean is unchanged, so opening a file only re-renders the handful of rows whose
+    // selected/ancestor state actually flipped instead of the entire tree.
+    const revealAtom = useMemo(
+        () =>
+            atom((get) => {
+                if (!entry.isdir) {
+                    return false;
+                }
+                const activePath = get(shared.model.metaFilePath);
+                return activePath != entry.path && isPathInside(activePath, entry.path);
+            }),
+        [shared.model, entry.path, entry.isdir]
+    );
+    const shouldReveal = useAtomValue(revealAtom);
     const mimeType = entry.mimetype ?? "";
     const iconClass = getMimeTypeIcon(fullConfig, mimeType);
     const iconColor = getMimeTypeColor(fullConfig, mimeType);
+
+    // Only ever expands, so a directory the user deliberately collapsed stays collapsed.
+    useEffect(() => {
+        if (shouldReveal) {
+            setExpanded(true);
+        }
+    }, [shouldReveal]);
+
+    useEffect(() => {
+        if (!selected) {
+            return;
+        }
+        itemRef.current
+            ?.querySelector<HTMLElement>("button[data-tree-row]")
+            ?.scrollIntoView({ block: "nearest", inline: "nearest" });
+    }, [selected]);
 
     const handleContextMenu = useCallback(
         (e: React.MouseEvent) => {
             e.preventDefault();
             e.stopPropagation();
-            const menu: ContextMenuItem[] = [
-                { label: t("common.newFile"), click: () => props.onContextAction?.("newfile", entry) },
-                { label: t("common.newFolder"), click: () => props.onContextAction?.("newfolder", entry) },
-                { label: t("common.rename"), click: () => props.onContextAction?.("rename", entry) },
+            const menu: ContextMenuItem[] = [];
+            if (entry.isdir) {
+                menu.push(
+                    {
+                        label: t("preview.openDirectoryHere"),
+                        click: () => shared.onContextAction("opendir", entry),
+                    },
+                    { type: "separator" }
+                );
+            }
+            menu.push(
+                { label: t("common.newFile"), click: () => shared.onContextAction("newfile", entry) },
+                { label: t("common.newFolder"), click: () => shared.onContextAction("newfolder", entry) },
+                { label: t("common.rename"), click: () => shared.onContextAction("rename", entry) },
                 { type: "separator" },
                 {
                     label: t("common.copyFileName"),
@@ -1080,16 +1183,16 @@ function FileTreeEntry({ entry, ...props }: FileTreeDirectoryProps & { entry: Fi
                 {
                     label: t("common.copyFullFileNameShellQuoted"),
                     click: () => fireAndForget(() => navigator.clipboard.writeText(shellQuote([entry.path]))),
-                },
-            ];
-            addOpenMenuItems(menu, props.connection, entry);
+                }
+            );
+            addOpenMenuItems(menu, shared.connection, entry);
             menu.push(
                 { type: "separator" },
-                { label: t("common.delete"), click: () => props.onContextAction?.("delete", entry) }
+                { label: t("common.delete"), click: () => shared.onContextAction("delete", entry) }
             );
             ContextMenuModel.getInstance().showContextMenu(menu, e);
         },
-        [entry, props.onContextAction, props.connection]
+        [entry, shared, t]
     );
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
@@ -1141,7 +1244,7 @@ function FileTreeEntry({ entry, ...props }: FileTreeDirectoryProps & { entry: Fi
                         setExpanded((value) => !value);
                         return;
                     }
-                    fireAndForget(() => props.model.openTreeFile(entry.path));
+                    fireAndForget(() => shared.model.openTreeFile(entry.path));
                 }}
                 onContextMenu={handleContextMenu}
             >
@@ -1155,10 +1258,12 @@ function FileTreeEntry({ entry, ...props }: FileTreeDirectoryProps & { entry: Fi
                 <i aria-hidden="true" className={cn(iconClass, "shrink-0 text-xs")} style={{ color: iconColor }} />
                 <span className="truncate">{entry.name}</span>
             </button>
-            {entry.isdir && expanded && <FileTreeDirectory {...props} path={entry.path} root={false} />}
+            {entry.isdir && expanded && <FileTreeDirectory shared={shared} path={entry.path} />}
         </li>
     );
-}
+});
+
+FileTreeEntry.displayName = "FileTreeEntry";
 
 export const FileTree = React.memo(function FileTree({
     model,
@@ -1169,14 +1274,15 @@ export const FileTree = React.memo(function FileTree({
     rootPath: string;
     onNavigateUp?: () => void;
 }) {
+    const t = useT();
     const connection = useAtomValue(model.connectionImmediate);
-    const selectedPath = useAtomValue(model.metaFilePath);
     const showHiddenFiles = useAtomValue(model.showHiddenFiles);
     const treeSort = useAtomValue(model.treeSort);
-    const loadableFileInfo = useAtomValue(model.loadableFileInfo);
     const setErrorMsg = useSetAtom(model.errorMsgAtom);
-    const [refreshVersion, setRefreshVersion] = useState(0);
-    const activeIsDir = loadableFileInfo.state == "hasData" && loadableFileInfo.data?.isdir == true;
+    const [versionAtom] = useState(() => atom<TreeVersionState>({ all: 0, dirs: {} }));
+    const setVersion = useSetAtom(versionAtom);
+    const rootActiveAtom = useMemo(() => atom((get) => get(model.metaFilePath) == rootPath), [model, rootPath]);
+    const rootIsActive = useAtomValue(rootActiveAtom);
 
     const [entryManagerPropsAtom] = useState(
         atom<EntryManagerOverlayProps>(null) as PrimitiveAtom<EntryManagerOverlayProps>
@@ -1190,23 +1296,23 @@ export const FileTree = React.memo(function FileTree({
     const dismiss = useDismiss(context);
     const { getFloatingProps } = useInteractions([dismiss]);
 
-    const refreshTree = useCallback(() => setRefreshVersion((version) => version + 1), []);
-
-    useEffect(() => {
-        if (!activeIsDir) {
-            return;
-        }
-        model.refreshCallback = refreshTree;
-        return () => {
-            if (model.refreshCallback === refreshTree) {
-                model.refreshCallback = null;
-            }
-        };
-    }, [activeIsDir, model, refreshTree]);
+    const refreshDir = useCallback(
+        (dirPath: string) =>
+            setVersion((version) => ({
+                ...version,
+                dirs: { ...version.dirs, [dirPath]: (version.dirs[dirPath] ?? 0) + 1 },
+            })),
+        [setVersion]
+    );
 
     const handleContextAction = useCallback(
         (action: string, entry: FileInfo) => {
-            const parentDir = entry.isdir ? entry.path : entry.path.split("/").slice(0, -1).join("/");
+            const entryDir = getParentPath(entry.path) ?? entry.path;
+            const parentDir = entry.isdir ? entry.path : entryDir;
+            if (action == "opendir") {
+                fireAndForget(() => model.goHistory(entry.path));
+                return;
+            }
             if (action == "newfile" || action == "newfolder") {
                 const isFolder = action == "newfolder";
                 setEntryManagerProps({
@@ -1226,11 +1332,13 @@ export const FileTree = React.memo(function FileTree({
                                 }
                             } catch (e) {
                                 setErrorMsg({
-                                    status: isFolder ? "Create Folder Failed" : "Create File Failed",
+                                    status: isFolder
+                                        ? t("preview.createFolderFailed")
+                                        : t("preview.createFileFailed"),
                                     text: String(e),
                                 });
                             }
-                            refreshTree();
+                            refreshDir(parentDir);
                         });
                     },
                 });
@@ -1246,16 +1354,44 @@ export const FileTree = React.memo(function FileTree({
                             return;
                         }
                         const parent = entry.path.substring(0, entry.path.lastIndexOf(entry.name));
-                        handleRename(model, entry.path, parent + newName, entry.isdir, setErrorMsg, refreshTree);
+                        const newPath = parent + newName;
+                        handleRename(
+                            model,
+                            entry.path,
+                            newPath,
+                            entry.isdir,
+                            setErrorMsg,
+                            () => refreshDir(entryDir),
+                            () => model.handlePathRenamed(entry.path, newPath)
+                        );
                     },
                 });
                 return;
             }
             if (action == "delete") {
-                handleFileDelete(model, entry.path, false, setErrorMsg, refreshTree);
+                handleFileDelete(
+                    model,
+                    entry.path,
+                    false,
+                    setErrorMsg,
+                    () => refreshDir(entryDir),
+                    () => model.handlePathRemoved(entry.path)
+                );
             }
         },
-        [connection, model, refreshTree, setEntryManagerProps, setErrorMsg]
+        [connection, model, refreshDir, setEntryManagerProps, setErrorMsg, t]
+    );
+
+    const shared = useMemo<FileTreeSharedProps>(
+        () => ({
+            model,
+            connection,
+            showHiddenFiles,
+            sort: treeSort,
+            versionAtom,
+            onContextAction: handleContextAction,
+        }),
+        [model, connection, showHiddenFiles, treeSort, versionAtom, handleContextAction]
     );
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -1304,18 +1440,24 @@ export const FileTree = React.memo(function FileTree({
                 onKeyDown={handleKeyDown}
                 onClick={() => entryManagerProps && setEntryManagerProps(undefined)}
             >
+                <button
+                    type="button"
+                    title={rootPath}
+                    className={cn(
+                        "flex h-7 w-full shrink-0 cursor-pointer select-none items-center gap-1.5 border-b border-border px-2 text-left text-xs font-medium transition-colors hover:bg-white/5",
+                        rootIsActive ? "text-primary" : "text-secondary"
+                    )}
+                    onClick={() => fireAndForget(() => model.goHistory(rootPath))}
+                >
+                    <i aria-hidden="true" className="fa-solid fa-folder-open shrink-0 text-[10px] opacity-70" />
+                    <span className="truncate">{getBaseName(rootPath)}</span>
+                </button>
                 <div className="min-h-0 flex-1 overflow-auto p-1 scrollbar-hide-until-hover">
                     <FileTreeDirectory
                         key={`${connection}:${rootPath}`}
-                        model={model}
+                        shared={shared}
                         path={rootPath}
-                        connection={connection}
-                        showHiddenFiles={showHiddenFiles}
-                        selectedPath={selectedPath}
-                        refreshVersion={refreshVersion}
-                        sort={treeSort}
                         onNavigateUp={onNavigateUp}
-                        onContextAction={handleContextAction}
                         root
                     />
                 </div>

@@ -13,11 +13,12 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { memo, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { ImperativePanelHandle, Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { CSVView } from "./csvview";
-import { FileTree } from "./preview-directory";
+import { DirectoryPreview, FileTree } from "./preview-directory";
 import { CodeEditPreview } from "./preview-edit";
 import { ErrorOverlay } from "./preview-error-overlay";
 import { MarkdownPreview } from "./preview-markdown";
 import type { PreviewModel } from "./preview-model";
+import { isPathInside } from "./preview-path";
 import { StreamingPreview } from "./preview-streaming";
 import type { PreviewEnv } from "./previewenv";
 
@@ -31,6 +32,7 @@ const SpecializedViewMap: { [view: string]: ({ model }: SpecializedViewProps) =>
     markdown: MarkdownPreview,
     codeedit: CodeEditPreview,
     csv: CSVViewPreview,
+    directory: DirectoryPreview,
 };
 
 function canPreview(mimeType: string): boolean {
@@ -73,19 +75,32 @@ type PreviewTreeRoot = {
     directory: FileInfo;
 };
 
+// The tree root tracks the block's current location so the header path and the tree can never
+// disagree. Navigating to a directory re-roots the tree there; opening a file keeps the existing
+// root as long as the file lives under it, which is what stops the tree from jumping around while
+// clicking through files. A file outside the root clears it so the effect below can re-resolve.
 export function getPreviewTreeRoot(
     current: PreviewTreeRoot,
     connection: string,
     fileInfo: Loadable<FileInfo>
 ): PreviewTreeRoot {
-    const root = current.connection == connection ? current : { connection, directory: null };
-    if (root.directory != null) {
-        return root;
+    if (current.connection != connection) {
+        return { connection, directory: null };
     }
-    if (fileInfo.state != "hasData" || !fileInfo.data?.isdir) {
-        return root;
+    if (fileInfo.state != "hasData" || fileInfo.data == null) {
+        return current;
     }
-    return { connection, directory: fileInfo.data };
+    const info = fileInfo.data;
+    if (info.isdir) {
+        if (current.directory?.path == info.path) {
+            return current;
+        }
+        return { connection, directory: info };
+    }
+    if (current.directory == null || isPathInside(info.path, current.directory.path)) {
+        return current;
+    }
+    return { connection, directory: null };
 }
 
 const fetchSuggestions = async (
@@ -150,30 +165,23 @@ function PreviewView({
     const metaFilePath = useAtomValue(model.metaFilePath);
     const openTabs = useAtomValue(model.openTabs);
     const setOpenTabs = useSetAtom(model.openTabs);
-    const showPreview = openTabs.length > 0 || (fileInfo != null && !fileInfo.isdir);
+    // A directory location renders the listing view in the right pane, so anything that resolved
+    // has something to show there.
+    const showPreview = openTabs.length > 0 || fileInfo != null;
     const [treeCollapsed, setTreeCollapsed] = useState(false);
     const treePanelRef = useRef<ImperativePanelHandle>(null);
     const [treeRoot, setTreeRoot] = useState<PreviewTreeRoot>({ connection, directory: null });
     const root = getPreviewTreeRoot(treeRoot, connection, loadableFileInfo);
 
+    // Navigating the block (rather than only re-rooting the tree) keeps the header path, the
+    // history stack and the tree pointing at the same directory.
     const handleTreeUp = useCallback(() => {
         const parentPath = root.directory?.dir;
         if (parentPath == null || parentPath == root.directory?.path) {
             return;
         }
-        fireAndForget(async () => {
-            try {
-                const directory = await env.rpc.FileInfoCommand(TabRpcClient, {
-                    info: { path: formatRemoteUri(parentPath, connection) },
-                });
-                if (directory?.isdir) {
-                    setTreeRoot({ connection, directory });
-                }
-            } catch (e) {
-                setErrorMsg((current) => current ?? { status: "Cannot Read Directory", text: String(e) });
-            }
-        });
-    }, [root.directory?.dir, root.directory?.path, connection, env.rpc, setErrorMsg]);
+        fireAndForget(() => model.goHistory(parentPath));
+    }, [root.directory?.dir, root.directory?.path, model]);
 
     useEffect(() => {
         if (root != treeRoot) {
@@ -198,7 +206,7 @@ function PreviewView({
             })
             .catch((e) => {
                 if (active) {
-                    setErrorMsg((current) => current ?? { status: "Cannot Read Directory", text: String(e) });
+                    setErrorMsg((current) => current ?? { status: t("preview.cannotReadDir"), text: String(e) });
                 }
             });
         return () => {
@@ -292,13 +300,20 @@ function PreviewView({
                                         : "text-secondary hover:bg-white/5 hover:text-primary"
                                 )}
                                 onClick={() => fireAndForget(() => model.openTreeFile(tabPath))}
+                                onAuxClick={(e) => {
+                                    if (e.button != 1) {
+                                        return;
+                                    }
+                                    e.preventDefault();
+                                    fireAndForget(() => model.closeFileTab(tabPath));
+                                }}
                             >
                                 <span className="truncate">{name}</span>
                                 {active && <TabDirtyDot model={model} />}
                                 <button
                                     type="button"
                                     title={t("preview.closeFile")}
-                                    aria-label={`Close ${name}`}
+                                    aria-label={t("preview.closeFileNamed", { name })}
                                     className={cn(
                                         "flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded transition-opacity hover:bg-white/10 focus-visible:opacity-100",
                                         active ? "opacity-70 hover:opacity-100" : "opacity-0 group-hover:opacity-70"
@@ -328,17 +343,9 @@ function PreviewView({
                 )}
             </div>
             <div ref={contentRef} className="min-h-0 flex-1 overflow-hidden">
-                {fileInfo?.isdir ? (
-                    <div className="flex h-full flex-col items-center justify-center gap-2 text-secondary">
-                        <i aria-hidden="true" className="fa-solid fa-file text-4xl opacity-20" />
-                        <div className="text-sm">{t("preview.selectFile")}</div>
-                        <div className="text-xs opacity-60">{t("preview.clickFileHint")}</div>
-                    </div>
-                ) : (
-                    <Suspense fallback={<CenteredDiv>{t("preview.loading")}</CenteredDiv>}>
-                        <SpecializedView parentRef={contentRef} model={model} />
-                    </Suspense>
-                )}
+                <Suspense fallback={<CenteredDiv>{t("preview.loading")}</CenteredDiv>}>
+                    <SpecializedView parentRef={contentRef} model={model} />
+                </Suspense>
             </div>
         </div>
     );

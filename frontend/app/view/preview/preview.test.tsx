@@ -31,11 +31,40 @@ describe("preview tree root", () => {
         expect(root).toBe(Root);
     });
 
-    it("adopts the active directory only when no root is set", () => {
+    it("adopts the active directory when no root is set", () => {
         const directory = { path: "/project/src", dir: "/project", isdir: true };
         const unset = { connection: "local", directory: null };
         expect(getPreviewTreeRoot(unset, "local", loaded(directory))).toEqual({ connection: "local", directory });
-        expect(getPreviewTreeRoot(Root, "local", loaded(directory))).toBe(Root);
+    });
+
+    it("re-roots when the block navigates to a descendant directory", () => {
+        const directory = { path: "/project/src", dir: "/project", isdir: true };
+        expect(getPreviewTreeRoot(Root, "local", loaded(directory))).toEqual({ connection: "local", directory });
+    });
+
+    it("re-roots when the block navigates to an unrelated directory", () => {
+        const directory = { path: "/other", dir: "/", isdir: true };
+        expect(getPreviewTreeRoot(Root, "local", loaded(directory))).toEqual({ connection: "local", directory });
+    });
+
+    it("follows a home-relative directory change so the header and the tree agree", () => {
+        const home = { connection: "local", directory: { path: "~", dir: "/", isdir: true } };
+        const music = { path: "~/Music", dir: "~", isdir: true };
+        expect(getPreviewTreeRoot(home, "local", loaded(music))).toEqual({ connection: "local", directory: music });
+    });
+
+    it("clears the root for a file outside it so the parent gets resolved", () => {
+        expect(getPreviewTreeRoot(Root, "local", loaded({ path: "/other/a.ts", dir: "/other" }))).toEqual({
+            connection: "local",
+            directory: null,
+        });
+    });
+
+    it("does not treat a sibling with a shared prefix as a descendant", () => {
+        expect(getPreviewTreeRoot(Root, "local", loaded({ path: "/project-old/a.ts", dir: "/project-old" }))).toEqual({
+            connection: "local",
+            directory: null,
+        });
     });
 
     it("does not reset the same directory after another stat", () => {
