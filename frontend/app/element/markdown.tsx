@@ -476,22 +476,6 @@ const Markdown = ({
         [transformedText, remarkPlugins, rehypePlugins, markdownComponents]
     );
 
-    const ScrollableMarkdown = () => {
-        return (
-            <OverlayScrollbarsComponent
-                ref={contentsOsRef}
-                className={cn("content", contentClassName)}
-                options={{ scrollbars: { autoHide: "leave" } }}
-            >
-                {markdownElem}
-            </OverlayScrollbarsComponent>
-        );
-    };
-
-    const NonScrollableMarkdown = () => {
-        return <div className={cn("content non-scrollable", contentClassName)}>{markdownElem}</div>;
-    };
-
     const mergedStyle = { ...style };
     if (fontSizeOverride != null) {
         mergedStyle["--markdown-font-size"] = `${boundNumber(fontSizeOverride, 6, 64)}px`;
@@ -501,7 +485,17 @@ const Markdown = ({
     }
     return (
         <div className={clsx("markdown", className)} style={mergedStyle}>
-            {scrollable ? <ScrollableMarkdown /> : <NonScrollableMarkdown />}
+            {scrollable ? (
+                <OverlayScrollbarsComponent
+                    ref={contentsOsRef}
+                    className={cn("content", contentClassName)}
+                    options={{ scrollbars: { autoHide: "leave" } }}
+                >
+                    {markdownElem}
+                </OverlayScrollbarsComponent>
+            ) : (
+                <div className={cn("content non-scrollable", contentClassName)}>{markdownElem}</div>
+            )}
             {toc && (
                 <OverlayScrollbarsComponent className="toc mt-1" options={{ scrollbars: { autoHide: "leave" } }}>
                     <div className="toc-inner">
