@@ -13,7 +13,7 @@ import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import { memo, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { ImperativePanelHandle, Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { CSVView } from "./csvview";
-import { DirectoryPreview, FileTree } from "./preview-directory";
+import { FileTree } from "./preview-directory";
 import { CodeEditPreview } from "./preview-edit";
 import { ErrorOverlay } from "./preview-error-overlay";
 import { MarkdownPreview } from "./preview-markdown";
@@ -32,7 +32,6 @@ const SpecializedViewMap: { [view: string]: ({ model }: SpecializedViewProps) =>
     markdown: MarkdownPreview,
     codeedit: CodeEditPreview,
     csv: CSVViewPreview,
-    directory: DirectoryPreview,
 };
 
 function canPreview(mimeType: string): boolean {
@@ -165,9 +164,8 @@ function PreviewView({
     const metaFilePath = useAtomValue(model.metaFilePath);
     const openTabs = useAtomValue(model.openTabs);
     const setOpenTabs = useSetAtom(model.openTabs);
-    // A directory location renders the listing view in the right pane, so anything that resolved
-    // has something to show there.
-    const showPreview = openTabs.length > 0 || fileInfo != null;
+    // The right pane previews files only; browsing a directory is the tree's job.
+    const showPreview = openTabs.length > 0 || (fileInfo != null && !fileInfo.isdir);
     const [treeCollapsed, setTreeCollapsed] = useState(false);
     const treePanelRef = useRef<ImperativePanelHandle>(null);
     const [treeRoot, setTreeRoot] = useState<PreviewTreeRoot>({ connection, directory: null });
@@ -343,9 +341,17 @@ function PreviewView({
                 )}
             </div>
             <div ref={contentRef} className="min-h-0 flex-1 overflow-hidden">
-                <Suspense fallback={<CenteredDiv>{t("preview.loading")}</CenteredDiv>}>
-                    <SpecializedView parentRef={contentRef} model={model} />
-                </Suspense>
+                {fileInfo?.isdir ? (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 text-secondary">
+                        <i aria-hidden="true" className="fa-solid fa-file text-4xl opacity-20" />
+                        <div className="text-sm">{t("preview.selectFile")}</div>
+                        <div className="text-xs opacity-60">{t("preview.clickFileHint")}</div>
+                    </div>
+                ) : (
+                    <Suspense fallback={<CenteredDiv>{t("preview.loading")}</CenteredDiv>}>
+                        <SpecializedView parentRef={contentRef} model={model} />
+                    </Suspense>
+                )}
             </div>
         </div>
     );
@@ -358,10 +364,15 @@ function PreviewView({
             >
                 {errorMsg && <ErrorOverlay errorMsg={errorMsg} resetOverlay={() => setErrorMsg(null)} />}
                 {showPreview ? (
+                    {/* The tree panel is conditional, so both panels need stable id/order --
+                        without them the group registers panels in mount order and the resize
+                        handle ends up driving the wrong one, which inverts the drag direction. */}
                     <PanelGroup direction="horizontal" className="h-full w-full">
                         {treeElem && (
                             <>
                                 <Panel
+                                    id="preview-tree"
+                                    order={1}
                                     ref={treePanelRef}
                                     collapsible
                                     collapsedSize={0}
@@ -382,7 +393,7 @@ function PreviewView({
                                 />
                             </>
                         )}
-                        <Panel minSize={30} className="overflow-hidden">
+                        <Panel id="preview-content" order={2} minSize={30} className="overflow-hidden">
                             {previewElem}
                         </Panel>
                     </PanelGroup>
