@@ -24,13 +24,15 @@ import { makeDirectoryDefaultMenuItems, type TreeSortType } from "./preview-dire
 import type { PreviewEnv } from "./previewenv";
 
 // TODO drive this using config
-const BOOKMARKS: { label: string; path: string }[] = [
-    { label: "Home", path: "~" },
-    { label: "Desktop", path: "~/Desktop" },
-    { label: "Downloads", path: "~/Downloads" },
-    { label: "Documents", path: "~/Documents" },
-    { label: "Root", path: "/" },
-];
+function getBookmarks(): { label: string; path: string }[] {
+    return [
+        { label: t("preview.bookmarkHome"), path: "~" },
+        { label: t("preview.bookmarkDesktop"), path: "~/Desktop" },
+        { label: t("preview.bookmarkDownloads"), path: "~/Downloads" },
+        { label: t("preview.bookmarkDocuments"), path: "~/Documents" },
+        { label: t("preview.bookmarkRoot"), path: "/" },
+    ];
+}
 
 const MaxFileSize = 1024 * 1024 * 10; // 10MB
 const MaxCSVSize = 1024 * 1024 * 1; // 1MB
@@ -214,8 +216,8 @@ export class PreviewModel implements ViewModel {
                     elemtype: "iconbutton",
                     icon: "folder-open",
                     longClick: (e: React.MouseEvent<any>) => {
-                        const menuItems: ContextMenuItem[] = BOOKMARKS.map((bookmark) => ({
-                            label: `Go to ${bookmark.label} (${bookmark.path})`,
+                        const menuItems: ContextMenuItem[] = getBookmarks().map((bookmark) => ({
+                            label: t("preview.goToBookmark", { label: bookmark.label, path: bookmark.path }),
                             click: () => this.goHistory(bookmark.path),
                         }));
                         ContextMenuModel.getInstance().showContextMenu(menuItems, e);
@@ -820,7 +822,7 @@ export class PreviewModel implements ViewModel {
                 }
             );
             fontSizeSubMenu.unshift({
-                label: "Default (" + defaultFontSize + "px)",
+                label: t("previewMenu.defaultPx", { size: defaultFontSize }),
                 type: "checkbox",
                 checked: overrideFontSize == null,
                 click: () => {

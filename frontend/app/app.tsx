@@ -20,6 +20,7 @@ import { ContextMenuModel } from "@/store/contextmenu";
 import { atoms, createBlock, getSettingsPrefixAtom, refocusNode } from "@/store/global";
 import { appHandleKeyDown, keyboardMouseDownHandler } from "@/store/keymodel";
 import { getElemAsStr } from "@/util/focusutil";
+import { t } from "@/util/i18n";
 import * as keyutil from "@/util/keyutil";
 import { PLATFORM } from "@/util/platformutil";
 import * as util from "@/util/util";
@@ -112,18 +113,18 @@ async function handleContextMenu(e: React.MouseEvent<HTMLDivElement>) {
     }
     const menu: ContextMenuItem[] = [];
     if (canCut) {
-        menu.push({ label: "Cut", role: "cut" });
+        menu.push({ label: t("menu.cut"), role: "cut" });
     }
     if (canCopy) {
-        menu.push({ label: "Copy", role: "copy" });
+        menu.push({ label: t("menu.copy"), role: "copy" });
     }
     if (canPaste) {
-        menu.push({ label: "Paste", role: "paste" });
+        menu.push({ label: t("menu.paste"), role: "paste" });
     }
     if (clipboardURL) {
         menu.push({ type: "separator" });
         menu.push({
-            label: "Open Clipboard URL (" + clipboardURL.hostname + ")",
+            label: t("menu.openClipboardUrl", { host: clipboardURL.hostname }),
             click: () => {
                 createBlock({
                     meta: {

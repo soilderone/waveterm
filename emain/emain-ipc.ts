@@ -10,6 +10,7 @@ import { PNG } from "pngjs";
 import { Readable } from "stream";
 import { RpcApi } from "../frontend/app/store/wshclientapi";
 import { getWebServerEndpoint } from "../frontend/util/endpoints";
+import { t } from "../frontend/util/i18n";
 import * as keyutil from "../frontend/util/keyutil";
 import { fireAndForget, parseDataUrl } from "../frontend/util/util";
 import {
@@ -164,9 +165,9 @@ function saveImageFileWithNativeDialog(
     defaultFileName = addExtensionIfNeeded(defaultFileName, mimeType);
     electron.dialog
         .showSaveDialog(ww, {
-            title: "Save Image",
+            title: t("dialog.saveImage"),
             defaultPath: defaultFileName,
-            filters: [{ name: "Images", extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp", "tiff", "heic"] }],
+            filters: [{ name: t("dialog.filterImages"), extensions: ["png", "jpg", "jpeg", "gif", "webp", "bmp", "tiff", "heic"] }],
         })
         .then((file) => {
             if (file.canceled) {
@@ -215,7 +216,7 @@ export function initIpcHandlers() {
         }
         menu.append(
             new electron.MenuItem({
-                label: "Save Image",
+                label: t("dialog.saveImage"),
                 click: () => {
                     const resultP = getUrlInSession(event.sender.session, payload.src);
                     resultP
@@ -514,9 +515,9 @@ export function initIpcHandlers() {
             return false;
         }
         const result = await electron.dialog.showSaveDialog(ww, {
-            title: "Save Scrollback",
+            title: t("dialog.saveScrollback"),
             defaultPath: fileName || "session.log",
-            filters: [{ name: "Text Files", extensions: ["txt", "log"] }],
+            filters: [{ name: t("dialog.filterTextFiles"), extensions: ["txt", "log"] }],
         });
         if (result.canceled || !result.filePath) {
             return false;

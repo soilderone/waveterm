@@ -135,4 +135,14 @@ export const zhCNAi: Record<string, string> = {
 
     "ai.maxOutputTokens": "最大输出 Token 数",
     "ai.hideWaveAI": "隐藏 Wave AI",
+    "ai.tokens24k": "24k",
+    "ai.tokens64kPro": "64k（Pro）",
+    "ai.tokens1kDev": "1k（开发测试）",
+    "ai.tokens4k": "4k",
+    "ai.tokens16kPro": "16k（Pro）",
+
+    "ai.legacyTitle": "旧版 Wave AI 块已不再受支持",
+    "ai.legacyDesc": "旧版 AI 小组件已停用，请改用新版 Wave AI 面板进行 AI 对话、终端上下文、工具调用和文件上传。",
+    "ai.openWaveAiPanel": "打开 Wave AI 面板",
+    "ai.waveAppBuilder": "WaveApp 构建器",
 };

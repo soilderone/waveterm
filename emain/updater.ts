@@ -183,7 +183,7 @@ export class Updater {
         const dialogOpts: Electron.MessageBoxOptions = {
             type: "info",
             buttons: [t("error.restart"), t("error.later")],
-            title: "Application Update",
+            title: t("error.appUpdate"),
             message: process.platform === "win32" ? this.availableUpdateReleaseNotes : this.availableUpdateReleaseName,
             detail: t("error.updateRestart"),
         };

@@ -1,6 +1,7 @@
 // Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { t } from "@/util/i18n";
 import { makeIconClass } from "@/util/util";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
@@ -143,7 +144,7 @@ export function buildVisibleRows(
                 parentId: id,
                 depth: depth + 1,
                 kind: "loading",
-                label: "Loading…",
+                label: t("treeview.loading"),
             });
             return;
         }
@@ -153,7 +154,7 @@ export function buildVisibleRows(
                 parentId: id,
                 depth: depth + 1,
                 kind: "error",
-                label: node.staterror ? `Error: ${node.staterror}` : "Unable to load directory",
+                label: node.staterror ? t("treeview.errorWithDetail", { error: node.staterror }) : t("treeview.unableLoadDirectory"),
             });
             return;
         }

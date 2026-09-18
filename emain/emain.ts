@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { RpcApi } from "@/app/store/wshclientapi";
+import { setLanguage, t } from "@/util/i18n";
 import * as electron from "electron";
 import { focusedBuilderWindow, getAllBuilderWindows } from "emain/emain-builder";
 import { globalEvents } from "emain/emain-events";
@@ -277,9 +278,9 @@ electronApp.on("before-quit", (e) => {
         e.preventDefault();
         const choice = electron.dialog.showMessageBoxSync(null, {
             type: "question",
-            buttons: ["Cancel", "Quit"],
-            title: "Confirm Quit",
-            message: "Are you sure you want to quit Wave Terminal?",
+            buttons: [t("dialog.cancel"), t("dialog.quit")],
+            title: t("dialog.confirmQuitTitle"),
+            message: t("dialog.confirmQuitMsg"),
             defaultId: 0,
             cancelId: 0,
         });
@@ -410,6 +411,7 @@ async function appMain() {
         console.log("error initializing wshrpc", e);
     }
     const fullConfig = await RpcApi.GetFullConfigCommand(ElectronWshClient);
+    setLanguage(fullConfig?.settings?.["app:language"]);
     checkIfRunningUnderARM64Translation(fullConfig);
     if (fullConfig?.settings?.["app:confirmquit"] != null) {
         confirmQuit = fullConfig.settings["app:confirmquit"];

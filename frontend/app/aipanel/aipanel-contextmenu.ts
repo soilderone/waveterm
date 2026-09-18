@@ -22,6 +22,7 @@ export async function handleWaveAIContextMenu(e: React.MouseEvent, showCopy: boo
         if (hasSelection) {
             menu.push({
                 role: "copy",
+                label: t("menu.copy"),
             });
             menu.push({ type: "separator" });
         }
@@ -48,7 +49,7 @@ export async function handleWaveAIContextMenu(e: React.MouseEvent, showCopy: boo
     if (model.inBuilder) {
         maxTokensSubmenu.push(
             {
-                label: "24k",
+                label: t("ai.tokens24k"),
                 type: "checkbox",
                 checked: currentMaxTokens === 24576,
                 click: () => {
@@ -59,7 +60,7 @@ export async function handleWaveAIContextMenu(e: React.MouseEvent, showCopy: boo
                 },
             },
             {
-                label: "64k (Pro)",
+                label: t("ai.tokens64kPro"),
                 type: "checkbox",
                 checked: currentMaxTokens === 65536,
                 click: () => {
@@ -73,7 +74,7 @@ export async function handleWaveAIContextMenu(e: React.MouseEvent, showCopy: boo
     } else {
         if (isDev()) {
             maxTokensSubmenu.push({
-                label: "1k (Dev Testing)",
+                label: t("ai.tokens1kDev"),
                 type: "checkbox",
                 checked: currentMaxTokens === 1024,
                 click: () => {
@@ -86,7 +87,7 @@ export async function handleWaveAIContextMenu(e: React.MouseEvent, showCopy: boo
         }
         maxTokensSubmenu.push(
             {
-                label: "4k",
+                label: t("ai.tokens4k"),
                 type: "checkbox",
                 checked: currentMaxTokens === 4096,
                 click: () => {
@@ -97,7 +98,7 @@ export async function handleWaveAIContextMenu(e: React.MouseEvent, showCopy: boo
                 },
             },
             {
-                label: "16k (Pro)",
+                label: t("ai.tokens16kPro"),
                 type: "checkbox",
                 checked: currentMaxTokens === 16384,
                 click: () => {
@@ -108,7 +109,7 @@ export async function handleWaveAIContextMenu(e: React.MouseEvent, showCopy: boo
                 },
             },
             {
-                label: "64k (Pro)",
+                label: t("ai.tokens64kPro"),
                 type: "checkbox",
                 checked: currentMaxTokens === 65536,
                 click: () => {

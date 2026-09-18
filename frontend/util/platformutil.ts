@@ -1,6 +1,7 @@
 // Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { t } from "./i18n";
 export const PlatformMacOS = "darwin";
 export const PlatformWindows = "win32";
 export const PlatformLinux = "linux";
@@ -34,20 +35,15 @@ export function isWindows(): boolean {
 export function makeNativeLabel(isDirectory: boolean) {
     let managerName: string;
     if (!isDirectory) {
-        managerName = "Default Application";
+        managerName = t("conn.openFileInApp", { manager: t("conn.defaultApp") });
+        return managerName;
     } else if (PLATFORM === PlatformMacOS) {
         managerName = "Finder";
     } else if (PLATFORM == PlatformWindows) {
         managerName = "Explorer";
     } else {
-        managerName = "File Manager";
+        managerName = t("conn.fileManager");
     }
 
-    let fileAction: string;
-    if (isDirectory) {
-        fileAction = "Reveal";
-    } else {
-        fileAction = "Open File";
-    }
-    return `${fileAction} in ${managerName}`;
+    return t("conn.revealInManager", { manager: managerName });
 }

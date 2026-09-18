@@ -140,4 +140,15 @@ export const enAi: Record<string, string> = {
 
     "ai.maxOutputTokens": "Max Output Tokens",
     "ai.hideWaveAI": "Hide Wave AI",
+    "ai.tokens24k": "24k",
+    "ai.tokens64kPro": "64k (Pro)",
+    "ai.tokens1kDev": "1k (Dev Testing)",
+    "ai.tokens4k": "4k",
+    "ai.tokens16kPro": "16k (Pro)",
+
+    "ai.legacyTitle": "This legacy Wave AI block is no longer supported",
+    "ai.legacyDesc":
+        "This older AI widget has been retired. Please use the modern Wave AI panel for AI chats, terminal context, tools, and uploads going forward.",
+    "ai.openWaveAiPanel": "Open Wave AI panel",
+    "ai.waveAppBuilder": "WaveApp Builder",
 };

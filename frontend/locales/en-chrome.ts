@@ -73,6 +73,8 @@ export const enChrome: Record<string, string> = {
     "chrome.errorPrefix": "Error: ",
 
     "chrome.headerIcons": "Header Icons",
+    "chrome.addToLayout": "Add to Layout",
+    "chrome.wshNotInstalled": "wsh is not installed for this connection",
     "chrome.connectRemote": "Connect to a remote server",
     "chrome.blockSettings": "Block Settings",
     "chrome.importantKeybindings": "Important Keybindings",

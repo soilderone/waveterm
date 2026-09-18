@@ -187,7 +187,7 @@ const AIBuilderWelcomeMessage = memo(() => {
         <div className="text-secondary py-8">
             <div className="text-center">
                 <i className="fa fa-sparkles text-4xl text-accent mb-4 block"></i>
-                <p className="text-lg font-bold text-primary">WaveApp Builder</p>
+                <p className="text-lg font-bold text-primary">{t("ai.waveAppBuilder")}</p>
             </div>
             <div className="mt-4 text-left max-w-md mx-auto">
                 <p className="text-sm mb-6">{t("ai.builderWelcomeDesc")}</p>

@@ -6,11 +6,12 @@ import { ContextMenuModel } from "@/app/store/contextmenu";
 import { globalStore } from "@/app/store/jotaiStore";
 import { BuilderAppPanelModel } from "@/builder/store/builder-apppanel-model";
 import { BuilderBuildPanelModel } from "@/builder/store/builder-buildpanel-model";
+import { useT } from "@/util/i18n-hooks";
 import { useAtomValue } from "jotai";
 import { memo, useCallback, useEffect, useRef } from "react";
 import { debounce } from "throttle-debounce";
 
-function handleBuildPanelContextMenu(e: React.MouseEvent, selectedText: string): void {
+function handleBuildPanelContextMenu(e: React.MouseEvent, selectedText: string, t: (key: string) => string): void {
     e.preventDefault();
     e.stopPropagation();
 
@@ -19,10 +20,10 @@ function handleBuildPanelContextMenu(e: React.MouseEvent, selectedText: string):
     }
 
     const menu: ContextMenuItem[] = [
-        { role: "copy" },
+        { role: "copy", label: t("menu.copy") },
         { type: "separator" },
         {
-            label: "Add to Context",
+            label: t("builder.addToContext"),
             click: () => {
                 const model = WaveAIModel.getInstance();
                 const formattedText = `from builder output:\n\`\`\`\n${selectedText}\n\`\`\``;
@@ -35,6 +36,7 @@ function handleBuildPanelContextMenu(e: React.MouseEvent, selectedText: string):
 }
 
 const BuilderBuildPanel = memo(() => {
+    const t = useT();
     const model = BuilderBuildPanelModel.getInstance();
     const outputLines = useAtomValue(model.outputLines);
     const showDebug = useAtomValue(model.showDebug);
@@ -71,8 +73,8 @@ const BuilderBuildPanel = memo(() => {
     const handleContextMenu = useCallback((e: React.MouseEvent) => {
         const selection = window.getSelection();
         const selectedText = selection ? selection.toString() : "";
-        handleBuildPanelContextMenu(e, selectedText);
-    }, []);
+        handleBuildPanelContextMenu(e, selectedText, t);
+    }, [t]);
 
     const handleDebugToggle = useCallback(() => {
         globalStore.set(model.showDebug, !showDebug);
@@ -104,7 +106,7 @@ const BuilderBuildPanel = memo(() => {
     return (
         <div className="w-full h-full flex flex-col bg-black rounded-br-2">
             <div className="flex-shrink-0 px-3 py-2 border-b border-gray-700 flex items-center justify-between">
-                <span className="text-sm font-semibold text-gray-300">Build Output</span>
+                <span className="text-sm font-semibold text-gray-300">{t("builder.buildOutput")}</span>
                 <div className="flex items-center gap-4">
                     <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
                         <input
@@ -113,19 +115,19 @@ const BuilderBuildPanel = memo(() => {
                             onChange={handleDebugToggle}
                             className="cursor-pointer"
                         />
-                        Debug
+                        {t("builder.debug")}
                     </label>
                     <button
                         className="px-3 py-1 text-sm font-medium rounded transition-colors bg-accent/80 text-white hover:bg-accent cursor-pointer"
                         onClick={handleSendToAI}
                     >
-                        Send Output to AI
+                        {t("builder.sendOutputToAi")}
                     </button>
                     <button
                         className="px-3 py-1 text-sm font-medium rounded transition-colors bg-accent/80 text-white hover:bg-accent cursor-pointer"
                         onClick={handleRestart}
                     >
-                        Restart App
+                        {t("builder.restartApp")}
                     </button>
                 </div>
             </div>
@@ -138,7 +140,7 @@ const BuilderBuildPanel = memo(() => {
                 >
                     {/* this comment fixes JSX blank line in pre tag */}
                     {filteredLines.length === 0 ? (
-                        <span className="text-secondary">Waiting for output...</span>
+                        <span className="text-secondary">{t("builder.waitingOutput")}</span>
                     ) : (
                         filteredLines.join("\n")
                     )}

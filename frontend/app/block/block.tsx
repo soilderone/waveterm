@@ -16,6 +16,7 @@ import { useDebouncedNodeInnerRect } from "@/layout/index";
 import { counterInc } from "@/store/counters";
 import { getBlockComponentModel, registerBlockComponentModel, unregisterBlockComponentModel } from "@/store/global";
 import { makeORef } from "@/store/wos";
+import { t } from "@/util/i18n";
 import { focusedBlockId, getElemAsStr } from "@/util/focusutil";
 import { isBlank, useAtomValueSafe } from "@/util/util";
 import clsx from "clsx";
@@ -34,10 +35,10 @@ function getViewElem(
     viewModel: ViewModel
 ): React.ReactElement {
     if (isBlank(blockView)) {
-        return <CenteredDiv>No View</CenteredDiv>;
+        return <CenteredDiv>{t("block.noView")}</CenteredDiv>;
     }
     if (viewModel.viewComponent == null) {
-        return <CenteredDiv>No View Component</CenteredDiv>;
+        return <CenteredDiv>{t("block.noViewComponent")}</CenteredDiv>;
     }
     const VC = viewModel.viewComponent;
     return <VC key={blockId} blockId={blockId} blockRef={blockRef} contentRef={contentRef} model={viewModel} />;
@@ -77,7 +78,7 @@ const BlockSubBlock = memo(({ nodeModel, viewModel }: FullSubBlockProps) => {
     return (
         <div key="content" className={clsx("block-content", { "block-no-padding": noPadding })} ref={contentRef}>
             <ErrorBoundary>
-                <Suspense fallback={<CenteredDiv>Loading...</CenteredDiv>}>{viewElem}</Suspense>
+                <Suspense fallback={<CenteredDiv>{t("block.loading")}</CenteredDiv>}>{viewElem}</Suspense>
             </ErrorBoundary>
         </div>
     );
@@ -259,7 +260,7 @@ const BlockFull = memo(({ nodeModel, viewModel }: FullBlockProps) => {
                 style={blockContentStyle}
             >
                 <ErrorBoundary>
-                    <Suspense fallback={<CenteredDiv>Loading...</CenteredDiv>}>{viewElem}</Suspense>
+                    <Suspense fallback={<CenteredDiv>{t("block.loading")}</CenteredDiv>}>{viewElem}</Suspense>
                 </ErrorBoundary>
             </div>
         </BlockFrame>

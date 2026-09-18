@@ -3,6 +3,7 @@
 
 import { enUS } from "@/locales/en";
 import { enAi } from "@/locales/en-ai";
+import { enBuilder } from "@/locales/en-builder";
 import { enChrome } from "@/locales/en-chrome";
 import { enOnboarding } from "@/locales/en-onboarding";
 import { enSettings } from "@/locales/en-settings";
@@ -11,6 +12,7 @@ import { enViews } from "@/locales/en-views";
 import { enWeb } from "@/locales/en-web";
 import { zhCN } from "@/locales/zh-cn";
 import { zhCNAi } from "@/locales/zh-cn-ai";
+import { zhCNBuilder } from "@/locales/zh-cn-builder";
 import { zhCNChrome } from "@/locales/zh-cn-chrome";
 import { zhCNOnboarding } from "@/locales/zh-cn-onboarding";
 import { zhCNSettings } from "@/locales/zh-cn-settings";
@@ -21,8 +23,8 @@ import { zhCNWeb } from "@/locales/zh-cn-web";
 export type Language = "en" | "zh-CN";
 
 const dictionaries: Record<Language, Record<string, string>> = {
-    en: { ...enUS, ...enAi, ...enOnboarding, ...enSettings, ...enTerm, ...enViews, ...enChrome, ...enWeb },
-    "zh-CN": { ...zhCN, ...zhCNAi, ...zhCNOnboarding, ...zhCNSettings, ...zhCNTerm, ...zhCNViews, ...zhCNChrome, ...zhCNWeb },
+    en: { ...enUS, ...enAi, ...enOnboarding, ...enSettings, ...enTerm, ...enViews, ...enChrome, ...enWeb, ...enBuilder },
+    "zh-CN": { ...zhCN, ...zhCNAi, ...zhCNOnboarding, ...zhCNSettings, ...zhCNTerm, ...zhCNViews, ...zhCNChrome, ...zhCNWeb, ...zhCNBuilder },
 };
 
 let currentLanguage: Language = "en";

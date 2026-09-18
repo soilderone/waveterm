@@ -474,25 +474,27 @@ type ColDef = {
     hideOnPlatform?: string[];
 };
 
-const Columns: ColDef[] = [
-    { key: "pid", label: "PID", width: "70px", align: "right" },
-    { key: "command", label: t("view.command"), width: "minmax(120px, 4fr)" },
-    { key: "status", label: t("view.status"), width: "75px", hideOnPlatform: ["windows", "darwin"] },
-    { key: "user", label: t("view.user"), width: "80px", hideOnPlatform: ["windows"] },
-    {
-        key: "threads",
-        label: "NT",
-        tooltip: t("view.numThreads"),
-        width: "40px",
-        align: "right",
-        hideOnPlatform: ["windows"],
-    },
-    { key: "cpu", label: "CPU%", width: "70px", align: "right" },
-    { key: "mem", label: t("view.memory"), width: "90px", align: "right" },
-];
+function makeColumns(): ColDef[] {
+    return [
+        { key: "pid", label: t("view.pid"), width: "70px", align: "right" },
+        { key: "command", label: t("view.command"), width: "minmax(120px, 4fr)" },
+        { key: "status", label: t("view.status"), width: "75px", hideOnPlatform: ["windows", "darwin"] },
+        { key: "user", label: t("view.user"), width: "80px", hideOnPlatform: ["windows"] },
+        {
+            key: "threads",
+            label: t("view.threadsShort"),
+            tooltip: t("view.numThreads"),
+            width: "40px",
+            align: "right",
+            hideOnPlatform: ["windows"],
+        },
+        { key: "cpu", label: t("view.cpuPercent"), width: "70px", align: "right" },
+        { key: "mem", label: t("view.memory"), width: "90px", align: "right" },
+    ];
+}
 
 function getColumns(platform: string): ColDef[] {
-    return Columns.filter((c) => !c.hideOnPlatform?.includes(platform));
+    return makeColumns().filter((c) => !c.hideOnPlatform?.includes(platform));
 }
 
 function getGridTemplate(platform: string): string {

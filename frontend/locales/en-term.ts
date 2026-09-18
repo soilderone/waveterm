@@ -69,4 +69,36 @@ export const enTerm: Record<string, string> = {
     "term.clickToOpenLink": "{modKey}-click to open link",
     "term.unknownTag": "Unknown tag:{tag}",
     "term.noShellIntegrationError": "Cannot get last command data without shell integration",
+
+    "durable.learnMore": "Learn More",
+    "durable.standardTitle": "Standard SSH Session",
+    "durable.standardDesc":
+        "Standard SSH sessions end when the connection drops. Durable sessions keep your shell state, running programs, and history alive through network changes, computer sleep, and Wave restarts.",
+    "durable.restartAsDurable": "Restart as Durable",
+    "durable.attachedTitle": "Durable Session (Attached)",
+    "durable.attachedDesc":
+        "Your shell state, running programs, and history are protected. This session will survive network disconnects.",
+    "durable.detachedTitle": "Durable Session (Detached)",
+    "durable.detachedDesc":
+        "Connection lost, but your session is still running on the remote server. Wave will automatically reconnect when the connection is restored.",
+    "durable.awaitingConnTitle": "Durable Session (Awaiting Connection)",
+    "durable.awaitingConnDesc": "Configured for a durable session. The session will start when the connection is established.",
+    "durable.awaitingStartTitle": "Durable Session (Awaiting Start)",
+    "durable.awaitingStartDesc":
+        "Configured for a durable session, but session hasn't started yet. Click below to start it manually.",
+    "durable.startSession": "Start Session",
+    "durable.startingTitle": "Durable Session (Starting)",
+    "durable.startingDesc": "The durable session is starting.",
+    "durable.endedTitle": "Durable Session (Ended)",
+    "durable.endedDesc": "The durable session has ended. This block is still configured for durable sessions.",
+    "durable.endedExitedTitle": "Durable Session (Ended, Exited)",
+    "durable.endedExitedDesc":
+        "The shell was terminated and is no longer running. This block is still configured for durable sessions.",
+    "durable.endedLostTitle": "Durable Session (Ended, Lost)",
+    "durable.endedLostDesc":
+        "The session was lost or not found on the remote server. This may have occurred due to a system reboot or the session being manually terminated.",
+    "durable.failedStartTitle": "Durable Session (Failed to Start)",
+    "durable.failedStartDesc": "The durable session failed to start.",
+    "durable.restartSession": "Restart Session",
+    "durable.restartAsStandard": "Restart as Standard",
 };

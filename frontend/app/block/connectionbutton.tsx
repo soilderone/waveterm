@@ -5,6 +5,7 @@ import { computeConnColorNum } from "@/app/block/blockutil";
 import { recordTEvent } from "@/app/store/global";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
 import { IconButton } from "@/element/iconbutton";
+import { useT } from "@/util/i18n-hooks";
 import * as util from "@/util/util";
 import * as jotai from "jotai";
 import * as React from "react";
@@ -20,6 +21,7 @@ interface ConnectionButtonProps {
 export const ConnectionButton = React.memo(
     React.forwardRef<HTMLDivElement, ConnectionButtonProps>(
         ({ connection, changeConnModalAtom, isTerminalBlock }: ConnectionButtonProps, ref) => {
+            const t = useT();
             const waveEnv = useWaveEnv<BlockEnv>();
             const [_connModalOpen, setConnModalOpen] = jotai.useAtom(changeConnModalAtom);
             const isLocal = util.isLocalConnName(connection);
@@ -147,7 +149,7 @@ export const ConnectionButton = React.memo(
                             decl={{
                                 elemtype: "iconbutton",
                                 icon: "link-slash",
-                                title: "wsh is not installed for this connection",
+                                title: t("chrome.wshNotInstalled"),
                             }}
                         />
                     )}

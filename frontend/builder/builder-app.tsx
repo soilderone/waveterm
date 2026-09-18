@@ -9,6 +9,7 @@ import { AppSelectionModal } from "@/builder/app-selection-modal";
 import { BuilderWorkspace } from "@/builder/builder-workspace";
 import { atoms, isDev } from "@/store/global";
 import { appHandleKeyDown } from "@/store/keymodel";
+import { t } from "@/util/i18n";
 import * as keyutil from "@/util/keyutil";
 import { isBlank } from "@/util/util";
 import { Provider, useAtomValue } from "jotai";
@@ -45,12 +46,12 @@ function BuilderAppInner() {
                 style={{ WebkitAppRegion: "drag" } as React.CSSProperties}
             >
                 {isDev() ? (
-                    <div className="text-accent text-xl" title="Running Wave Dev Build">
+                    <div className="text-accent text-xl" title={t("builder.runningDevBuild")}>
                         <i className="fa fa-brands fa-dev fa-fw" />
                     </div>
                 ) : null}
                 <div className="text-sm font-medium">
-                    WaveApp Builder{!isBlank(builderAppId) && ` (${builderAppId})`}
+                    {t("builder.title")}{!isBlank(builderAppId) && ` (${builderAppId})`}
                 </div>
             </div>
             <DndProvider backend={HTML5Backend}>

@@ -116,6 +116,7 @@ function DirectoryTable({
     newDirectory,
 }: DirectoryTableProps) {
     const env = useWaveEnv<PreviewEnv>();
+    const t = useT();
     const fullConfig = useAtomValue(env.atoms.fullConfigAtom);
     const defaultSort = useAtomValue(env.getSettingsKeyAtom("preview:defaultsort")) ?? "name";
     const setErrorMsg = useSetAtom(model.errorMsgAtom);
@@ -143,42 +144,42 @@ function DirectoryTable({
             }),
             columnHelper.accessor("name", {
                 cell: (info) => <span className="dir-table-name ellipsis">{info.getValue()}</span>,
-                header: () => <span className="dir-table-head-name">Name</span>,
+                header: () => <span className="dir-table-head-name">{t("preview.tableName")}</span>,
                 sortingFn: "alphanumeric",
                 size: 200,
                 minSize: 90,
             }),
             columnHelper.accessor("modestr", {
                 cell: (info) => <span className="dir-table-modestr">{info.getValue()}</span>,
-                header: () => <span>Perm</span>,
+                header: () => <span>{t("preview.tablePerm")}</span>,
                 size: 91,
                 minSize: 90,
                 sortingFn: "alphanumeric",
             }),
             columnHelper.accessor("modtime", {
                 cell: (info) => <span className="dir-table-lastmod">{getLastModifiedTime(info.getValue())}</span>,
-                header: () => <span>Last Modified</span>,
+                header: () => <span>{t("preview.tableLastModified")}</span>,
                 size: 91,
                 minSize: 65,
                 sortingFn: "datetime",
             }),
             columnHelper.accessor("size", {
                 cell: (info) => <span className="dir-table-size">{getBestUnit(info.getValue())}</span>,
-                header: () => <span className="dir-table-head-size">Size</span>,
+                header: () => <span className="dir-table-head-size">{t("preview.tableSize")}</span>,
                 size: 55,
                 minSize: 50,
                 sortingFn: "auto",
             }),
             columnHelper.accessor("mimetype", {
                 cell: (info) => <span className="dir-table-type ellipsis">{cleanMimetype(info.getValue() ?? "")}</span>,
-                header: () => <span className="dir-table-head-type">Type</span>,
+                header: () => <span className="dir-table-head-type">{t("preview.tableType")}</span>,
                 size: 97,
                 minSize: 97,
                 sortingFn: "alphanumeric",
             }),
             columnHelper.accessor("path", {}),
         ],
-        [fullConfig]
+        [fullConfig, t]
     );
 
     const setEntryManagerProps = useSetAtom(entryManagerOverlayPropsAtom);
@@ -317,6 +318,7 @@ function TableBody({
     setRefreshVersion,
     osRef,
 }: TableBodyProps) {
+    const t = useT();
     const searchActive = useAtomValue(model.directorySearchActive);
     const dummyLineRef = useRef<HTMLDivElement>(null);
     const warningBoxRef = useRef<HTMLDivElement>(null);
@@ -365,19 +367,19 @@ function TableBody({
             const fileName = finfo.path.split("/").pop();
             const menu: ContextMenuItem[] = [
                 {
-                    label: "New File",
+                    label: t("common.newFile"),
                     click: () => {
                         table.options.meta.newFile();
                     },
                 },
                 {
-                    label: "New Folder",
+                    label: t("common.newFolder"),
                     click: () => {
                         table.options.meta.newDirectory();
                     },
                 },
                 {
-                    label: "Rename",
+                    label: t("common.rename"),
                     click: () => {
                         table.options.meta.updateName(finfo.path, finfo.isdir);
                     },
@@ -386,19 +388,19 @@ function TableBody({
                     type: "separator",
                 },
                 {
-                    label: "Copy File Name",
+                    label: t("common.copyFileName"),
                     click: () => fireAndForget(() => navigator.clipboard.writeText(fileName)),
                 },
                 {
-                    label: "Copy Full File Name",
+                    label: t("common.copyFullFileName"),
                     click: () => fireAndForget(() => navigator.clipboard.writeText(finfo.path)),
                 },
                 {
-                    label: "Copy File Name (Shell Quoted)",
+                    label: t("common.copyFileNameShellQuoted"),
                     click: () => fireAndForget(() => navigator.clipboard.writeText(shellQuote([fileName]))),
                 },
                 {
-                    label: "Copy Full File Name (Shell Quoted)",
+                    label: t("common.copyFullFileNameShellQuoted"),
                     click: () => fireAndForget(() => navigator.clipboard.writeText(shellQuote([finfo.path]))),
                 },
             ];
@@ -408,14 +410,14 @@ function TableBody({
                     type: "separator",
                 },
                 {
-                    label: "Default Settings",
+                    label: t("previewMenu.defaultSettings"),
                     submenu: makeDirectoryDefaultMenuItems(model),
                 },
                 {
                     type: "separator",
                 },
                 {
-                    label: "Delete",
+                    label: t("common.delete"),
                     click: () => handleFileDelete(model, finfo.path, false, setErrorMsg),
                 }
             );
@@ -556,6 +558,7 @@ interface DirectoryPreviewProps {
 }
 
 function DirectoryPreview({ model }: DirectoryPreviewProps) {
+    const t = useT();
     const env = useWaveEnv<PreviewEnv>();
     const [searchText, setSearchText] = useState("");
     const [focusIndex, setFocusIndex] = useState(0);
@@ -835,13 +838,13 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
             e.stopPropagation();
             const menu: ContextMenuItem[] = [
                 {
-                    label: "New File",
+                    label: t("common.newFile"),
                     click: () => {
                         newFile();
                     },
                 },
                 {
-                    label: "New Folder",
+                    label: t("common.newFolder"),
                     click: () => {
                         newDirectory();
                     },

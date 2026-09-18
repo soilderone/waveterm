@@ -137,7 +137,7 @@ const HeaderEndIcons = React.memo(({ viewModel, nodeModel, blockId }: HeaderEndI
         const splitHorizontalDecl: IconButtonDecl = {
             elemtype: "iconbutton",
             icon: "columns",
-            title: "Split Horizontally",
+            title: t("term.splitHorizontally"),
             click: (e) => {
                 e.stopPropagation();
                 const blockAtom = WOS.getWaveObjectAtom<Block>(WOS.makeORef("block", blockId));
@@ -151,7 +151,7 @@ const HeaderEndIcons = React.memo(({ viewModel, nodeModel, blockId }: HeaderEndI
         const splitVerticalDecl: IconButtonDecl = {
             elemtype: "iconbutton",
             icon: "grip-lines",
-            title: "Split Vertically",
+            title: t("term.splitVertically"),
             click: (e) => {
                 e.stopPropagation();
                 const blockAtom = WOS.getWaveObjectAtom<Block>(WOS.makeORef("block", blockId));
@@ -168,7 +168,7 @@ const HeaderEndIcons = React.memo(({ viewModel, nodeModel, blockId }: HeaderEndI
     const settingsDecl: IconButtonDecl = {
         elemtype: "iconbutton",
         icon: "cog",
-        title: "Settings",
+        title: t("chrome.blockSettings"),
         click: (e) => handleHeaderContextMenu(e, blockId, viewModel, nodeModel, blockEnv),
     };
     endIconsElem.push(<IconButton key="settings" decl={settingsDecl} className="block-frame-settings" />);
@@ -176,7 +176,7 @@ const HeaderEndIcons = React.memo(({ viewModel, nodeModel, blockId }: HeaderEndI
         const addToLayoutDecl: IconButtonDecl = {
             elemtype: "iconbutton",
             icon: "circle-plus",
-            title: "Add to Layout",
+            title: t("chrome.addToLayout"),
             click: () => {
                 nodeModel.addEphemeralNodeToLayout();
             },
@@ -199,7 +199,7 @@ const HeaderEndIcons = React.memo(({ viewModel, nodeModel, blockId }: HeaderEndI
     const closeDecl: IconButtonDecl = {
         elemtype: "iconbutton",
         icon: "xmark-large",
-        title: "Close",
+        title: t("menu.close"),
         click: () => uxCloseBlock(nodeModel.blockId),
     };
     endIconsElem.push(<IconButton key="close" decl={closeDecl} className="block-frame-default-close" />);

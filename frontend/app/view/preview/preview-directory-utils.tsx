@@ -3,6 +3,7 @@
 
 import { globalStore } from "@/app/store/jotaiStore";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
+import { t } from "@/util/i18n";
 import { fireAndForget, isBlank } from "@/util/util";
 import dayjs from "dayjs";
 import React from "react";
@@ -145,7 +146,7 @@ export function handleRename(
             const errorText = `${e}`;
             console.warn(`Rename failed: ${errorText}`);
             const errorMsg: ErrorMsg = {
-                status: "Rename Failed",
+                status: t("preview.renameFailed"),
                 text: `${e}`,
             };
             setErrorMsg(errorMsg);
@@ -178,19 +179,19 @@ export function handleFileDelete(
             let errorMsg: ErrorMsg;
             if (errorText.includes(recursiveError) && !recursive) {
                 errorMsg = {
-                    status: "Confirm Delete Directory",
-                    text: "Deleting a directory requires the recursive flag. Proceed?",
+                    status: t("preview.confirmDeleteDir"),
+                    text: t("preview.confirmDeleteDirText"),
                     level: "warning",
                     buttons: [
                         {
-                            text: "Delete Recursively",
+                            text: t("common.deleteRecursively"),
                             onClick: () => handleFileDelete(model, path, true, setErrorMsg, refresh),
                         },
                     ],
                 };
             } else {
                 errorMsg = {
-                    status: "Delete Failed",
+                    status: t("preview.deleteFailed"),
                     text: `${e}`,
                 };
             }
@@ -209,10 +210,10 @@ export function makeDirectoryDefaultMenuItems(model: PreviewModel): ContextMenuI
     const showHiddenFiles = globalStore.get(model.showHiddenFiles) ?? true;
     return [
         {
-            label: "Directory Sort Order",
+            label: t("preview.dirSortOrder"),
             submenu: [
                 {
-                    label: "Name",
+                    label: t("previewMenu.sortName"),
                     type: "checkbox",
                     checked: defaultSort === "name",
                     click: () =>
@@ -221,7 +222,7 @@ export function makeDirectoryDefaultMenuItems(model: PreviewModel): ContextMenuI
                         ),
                 },
                 {
-                    label: "Last Modified",
+                    label: t("previewMenu.sortModtime"),
                     type: "checkbox",
                     checked: defaultSort === "modtime",
                     click: () =>
@@ -232,10 +233,10 @@ export function makeDirectoryDefaultMenuItems(model: PreviewModel): ContextMenuI
             ],
         },
         {
-            label: "Show Hidden Files",
+            label: t("preview.showHiddenFiles"),
             submenu: [
                 {
-                    label: "On",
+                    label: t("menu.on"),
                     type: "checkbox",
                     checked: showHiddenFiles,
                     click: () => {
@@ -246,7 +247,7 @@ export function makeDirectoryDefaultMenuItems(model: PreviewModel): ContextMenuI
                     },
                 },
                 {
-                    label: "Off",
+                    label: t("menu.off"),
                     type: "checkbox",
                     checked: !showHiddenFiles,
                     click: () => {

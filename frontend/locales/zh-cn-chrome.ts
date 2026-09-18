@@ -73,6 +73,8 @@ export const zhCNChrome: Record<string, string> = {
     "chrome.errorPrefix": "错误：",
 
     "chrome.headerIcons": "头部图标",
+    "chrome.addToLayout": "添加到布局",
+    "chrome.wshNotInstalled": "此连接未安装 wsh",
     "chrome.connectRemote": "连接到远程服务器",
     "chrome.blockSettings": "块设置",
     "chrome.importantKeybindings": "重要快捷键",
