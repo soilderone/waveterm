@@ -18,6 +18,7 @@ jobs:
         outputs:
             version: ${{ steps.set-version.outputs.WAVETERM_VERSION }}
         strategy:
+            fail-fast: false
             matrix:
                 include:
                     - platform: "darwin"
@@ -125,9 +126,18 @@ jobs:
               shell: cmd
 
             # Build and upload packages
+            - name: Fix app-builder permissions (Linux ARM only)
+              if: matrix.runner == 'ubuntu-24.04-arm'
+              run: chmod +x node_modules/app-builder-bin/linux/arm64/app-builder || true
             - name: Build (Linux)
-              if: matrix.platform == 'linux'
+              if: matrix.platform == 'linux' && matrix.runner != 'ubuntu-24.04-arm'
               run: task package
+              env:
+                  USE_SYSTEM_FPM: true # Ensure that the installed version of FPM is used rather than the bundled one.
+                  SNAPCRAFT_BUILD_ENVIRONMENT: host
+            - name: Build (Linux ARM, skip snap)
+              if: matrix.runner == 'ubuntu-24.04-arm'
+              run: task package -- --linux zip deb rpm pacman AppImage
               env:
                   USE_SYSTEM_FPM: true # Ensure that the installed version of FPM is used rather than the bundled one.
                   SNAPCRAFT_BUILD_ENVIRONMENT: host
