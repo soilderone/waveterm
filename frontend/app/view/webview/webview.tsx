@@ -16,6 +16,7 @@ import {
 import { MockBoundary } from "@/app/waveenv/mockboundary";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
 import { openLink } from "@/store/global";
+import { setWebviewFocused } from "@/util/focusutil";
 import { t } from "@/util/i18n";
 import { useT } from "@/util/i18n-hooks";
 import { adaptFromReactOrNativeKeyEvent, checkKeyPressed } from "@/util/keyutil";
@@ -1063,10 +1064,12 @@ const WebView = memo(({ model, onFailLoad, blockRef, initialSrc }: WebViewProps)
             }
         };
         const webviewFocus = () => {
+            setWebviewFocused(true);
             env.electron.setWebviewFocus(webview.getWebContentsId());
             model.nodeModel.focusNode();
         };
         const webviewBlur = () => {
+            setWebviewFocused(false);
             env.electron.setWebviewFocus(null);
         };
         const handleDomReady = () => {
@@ -1109,6 +1112,8 @@ const WebView = memo(({ model, onFailLoad, blockRef, initialSrc }: WebViewProps)
             webview.removeEventListener("media-started-playing", handleMediaPlaying);
             webview.removeEventListener("media-paused", handleMediaPaused);
             webview.removeEventListener("found-in-page", onFoundInPage);
+            // A webview torn down while focused never fires blur, which would leave the flag set.
+            setWebviewFocused(false);
         };
     }, []);
 

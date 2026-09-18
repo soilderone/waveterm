@@ -19,7 +19,7 @@ import { getLayoutModelForStaticTab } from "@/layout/index";
 import { ContextMenuModel } from "@/store/contextmenu";
 import { atoms, createBlock, getSettingsPrefixAtom, refocusNode } from "@/store/global";
 import { appHandleKeyDown, keyboardMouseDownHandler } from "@/store/keymodel";
-import { getElemAsStr } from "@/util/focusutil";
+import { getElemAsStr, isWebviewFocused } from "@/util/focusutil";
 import { t } from "@/util/i18n";
 import * as keyutil from "@/util/keyutil";
 import { PLATFORM } from "@/util/platformutil";
@@ -213,6 +213,13 @@ const MacOSFirstClickHandler = () => {
         let windowFocusTime: number = null;
         let cancelNextClick = false;
         const handleWindowFocus = (e: FocusEvent) => {
+            // A focused <webview> holds input focus in its own renderer, so the host window fires
+            // blur/focus as the user moves between the guest page and our own UI even though the
+            // app was never deactivated. Treating that as an activation swallowed the first click
+            // on the block header buttons every time the user came back from a web block.
+            if (isWebviewFocused()) {
+                return;
+            }
             windowFocusTime = Date.now();
         };
         const getBlockIdFromTarget = (target: EventTarget): string => {

@@ -68,3 +68,18 @@ export function focusedBlockId(): string {
     }
     return null;
 }
+
+// An Electron <webview> runs in its own renderer, so focusing one takes input focus away from the
+// host document: the host window fires blur/focus even though the app itself was never
+// deactivated. Anything keying off window focus to detect an app-level activation has to be able
+// to tell the two apart. Tracked explicitly rather than inferred from document.activeElement,
+// which depends on how element focus and window focus interleave.
+let webviewFocused = false;
+
+export function setWebviewFocused(focused: boolean): void {
+    webviewFocused = focused;
+}
+
+export function isWebviewFocused(): boolean {
+    return webviewFocused;
+}
