@@ -54,6 +54,7 @@ class WorkspaceLayoutModel {
     private vtabWidth: number;
     private vtabVisible: boolean;
     private vtabCollapsed: boolean;
+    private lastCommitKey: string = null;
     private transitionTimeoutRef: NodeJS.Timeout | null = null;
     private focusTimeoutRef: NodeJS.Timeout | null = null;
     private debouncedPersistAIWidth: () => void;
@@ -227,6 +228,12 @@ class WorkspaceLayoutModel {
     private commitLayouts(windowWidth: number): void {
         if (!this.outerPanelGroupRef || !this.innerPanelGroupRef) return;
         const { outer, inner } = this.computeLayout(windowWidth);
+        // window resize fires for height changes too, but the layout only depends on the width --
+        // without this every vertical drag frame ran two setLayout calls and re-rendered both
+        // panel groups for an identical result.
+        const commitKey = `${windowWidth}|${outer.join(",")}|${inner.join(",")}`;
+        if (commitKey == this.lastCommitKey) return;
+        this.lastCommitKey = commitKey;
         this.inResize = true;
         this.outerPanelGroupRef.setLayout(outer);
         this.innerPanelGroupRef.setLayout(inner);
@@ -316,6 +323,9 @@ class WorkspaceLayoutModel {
         this.aiPanelWrapperRef = aiPanelWrapperRef;
         this.vtabPanelWrapperRef = vtabPanelWrapperRef ?? null;
         this.vtabVisible = showLeftTabBar ?? false;
+        // Fresh panel groups start from their defaultSize props, so the commit cache must not
+        // suppress the first commit against them.
+        this.lastCommitKey = null;
         this.syncPanelCollapse();
         this.commitLayouts(window.innerWidth);
     }
