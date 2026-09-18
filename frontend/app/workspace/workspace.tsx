@@ -165,13 +165,9 @@ const WorkspaceElem = memo(() => {
                             <div className="flex flex-row h-full">
                                 {showLeftTabBar && vtabCollapsed && (
                                     <div className="flex h-full w-6 shrink-0 flex-col items-center border-r border-border bg-panel">
-                                        <div
-                                            className="w-full shrink-0"
-                                            style={{ height: "calc(28px * var(--zoomfactor-inv))" }}
-                                        />
                                         <button
                                             type="button"
-                                            className="flex h-6 w-5 cursor-pointer items-center justify-center rounded text-secondary transition-colors hover:bg-white/10 hover:text-primary"
+                                            className="mt-1 flex h-6 w-5 cursor-pointer items-center justify-center rounded text-secondary transition-colors hover:bg-white/10 hover:text-primary"
                                             onClick={() => workspaceLayoutModel.setVTabCollapsed(false)}
                                             aria-label={t("vtab.showTabBar")}
                                             title={t("vtab.showTabBar")}
