@@ -8,6 +8,7 @@ import path from "path";
 import YAML from "yaml";
 import { RpcApi } from "../frontend/app/store/wshclientapi";
 import { isDev } from "../frontend/util/isdev";
+import { setLanguage, t } from "../frontend/util/i18n";
 import { fireAndForget } from "../frontend/util/util";
 import { setUserConfirmedQuit } from "./emain-activity";
 import { delay } from "./emain-util";
@@ -94,7 +95,7 @@ export class Updater {
             this.status = "ready";
             const updateNotification = new Notification({
                 title: "Wave Terminal",
-                body: "A new version of Wave Terminal is ready to install.",
+                body: t("error.updateReady"),
             });
             updateNotification.on("click", () => {
                 fireAndForget(this.promptToInstallUpdate.bind(this));
@@ -163,7 +164,7 @@ export class Updater {
             if (userInput && !result.downloadPromise) {
                 const dialogOpts: Electron.MessageBoxOptions = {
                     type: "info",
-                    message: "There are currently no updates available.",
+                    message: t("error.noUpdates"),
                 };
                 if (focusedWaveWindow) {
                     dialog.showMessageBox(focusedWaveWindow, dialogOpts);
@@ -181,10 +182,10 @@ export class Updater {
     async promptToInstallUpdate() {
         const dialogOpts: Electron.MessageBoxOptions = {
             type: "info",
-            buttons: ["Restart", "Later"],
+            buttons: [t("error.restart"), t("error.later")],
             title: "Application Update",
             message: process.platform === "win32" ? this.availableUpdateReleaseNotes : this.availableUpdateReleaseName,
-            detail: "A new version has been downloaded. Restart the application to apply the updates.",
+            detail: t("error.updateRestart"),
         };
 
         const allWindows = getAllWaveWindows();
@@ -243,6 +244,7 @@ export async function configureAutoUpdater() {
     try {
         console.log("Configuring updater");
         const settings = (await RpcApi.GetFullConfigCommand(ElectronWshClient)).settings;
+        setLanguage(settings["app:language"]);
         updater = new Updater(settings);
         await updater.start();
     } catch (e) {

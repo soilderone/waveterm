@@ -8,8 +8,9 @@ import { useWaveEnv } from "@/app/waveenv/waveenv";
 import { checkKeyPressed, isCharacterKeyEvent } from "@/util/keyutil";
 import { PLATFORM, PlatformMacOS } from "@/util/platformutil";
 import { addOpenMenuItems } from "@/util/previewutil";
-import { fireAndForget } from "@/util/util";
+import { cn, fireAndForget, isBlank } from "@/util/util";
 import { formatRemoteUri } from "@/util/waveutil";
+import { useT } from "@/util/i18n-hooks";
 import { offset, useDismiss, useFloating, useInteractions } from "@floating-ui/react";
 import {
     Header,
@@ -33,15 +34,18 @@ import "./directorypreview.scss";
 import { EntryManagerOverlay, EntryManagerOverlayProps, EntryManagerType } from "./entry-manager";
 import {
     cleanMimetype,
+    compareTreeEntries,
     getBestUnit,
     getLastModifiedTime,
+    getMimeTypeColor,
+    getMimeTypeIcon,
     getSortIcon,
     handleFileDelete,
     handleRename,
-    isIconValid,
     makeDirectoryDefaultMenuItems,
     mergeError,
     overwriteError,
+    type TreeSortType,
 } from "./preview-directory-utils";
 import { type PreviewModel } from "./preview-model";
 import type { PreviewEnv } from "./previewenv";
@@ -116,21 +120,12 @@ function DirectoryTable({
     const defaultSort = useAtomValue(env.getSettingsKeyAtom("preview:defaultsort")) ?? "name";
     const setErrorMsg = useSetAtom(model.errorMsgAtom);
     const getIconFromMimeType = useCallback(
-        (mimeType: string): string => {
-            while (mimeType.length > 0) {
-                const icon = fullConfig.mimetypes?.[mimeType]?.icon ?? null;
-                if (isIconValid(icon)) {
-                    return `fa fa-solid fa-${icon} fa-fw`;
-                }
-                mimeType = mimeType.slice(0, -1);
-            }
-            return "fa fa-solid fa-file fa-fw";
-        },
-        [fullConfig.mimetypes]
+        (mimeType: string): string => getMimeTypeIcon(fullConfig, mimeType),
+        [fullConfig]
     );
     const getIconColor = useCallback(
-        (mimeType: string): string => fullConfig.mimetypes?.[mimeType]?.color ?? "inherit",
-        [fullConfig.mimetypes]
+        (mimeType: string): string => getMimeTypeColor(fullConfig, mimeType),
+        [fullConfig]
     );
     const columns = useMemo(
         () => [
@@ -903,5 +898,438 @@ function DirectoryPreview({ model }: DirectoryPreviewProps) {
         </Fragment>
     );
 }
+
+type FileTreeDirectoryProps = {
+    model: PreviewModel;
+    path: string;
+    connection: string;
+    showHiddenFiles: boolean;
+    selectedPath: string;
+    refreshVersion: number;
+    sort: TreeSortType;
+    onNavigateUp?: () => void;
+    onContextAction?: (action: string, entry: FileInfo) => void;
+    root?: boolean;
+};
+
+function FileTreeDirectory(props: FileTreeDirectoryProps) {
+    const { path, connection, showHiddenFiles, refreshVersion, sort, onNavigateUp, root } = props;
+    const env = useWaveEnv<PreviewEnv>();
+    const t = useT();
+    const fullConfig = useAtomValue(env.atoms.fullConfigAtom);
+    const [entries, setEntries] = useState<FileInfo[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState("");
+    const [retryVersion, setRetryVersion] = useState(0);
+
+    useEffect(() => {
+        let active = true;
+        let finished = false;
+        let stream: AsyncGenerator<CommandRemoteListEntriesRtnData, void, boolean>;
+        setLoading(true);
+        setError("");
+        fireAndForget(async () => {
+            try {
+                stream = env.rpc.FileListStreamCommand(
+                    TabRpcClient,
+                    { path: formatRemoteUri(path, connection) },
+                    null
+                );
+                const nextEntries = new Map<string, FileInfo>();
+                while (active) {
+                    const chunk = await stream.next();
+                    if (!active) {
+                        return;
+                    }
+                    if (chunk.done) {
+                        finished = true;
+                        break;
+                    }
+                    const chunkValue = chunk.value as CommandRemoteListEntriesRtnData;
+                    for (const entry of chunkValue?.fileinfo ?? []) {
+                        if (!entry?.name || !entry.path || entry.name == "." || entry.name == "..") {
+                            continue;
+                        }
+                        nextEntries.set(entry.path, entry);
+                    }
+                }
+                if (active) {
+                    setEntries(Array.from(nextEntries.values()));
+                }
+            } catch (e) {
+                if (active) {
+                    setError(String(e));
+                }
+            } finally {
+                if (active) {
+                    setLoading(false);
+                }
+            }
+        });
+        return () => {
+            active = false;
+            if (stream && !finished) {
+                fireAndForget(async () => {
+                    await stream.next(true);
+                });
+            }
+        };
+    }, [env.rpc, path, connection, refreshVersion, retryVersion]);
+
+    const visibleEntries = useMemo(
+        () =>
+            entries
+                .filter((entry) => showHiddenFiles || !entry.name.startsWith("."))
+                .sort((a, b) => compareTreeEntries(a, b, sort)),
+        [entries, showHiddenFiles, sort]
+    );
+
+    return (
+        <ul
+            role={root ? "tree" : "group"}
+            aria-label={root ? path : undefined}
+            aria-busy={loading}
+            className={cn("m-0 list-none p-0", !root && "ml-[13px] border-l border-white/10 pl-1")}
+        >
+            {root && onNavigateUp && (
+                <li role="none">
+                    <button
+                        type="button"
+                        data-tree-row=""
+                        title={t("preview.parentDirectory")}
+                        className="flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-white/5 focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2"
+                        onClick={onNavigateUp}
+                    >
+                        <i
+                            aria-hidden="true"
+                            className="fa-solid w-3 shrink-0 text-[10px] opacity-70 invisible"
+                        />
+                        <i
+                            aria-hidden="true"
+                            className={cn(getMimeTypeIcon(fullConfig, "directory"), "shrink-0 text-xs")}
+                            style={{ color: getMimeTypeColor(fullConfig, "directory") }}
+                        />
+                        <span className="truncate">..</span>
+                    </button>
+                </li>
+            )}
+            {loading && (
+                <li role="none" className="flex items-center gap-1.5 px-2 py-1 text-xs text-secondary">
+                    <i aria-hidden="true" className="fa-solid fa-spinner fa-spin" />
+                    <span role="status">{t("preview.loading")}</span>
+                </li>
+            )}
+            {error && (
+                <li role="none" className="px-2 py-1 text-xs">
+                    <div role="alert" className="break-words text-warning">
+                        {error}
+                    </div>
+                    <button
+                        type="button"
+                        className="mt-0.5 cursor-pointer rounded px-1.5 py-0.5 text-secondary transition-colors hover:bg-white/10 hover:text-primary focus-visible:outline focus-visible:outline-accent"
+                        onClick={() => setRetryVersion((version) => version + 1)}
+                    >
+                        {t("preview.retry")}
+                    </button>
+                </li>
+            )}
+            {!loading && !error && visibleEntries.length == 0 && (
+                <li role="none" className="px-2 py-1 text-xs text-secondary">
+                    <span role="status">{entries.length ? t("preview.noVisibleFiles") : t("preview.emptyDirectory")}</span>
+                </li>
+            )}
+            {visibleEntries.map((entry) => (
+                <FileTreeEntry key={entry.path} {...props} entry={entry} />
+            ))}
+        </ul>
+    );
+}
+
+function FileTreeEntry({ entry, ...props }: FileTreeDirectoryProps & { entry: FileInfo }) {
+    const env = useWaveEnv<PreviewEnv>();
+    const t = useT();
+    const fullConfig = useAtomValue(env.atoms.fullConfigAtom);
+    const [expanded, setExpanded] = useState(false);
+    const itemRef = useRef<HTMLLIElement>(null);
+    const labelId = React.useId();
+    const selected = props.selectedPath == entry.path;
+    const mimeType = entry.mimetype ?? "";
+    const iconClass = getMimeTypeIcon(fullConfig, mimeType);
+    const iconColor = getMimeTypeColor(fullConfig, mimeType);
+
+    const handleContextMenu = useCallback(
+        (e: React.MouseEvent) => {
+            e.preventDefault();
+            e.stopPropagation();
+            const menu: ContextMenuItem[] = [
+                { label: t("common.newFile"), click: () => props.onContextAction?.("newfile", entry) },
+                { label: t("common.newFolder"), click: () => props.onContextAction?.("newfolder", entry) },
+                { label: t("common.rename"), click: () => props.onContextAction?.("rename", entry) },
+                { type: "separator" },
+                {
+                    label: t("common.copyFileName"),
+                    click: () => fireAndForget(() => navigator.clipboard.writeText(entry.name)),
+                },
+                {
+                    label: t("common.copyFullFileName"),
+                    click: () => fireAndForget(() => navigator.clipboard.writeText(entry.path)),
+                },
+                {
+                    label: t("common.copyFullFileNameShellQuoted"),
+                    click: () => fireAndForget(() => navigator.clipboard.writeText(shellQuote([entry.path]))),
+                },
+            ];
+            addOpenMenuItems(menu, props.connection, entry);
+            menu.push(
+                { type: "separator" },
+                { label: t("common.delete"), click: () => props.onContextAction?.("delete", entry) }
+            );
+            ContextMenuModel.getInstance().showContextMenu(menu, e);
+        },
+        [entry, props.onContextAction, props.connection]
+    );
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+            return;
+        }
+        if (event.key == "ArrowRight") {
+            event.preventDefault();
+            if (entry.isdir) {
+                if (expanded) {
+                    itemRef.current?.querySelector<HTMLButtonElement>("ul button[data-tree-row]")?.focus();
+                } else {
+                    setExpanded(true);
+                }
+            }
+        } else if (event.key == "ArrowLeft") {
+            event.preventDefault();
+            if (entry.isdir && expanded) {
+                setExpanded(false);
+            } else {
+                itemRef.current?.parentElement
+                    ?.closest('[role="treeitem"]')
+                    ?.querySelector<HTMLButtonElement>("button[data-tree-row]")
+                    ?.focus();
+            }
+        }
+    };
+
+    return (
+        <li
+            ref={itemRef}
+            role="treeitem"
+            aria-labelledby={labelId}
+            aria-expanded={entry.isdir ? expanded : undefined}
+            aria-selected={selected}
+        >
+            <button
+                id={labelId}
+                type="button"
+                data-tree-row=""
+                title={entry.path}
+                className={cn(
+                    "flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-white/5 focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2",
+                    selected && "bg-accentbg text-primary"
+                )}
+                onKeyDown={handleKeyDown}
+                onClick={() => {
+                    if (entry.isdir) {
+                        setExpanded((value) => !value);
+                        return;
+                    }
+                    fireAndForget(() => props.model.openTreeFile(entry.path));
+                }}
+                onContextMenu={handleContextMenu}
+            >
+                <i
+                    aria-hidden="true"
+                    className={cn(
+                        "fa-solid w-3 shrink-0 text-[10px] opacity-70",
+                        entry.isdir ? (expanded ? "fa-chevron-down" : "fa-chevron-right") : "invisible"
+                    )}
+                />
+                <i aria-hidden="true" className={cn(iconClass, "shrink-0 text-xs")} style={{ color: iconColor }} />
+                <span className="truncate">{entry.name}</span>
+            </button>
+            {entry.isdir && expanded && <FileTreeDirectory {...props} path={entry.path} root={false} />}
+        </li>
+    );
+}
+
+export const FileTree = React.memo(function FileTree({
+    model,
+    rootPath,
+    onNavigateUp,
+}: {
+    model: PreviewModel;
+    rootPath: string;
+    onNavigateUp?: () => void;
+}) {
+    const connection = useAtomValue(model.connectionImmediate);
+    const selectedPath = useAtomValue(model.metaFilePath);
+    const showHiddenFiles = useAtomValue(model.showHiddenFiles);
+    const treeSort = useAtomValue(model.treeSort);
+    const loadableFileInfo = useAtomValue(model.loadableFileInfo);
+    const setErrorMsg = useSetAtom(model.errorMsgAtom);
+    const [refreshVersion, setRefreshVersion] = useState(0);
+    const activeIsDir = loadableFileInfo.state == "hasData" && loadableFileInfo.data?.isdir == true;
+
+    const [entryManagerPropsAtom] = useState(
+        atom<EntryManagerOverlayProps>(null) as PrimitiveAtom<EntryManagerOverlayProps>
+    );
+    const [entryManagerProps, setEntryManagerProps] = useAtom(entryManagerPropsAtom);
+    const { refs, floatingStyles, context } = useFloating({
+        open: !!entryManagerProps,
+        onOpenChange: () => setEntryManagerProps(undefined),
+        middleware: [offset(({ rects }) => -rects.reference.height / 2 - rects.floating.height / 2)],
+    });
+    const dismiss = useDismiss(context);
+    const { getFloatingProps } = useInteractions([dismiss]);
+
+    const refreshTree = useCallback(() => setRefreshVersion((version) => version + 1), []);
+
+    useEffect(() => {
+        if (!activeIsDir) {
+            return;
+        }
+        model.refreshCallback = refreshTree;
+        return () => {
+            if (model.refreshCallback === refreshTree) {
+                model.refreshCallback = null;
+            }
+        };
+    }, [activeIsDir, model, refreshTree]);
+
+    const handleContextAction = useCallback(
+        (action: string, entry: FileInfo) => {
+            const parentDir = entry.isdir ? entry.path : entry.path.split("/").slice(0, -1).join("/");
+            if (action == "newfile" || action == "newfolder") {
+                const isFolder = action == "newfolder";
+                setEntryManagerProps({
+                    entryManagerType: isFolder ? EntryManagerType.NewDirectory : EntryManagerType.NewFile,
+                    onSave: (newName) => {
+                        setEntryManagerProps(undefined);
+                        if (isBlank(newName)) {
+                            return;
+                        }
+                        fireAndForget(async () => {
+                            const path = await formatRemoteUri(`${parentDir}/${newName}`, connection);
+                            try {
+                                if (isFolder) {
+                                    await model.env.rpc.FileMkdirCommand(TabRpcClient, { info: { path } });
+                                } else {
+                                    await model.env.rpc.FileCreateCommand(TabRpcClient, { info: { path } }, null);
+                                }
+                            } catch (e) {
+                                setErrorMsg({
+                                    status: isFolder ? "Create Folder Failed" : "Create File Failed",
+                                    text: String(e),
+                                });
+                            }
+                            refreshTree();
+                        });
+                    },
+                });
+                return;
+            }
+            if (action == "rename") {
+                setEntryManagerProps({
+                    entryManagerType: EntryManagerType.EditName,
+                    startingValue: entry.name,
+                    onSave: (newName) => {
+                        setEntryManagerProps(undefined);
+                        if (isBlank(newName) || newName == entry.name) {
+                            return;
+                        }
+                        const parent = entry.path.substring(0, entry.path.lastIndexOf(entry.name));
+                        handleRename(model, entry.path, parent + newName, entry.isdir, setErrorMsg, refreshTree);
+                    },
+                });
+                return;
+            }
+            if (action == "delete") {
+                handleFileDelete(model, entry.path, false, setErrorMsg, refreshTree);
+            }
+        },
+        [connection, model, refreshTree, setEntryManagerProps, setErrorMsg]
+    );
+
+    const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+        if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
+            return;
+        }
+        const consumedKeys = ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End", "Enter", " ", "PageUp", "PageDown"];
+        if (!consumedKeys.includes(event.key)) {
+            return;
+        }
+        event.stopPropagation();
+        const handledNavKeys = ["ArrowDown", "ArrowUp", "Home", "End"];
+        if (!handledNavKeys.includes(event.key)) {
+            return;
+        }
+        const button = (event.target as HTMLElement).closest?.("button[data-tree-row]") as HTMLButtonElement;
+        if (!button) {
+            return;
+        }
+        const rows = Array.from(event.currentTarget.querySelectorAll<HTMLButtonElement>("button[data-tree-row]"));
+        const index = rows.indexOf(button);
+        let nextIndex: number;
+        if (event.key == "ArrowDown") {
+            nextIndex = Math.min(index + 1, rows.length - 1);
+        } else if (event.key == "ArrowUp") {
+            nextIndex = Math.max(index - 1, 0);
+        } else if (event.key == "Home") {
+            nextIndex = 0;
+        } else {
+            nextIndex = rows.length - 1;
+        }
+        event.preventDefault();
+        rows[nextIndex]?.focus();
+    };
+
+    if (!rootPath) {
+        return null;
+    }
+
+    return (
+        <>
+            <div
+                ref={refs.setReference}
+                data-file-tree=""
+                className="flex h-full min-h-0 min-w-0 flex-col"
+                onKeyDown={handleKeyDown}
+                onClick={() => entryManagerProps && setEntryManagerProps(undefined)}
+            >
+                <div className="min-h-0 flex-1 overflow-auto p-1 scrollbar-hide-until-hover">
+                    <FileTreeDirectory
+                        key={`${connection}:${rootPath}`}
+                        model={model}
+                        path={rootPath}
+                        connection={connection}
+                        showHiddenFiles={showHiddenFiles}
+                        selectedPath={selectedPath}
+                        refreshVersion={refreshVersion}
+                        sort={treeSort}
+                        onNavigateUp={onNavigateUp}
+                        onContextAction={handleContextAction}
+                        root
+                    />
+                </div>
+            </div>
+            {entryManagerProps && (
+                <EntryManagerOverlay
+                    {...entryManagerProps}
+                    forwardRef={refs.setFloating}
+                    style={floatingStyles}
+                    getReferenceProps={getFloatingProps}
+                    onCancel={() => setEntryManagerProps(undefined)}
+                />
+            )}
+        </>
+    );
+});
+
+FileTree.displayName = "FileTree";
 
 export { DirectoryPreview };

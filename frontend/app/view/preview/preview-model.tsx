@@ -10,6 +10,7 @@ import { getOverrideConfigAtom, refocusNode } from "@/store/global";
 import * as WOS from "@/store/wos";
 import { goHistory, goHistoryBack, goHistoryForward } from "@/util/historyutil";
 import { checkKeyPressed } from "@/util/keyutil";
+import { t } from "@/util/i18n";
 import { addOpenMenuItems } from "@/util/previewutil";
 import { base64ToString, fireAndForget, isBlank, jotaiLoadableValue, stringToBase64 } from "@/util/util";
 import { formatRemoteUri } from "@/util/waveutil";
@@ -19,7 +20,7 @@ import { loadable } from "jotai/utils";
 import type * as MonacoTypes from "monaco-editor";
 import { createRef } from "react";
 import { PreviewView } from "./preview";
-import { makeDirectoryDefaultMenuItems } from "./preview-directory-utils";
+import { makeDirectoryDefaultMenuItems, type TreeSortType } from "./preview-directory-utils";
 import type { PreviewEnv } from "./previewenv";
 
 // TODO drive this using config
@@ -164,6 +165,8 @@ export class PreviewModel implements ViewModel {
 
     showHiddenFiles: PrimitiveAtom<boolean>;
     refreshVersion: PrimitiveAtom<number>;
+    openTabs: PrimitiveAtom<string[]>;
+    treeSort: PrimitiveAtom<TreeSortType>;
     directorySearchActive: PrimitiveAtom<boolean>;
     refreshCallback: () => void;
     directoryKeyDownHandler: (waveEvent: WaveKeyboardEvent) => boolean;
@@ -179,6 +182,9 @@ export class PreviewModel implements ViewModel {
         let showHiddenFiles = globalStore.get(this.env.getSettingsKeyAtom("preview:showhiddenfiles")) ?? true;
         this.showHiddenFiles = atom<boolean>(showHiddenFiles);
         this.refreshVersion = atom(0);
+        this.openTabs = atom<string[]>([]);
+        const defaultSort = globalStore.get(this.env.getSettingsKeyAtom("preview:defaultsort")) ?? "name";
+        this.treeSort = atom<TreeSortType>({ field: defaultSort, desc: defaultSort == "modtime" });
         this.directorySearchActive = atom(false);
         this.previewTextRef = createRef();
         this.openFileModal = atom(false);
@@ -416,7 +422,7 @@ export class PreviewModel implements ViewModel {
                 return statFile;
             } catch (e) {
                 const errorStatus: ErrorMsg = {
-                    status: "File Read Failed",
+                    status: t("preview.fileReadFailed"),
                     text: `${e}`,
                 };
                 globalStore.set(this.errorMsgAtom, errorStatus);
@@ -446,7 +452,7 @@ export class PreviewModel implements ViewModel {
                 return file;
             } catch (e) {
                 const errorStatus: ErrorMsg = {
-                    status: "File Read Failed",
+                    status: t("preview.fileReadFailed"),
                     text: `${e}`,
                 };
                 globalStore.set(this.errorMsgAtom, errorStatus);
@@ -508,29 +514,29 @@ export class PreviewModel implements ViewModel {
         const genErr = getFn(this.errorMsgAtom);
 
         if (!fileInfo) {
-            return { errorStr: `Load Error: ${genErr?.text}` };
+            return { errorStr: t("preview.loadError", { text: genErr?.text }) };
         }
         if (connErr != "") {
-            return { errorStr: `Connection Error: ${connErr}` };
+            return { errorStr: t("preview.connectionError", { text: connErr }) };
         }
         if (fileInfo?.notfound) {
             return { specializedView: "codeedit" };
         }
         if (mimeType == null) {
-            return { errorStr: `Unable to determine mimetype for: ${fileInfo.path}` };
+            return { errorStr: t("preview.unableMimetype", { path: fileInfo.path }) };
         }
         if (isStreamingType(mimeType)) {
             return { specializedView: "streaming" };
         }
         if (!fileInfo) {
             const fileNameStr = fileName ? " " + JSON.stringify(fileName) : "";
-            return { errorStr: "File Not Found" + fileNameStr };
+            return { errorStr: t("preview.fileNotFound", { name: fileNameStr }) };
         }
         if (fileInfo.size > MaxFileSize) {
-            return { errorStr: "File Too Large to Preview (10 MB Max)" };
+            return { errorStr: t("preview.fileTooLarge") };
         }
         if (mimeType == "text/csv" && fileInfo.size > MaxCSVSize) {
-            return { errorStr: "CSV File Too Large to Preview (1 MB Max)" };
+            return { errorStr: t("preview.csvTooLarge") };
         }
         if (mimeType == "directory") {
             return { specializedView: "directory" };
@@ -550,7 +556,7 @@ export class PreviewModel implements ViewModel {
         if (isTextFile(mimeType) || fileInfo.size == 0) {
             return { specializedView: "codeedit" };
         }
-        return { errorStr: `Preview (${mimeType})` };
+        return { errorStr: t("preview.previewUnavailable", { mime: mimeType }) };
     }
 
     updateOpenFileModalAndError(isOpen, errorMsg = null) {
@@ -575,6 +581,62 @@ export class PreviewModel implements ViewModel {
             return;
         }
         this.updateOpenFileModalAndError(!modalOpen);
+    }
+
+    async openTreeFile(newPath: string) {
+        if (isBlank(newPath) || newPath == globalStore.get(this.metaFilePath)) {
+            return;
+        }
+        if (globalStore.get(this.newFileContent) != null) {
+            globalStore.set(this.errorMsgAtom, {
+                status: t("preview.unsavedChanges"),
+                text: t("preview.unsavedOpenText"),
+                level: "warning",
+            });
+            return;
+        }
+        try {
+            await this.goHistory(newPath);
+        } catch (e) {
+            globalStore.set(this.errorMsgAtom, { status: t("preview.cannotOpenFile"), text: String(e) });
+        }
+    }
+
+    async closeFileTab(path: string, force = false) {
+        const tabs = globalStore.get(this.openTabs);
+        const tabIndex = tabs.indexOf(path);
+        if (tabIndex < 0) {
+            return;
+        }
+        const isActive = globalStore.get(this.metaFilePath) == path;
+        if (isActive && !force && globalStore.get(this.newFileContent) != null) {
+            globalStore.set(this.errorMsgAtom, {
+                status: t("preview.unsavedChanges"),
+                text: t("preview.unsavedCloseText"),
+                level: "warning",
+                buttons: [
+                    {
+                        text: t("preview.discardAndClose"),
+                        onClick: () => fireAndForget(() => this.closeFileTab(path, true)),
+                    },
+                ],
+            });
+            return;
+        }
+        const newTabs = tabs.filter((tabPath) => tabPath != path);
+        globalStore.set(this.openTabs, newTabs);
+        if (!isActive) {
+            return;
+        }
+        const nextPath = newTabs[Math.min(tabIndex, newTabs.length - 1)];
+        if (nextPath != null) {
+            await this.goHistory(nextPath);
+            return;
+        }
+        const statFile = await globalStore.get(this.statFile);
+        if (statFile?.dir != null) {
+            await this.goHistory(statFile.dir);
+        }
     }
 
     async goHistory(newPath: string) {
@@ -667,7 +729,7 @@ export class PreviewModel implements ViewModel {
             console.log("saved file", filePath);
         } catch (e) {
             const errorStatus: ErrorMsg = {
-                status: "Save Failed",
+                status: t("preview.saveFailed"),
                 text: `${e}`,
             };
             globalStore.set(this.errorMsgAtom, errorStatus);
@@ -706,7 +768,7 @@ export class PreviewModel implements ViewModel {
         const overrideFontSize = blockData?.meta?.["editor:fontsize"];
         const menuItems: ContextMenuItem[] = [];
         menuItems.push({
-            label: "Copy Full Path",
+            label: t("previewMenu.copyFullPath"),
             click: () =>
                 fireAndForget(async () => {
                     const filePath = await globalStore.get(this.statFilePath);
@@ -724,7 +786,7 @@ export class PreviewModel implements ViewModel {
                 }),
         });
         menuItems.push({
-            label: "Copy File Name",
+            label: t("common.copyFileName"),
             click: () =>
                 fireAndForget(async () => {
                     const fileInfo = await globalStore.get(this.statFile);
@@ -769,23 +831,23 @@ export class PreviewModel implements ViewModel {
                 },
             });
             menuItems.push({
-                label: "Editor Font Size",
+                label: t("previewMenu.editorFontSize"),
                 submenu: fontSizeSubMenu,
             });
             if (globalStore.get(this.newFileContent) != null) {
                 menuItems.push({ type: "separator" });
                 menuItems.push({
-                    label: "Save File",
+                    label: t("previewMenu.saveFile"),
                     click: () => fireAndForget(this.handleFileSave.bind(this)),
                 });
                 menuItems.push({
-                    label: "Revert File",
+                    label: t("previewMenu.revertFile"),
                     click: () => fireAndForget(this.handleFileRevert.bind(this)),
                 });
             }
             menuItems.push({ type: "separator" });
             menuItems.push({
-                label: "Word Wrap",
+                label: t("previewMenu.wordWrap"),
                 type: "checkbox",
                 checked: wordWrap,
                 click: () =>
@@ -798,8 +860,53 @@ export class PreviewModel implements ViewModel {
             });
         }
         if (loadableSV.state == "hasData" && loadableSV.data.specializedView == "directory") {
+            const treeSort = globalStore.get(this.treeSort);
+            const setSortField = (field: string) => globalStore.set(this.treeSort, { ...treeSort, field });
             menuItems.push({ type: "separator" });
-            menuItems.push({ label: "Default Settings", enabled: false });
+            menuItems.push({
+                label: t("previewMenu.sortOrder"),
+                submenu: [
+                    {
+                        label: t("previewMenu.sortName"),
+                        type: "checkbox",
+                        checked: treeSort.field == "name",
+                        click: () => setSortField("name"),
+                    },
+                    {
+                        label: t("previewMenu.sortType"),
+                        type: "checkbox",
+                        checked: treeSort.field == "mimetype",
+                        click: () => setSortField("mimetype"),
+                    },
+                    {
+                        label: t("previewMenu.sortModtime"),
+                        type: "checkbox",
+                        checked: treeSort.field == "modtime",
+                        click: () => setSortField("modtime"),
+                    },
+                    {
+                        label: t("previewMenu.sortSize"),
+                        type: "checkbox",
+                        checked: treeSort.field == "size",
+                        click: () => setSortField("size"),
+                    },
+                    {
+                        label: t("previewMenu.sortPerm"),
+                        type: "checkbox",
+                        checked: treeSort.field == "modestr",
+                        click: () => setSortField("modestr"),
+                    },
+                    { type: "separator" },
+                    {
+                        label: t("previewMenu.sortDescending"),
+                        type: "checkbox",
+                        checked: treeSort.desc,
+                        click: () => globalStore.set(this.treeSort, { ...treeSort, desc: !treeSort.desc }),
+                    },
+                ],
+            });
+            menuItems.push({ type: "separator" });
+            menuItems.push({ label: t("previewMenu.defaultSettings"), enabled: false });
             menuItems.push(...makeDirectoryDefaultMenuItems(this));
         }
         return menuItems;

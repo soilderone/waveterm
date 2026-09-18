@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Button } from "@/element/button";
+import { useT } from "@/util/i18n-hooks";
 import React from "react";
 
 import "./modal.scss";
@@ -68,13 +69,15 @@ interface WaveModalProps {
     children: React.ReactNode;
 }
 
-function WaveModal({ title, description, onSubmit, onCancel, buttonLabel = "Ok", children }: WaveModalProps) {
+function WaveModal({ title, description, onSubmit, onCancel, buttonLabel, children }: WaveModalProps) {
+    const t = useT();
+    const resolvedButtonLabel = buttonLabel ?? t("chrome.ok");
     return (
         <Modal onClickOut={onCancel}>
             <ModalHeader title={title} description={description} />
             <ModalContent>{children}</ModalContent>
             <ModalFooter>
-                <Button onClick={onSubmit}>{buttonLabel}</Button>
+                <Button onClick={onSubmit}>{resolvedButtonLabel}</Button>
             </ModalFooter>
         </Modal>
     );

@@ -3,6 +3,7 @@
 
 import { waveEventSubscribeSingle } from "@/app/store/wps";
 import { RpcApi } from "@/app/store/wshclientapi";
+import { setLanguage, t } from "@/util/i18n";
 import * as electron from "electron";
 import { fireAndForget } from "../frontend/util/util";
 import { focusedBuilderWindow, getBuilderWindowById } from "./emain-builder";
@@ -49,7 +50,7 @@ async function getWorkspaceMenu(ww?: WaveBrowserWindow): Promise<Electron.MenuIt
     const workspaceList = await RpcApi.WorkspaceListCommand(ElectronWshClient);
     const workspaceMenu: Electron.MenuItemConstructorOptions[] = [
         {
-            label: "Create Workspace",
+            label: t("menu.createWorkspace"),
             click: (_, window) => fireAndForget(() => createWorkspace((window as WaveBrowserWindow) ?? ww)),
         },
     ];
@@ -132,7 +133,7 @@ function makeFileMenu(
 ): Electron.MenuItemConstructorOptions[] {
     const fileMenu: Electron.MenuItemConstructorOptions[] = [
         {
-            label: "New Window",
+            label: t("menu.newWindow"),
             accelerator: "CommandOrControl+Shift+N",
             click: () => fireAndForget(callbacks.createNewWaveWindow),
         },
@@ -147,7 +148,7 @@ function makeFileMenu(
     const featureWaveAppBuilder = fullConfig?.settings?.["feature:waveappbuilder"];
     if (isDev || featureWaveAppBuilder) {
         fileMenu.splice(1, 0, {
-            label: "New WaveApp Builder Window",
+            label: t("menu.newBuilderWindow"),
             accelerator: unamePlatform === "darwin" ? "Command+Shift+B" : "Alt+Shift+B",
             click: () => openBuilderWindow(""),
         });
@@ -174,13 +175,13 @@ function makeFileMenu(
 function makeAppMenuItems(webContents: electron.WebContents): Electron.MenuItemConstructorOptions[] {
     const appMenuItems: Electron.MenuItemConstructorOptions[] = [
         {
-            label: "About Wave Terminal",
+            label: t("menu.about"),
             click: (_, window) => {
                 (getWindowWebContents(window) ?? webContents)?.send("menu-item-about");
             },
         },
         {
-            label: "Check for Updates",
+            label: t("menu.checkForUpdates"),
             click: () => {
                 fireAndForget(() => updater?.checkForUpdates(true));
             },
@@ -209,22 +210,22 @@ function makeViewMenu(
     const devToolsAccel = unamePlatform === "darwin" ? "Option+Command+I" : "Alt+Shift+I";
     return [
         {
-            label: isBuilderWindowFocused ? "Reload Window" : "Reload Tab",
+            label: isBuilderWindowFocused ? t("menu.reloadWindow") : t("menu.reloadTab"),
             accelerator: "Shift+CommandOrControl+R",
             click: (_, window) => {
                 (getWindowWebContents(window) ?? webContents)?.reloadIgnoringCache();
             },
         },
         {
-            label: "Relaunch All Windows",
+            label: t("menu.relaunchAllWindows"),
             click: () => callbacks.relaunchBrowserWindows(),
         },
         {
-            label: "Clear Tab Cache",
+            label: t("menu.clearTabCache"),
             click: () => clearTabCache(),
         },
         {
-            label: "Toggle DevTools",
+            label: t("menu.toggleDevTools"),
             accelerator: devToolsAccel,
             click: (_, window) => {
                 const wc = getWindowWebContents(window) ?? webContents;
@@ -233,7 +234,7 @@ function makeViewMenu(
         },
         { type: "separator" },
         {
-            label: "Reset Zoom",
+            label: t("menu.resetZoom"),
             accelerator: "CommandOrControl+0",
             click: (_, window) => {
                 const wc = getWindowWebContents(window) ?? webContents;
@@ -243,7 +244,7 @@ function makeViewMenu(
             },
         },
         {
-            label: "Zoom In",
+            label: t("menu.zoomIn"),
             accelerator: "CommandOrControl+=",
             click: (_, window) => {
                 const wc = getWindowWebContents(window) ?? webContents;
@@ -265,7 +266,7 @@ function makeViewMenu(
             acceleratorWorksWhenHidden: true,
         },
         {
-            label: "Zoom Out",
+            label: t("menu.zoomOut"),
             accelerator: "CommandOrControl+-",
             click: (_, window) => {
                 const wc = getWindowWebContents(window) ?? webContents;
@@ -287,10 +288,10 @@ function makeViewMenu(
             acceleratorWorksWhenHidden: true,
         },
         {
-            label: "Launch On Full Screen",
+            label: t("menu.launchOnFullScreen"),
             submenu: [
                 {
-                    label: "On",
+                    label: t("menu.on"),
                     type: "radio",
                     checked: fullscreenOnLaunch,
                     click: () => {
@@ -298,7 +299,7 @@ function makeViewMenu(
                     },
                 },
                 {
-                    label: "Off",
+                    label: t("menu.off"),
                     type: "radio",
                     checked: !fullscreenOnLaunch,
                     click: () => {
@@ -313,7 +314,7 @@ function makeViewMenu(
         },
         { type: "separator" },
         {
-            label: "Toggle Widgets Bar",
+            label: t("menu.toggleWidgetsBar"),
             click: () => {
                 fireAndForget(async () => {
                     const workspaceId = focusedWaveWindow?.workspaceId;
@@ -339,6 +340,7 @@ async function makeFullAppMenu(callbacks: AppMenuCallbacks, workspaceOrBuilderId
     try {
         fullConfig = await RpcApi.GetFullConfigCommand(ElectronWshClient);
         fullscreenOnLaunch = fullConfig?.settings["window:fullscreenonlaunch"];
+        setLanguage(fullConfig?.settings["app:language"]);
     } catch (e) {
         console.error("Error fetching config:", e);
     }
@@ -365,7 +367,7 @@ async function makeFullAppMenu(callbacks: AppMenuCallbacks, workspaceOrBuilderId
     ];
     if (workspaceMenu != null && !isBuilderWindowFocused) {
         menuTemplate.push({
-            label: "Workspace",
+            label: t("menu.workspace"),
             id: "workspace-menu",
             submenu: workspaceMenu,
         });
@@ -437,6 +439,9 @@ function convertMenuDefArrToMenu(
             checked: menuDef.checked,
             enabled: menuDef.enabled,
         };
+        if (menuDef.icon != null) {
+            menuItemTemplate.icon = electron.nativeImage.createFromDataURL(menuDef.icon);
+        }
         if (menuDef.submenu != null) {
             menuItemTemplate.submenu = convertMenuDefArrToMenu(webContents, menuDef.submenu, menuState);
         }

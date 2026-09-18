@@ -13,6 +13,7 @@ import { modalsModel } from "@/app/store/modalmodel";
 import * as WOS from "@/app/store/wos";
 import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
+import { useT } from "@/util/i18n-hooks";
 import { useAtomValue } from "jotai";
 import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
 import { useEffect, useRef, useState } from "react";
@@ -58,6 +59,7 @@ export function UpgradeOnboardingFooter({
     onNext,
     onClose,
 }: UpgradeOnboardingFooterProps) {
+    const t = useT();
     return (
         <footer className="unselectable flex-shrink-0 mt-4">
             <div className="flex flex-row items-center justify-between w-full">
@@ -68,14 +70,14 @@ export function UpgradeOnboardingFooter({
                                 onClick={onPrev}
                                 className="cursor-pointer hover:text-foreground transition-colors"
                             >
-                                &lt; {prevText}
+                                &lt; {t(prevText)}
                             </button>
                         </div>
                     )}
                 </div>
                 <div className="flex flex-row items-center justify-center [&>button]:!px-5 [&>button]:!py-2 [&>button]:text-sm">
                     <Button className="font-[600]" onClick={onClose}>
-                        Continue
+                        {t("onboarding.continue")}
                     </Button>
                 </div>
                 <div className="flex-1 flex justify-end">
@@ -85,7 +87,7 @@ export function UpgradeOnboardingFooter({
                                 onClick={onNext}
                                 className="cursor-pointer hover:text-foreground transition-colors"
                             >
-                                {nextText} &gt;
+                                {t(nextText)} &gt;
                             </button>
                         </div>
                     )}
@@ -99,64 +101,65 @@ export const UpgradeOnboardingVersions: VersionConfig[] = [
     {
         version: "v0.12.1",
         content: () => <UpgradeOnboardingModal_v0_12_1_Content />,
-        nextText: "Next (v0.12.2)",
+        nextText: "onboarding.upgrade.next.v0122",
     },
     {
         version: "v0.12.2",
         content: () => <UpgradeOnboardingModal_v0_12_2_Content />,
-        prevText: "Prev (v0.12.1)",
-        nextText: "Next (v0.12.3)",
+        prevText: "onboarding.upgrade.prev.v0121",
+        nextText: "onboarding.upgrade.next.v0123",
     },
     {
         version: "v0.12.5",
         content: () => <UpgradeOnboardingModal_v0_12_3_Content />,
-        prevText: "Prev (v0.12.2)",
-        nextText: "Next (v0.13.0)",
+        prevText: "onboarding.upgrade.prev.v0122",
+        nextText: "onboarding.upgrade.next.v0130",
     },
     {
         version: "v0.13.0",
         content: () => <UpgradeOnboardingModal_v0_13_0_Content />,
-        prevText: "Prev (v0.12.5)",
-        nextText: "Next (v0.13.1)",
+        prevText: "onboarding.upgrade.prev.v0125",
+        nextText: "onboarding.upgrade.next.v0131",
     },
     {
         version: "v0.13.1",
         content: () => <UpgradeOnboardingModal_v0_13_1_Content />,
-        prevText: "Prev (v0.13.0)",
-        nextText: "Next (v0.14.0)",
+        prevText: "onboarding.upgrade.prev.v0130",
+        nextText: "onboarding.upgrade.next.v0140",
     },
     {
         version: "v0.14.0",
         content: () => <UpgradeOnboardingModal_v0_14_0_Content />,
-        prevText: "Prev (v0.13.1)",
-        nextText: "Next (v0.14.1)",
+        prevText: "onboarding.upgrade.prev.v0131",
+        nextText: "onboarding.upgrade.next.v0141",
     },
     {
         version: "v0.14.1",
         content: () => <UpgradeOnboardingModal_v0_14_1_Content />,
-        prevText: "Prev (v0.14.0)",
-        nextText: "Next (v0.14.3)",
+        prevText: "onboarding.upgrade.prev.v0140",
+        nextText: "onboarding.upgrade.next.v0143",
     },
     {
         version: "v0.14.3",
         content: () => <UpgradeOnboardingModal_v0_14_2_Content />,
-        prevText: "Prev (v0.14.1)",
-        nextText: "Next (v0.14.4)",
+        prevText: "onboarding.upgrade.prev.v0141",
+        nextText: "onboarding.upgrade.next.v0144",
     },
     {
         version: "v0.14.4",
         content: () => <UpgradeOnboardingModal_v0_14_4_Content />,
-        prevText: "Prev (v0.14.3)",
-        nextText: "Next (v0.14.5)",
+        prevText: "onboarding.upgrade.prev.v0143",
+        nextText: "onboarding.upgrade.next.v0145",
     },
     {
         version: "v0.14.5",
         content: () => <UpgradeOnboardingModal_v0_14_5_Content />,
-        prevText: "Prev (v0.14.4)",
+        prevText: "onboarding.upgrade.prev.v0144",
     },
 ];
 
 const UpgradeOnboardingPatch = ({ isReleaseNotes = false }: UpgradeOnboardingPatchProps) => {
+    const t = useT();
     const modalRef = useRef<HTMLDivElement | null>(null);
     const [isCompact, setIsCompact] = useState<boolean>(window.innerHeight < 800);
     const [currentIndex, setCurrentIndex] = useState<number>(UpgradeOnboardingVersions.length - 1);
@@ -264,7 +267,7 @@ const UpgradeOnboardingPatch = ({ isReleaseNotes = false }: UpgradeOnboardingPat
                             <Logo />
                         </div>
                         <div className="text-center text-[25px] font-normal text-foreground">
-                            Wave {currentVersion.version} Update
+                            {t("onboarding.upgrade.versionUpdate", { version: currentVersion.version })}
                         </div>
                     </header>
                     <OverlayScrollbarsComponent

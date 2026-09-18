@@ -1,0 +1,66 @@
+// Copyright 2026, Command Line Inc.
+// SPDX-License-Identifier: Apache-2.0
+
+export const enSettings: Record<string, string> = {
+    "config.configFiles": "Config Files",
+    "config.deprecated": "deprecated",
+    "config.viewDocs": "View documentation",
+    "config.saveTooltip": "Save ({shortcut})",
+    "config.saving": "Saving...",
+    "config.visual": "Visual",
+    "config.rawJson": "Raw JSON",
+    "config.configError": "Config Error",
+
+    "config.fileGeneral": "General",
+    "config.fileConnections": "Connections",
+    "config.fileWidgets": "Sidebar Widgets",
+    "config.fileWaveAi": "Wave AI Modes",
+    "config.fileBackgrounds": "Tab Backgrounds",
+    "config.filePresets": "Presets",
+    "config.fileAiPresets": "AI Presets",
+    "config.connectionsDesc": "SSH hosts",
+    "config.connectionsDescWindows": "SSH hosts and WSL distros",
+    "config.waveAiDesc": "Local models and BYOK",
+
+    "config.discardChangesConfirm": "You have unsaved changes. Discard and continue?",
+    "config.failedToLoad": "Failed to load {name}: {error}",
+    "config.failedToSave": "Failed to save {name}: {error}",
+    "config.jsonMustBeObject": "JSON must be an object, not an array, primitive, or null",
+    "config.invalidJson": "Invalid JSON: {error}",
+    "config.invalidAiKey": 'Invalid key "{key}": all top-level keys must start with "ai@"',
+    "config.invalidWaveAiKey":
+        'Invalid key "{key}": keys must only contain letters, numbers, underscores, @, dots, and hyphens',
+
+    "config.noSecretManager": "No appropriate secret manager found. Cannot manage secrets securely.",
+    "config.storageBackendError": "Error checking storage backend: {error}",
+    "config.failedToLoadSecrets": "Failed to load secrets: {error}",
+    "config.secretNotFound": "Secret not found: {name}",
+    "config.failedToLoadSecret": "Failed to load secret: {error}",
+    "config.failedToSaveSecret": "Failed to save secret: {error}",
+    "config.failedToDeleteSecret": "Failed to delete secret: {error}",
+    "config.secretNameEmpty": "Secret name cannot be empty",
+    "config.invalidSecretName":
+        "Invalid secret name: must start with a letter and contain only letters, numbers, and underscores",
+    "config.secretExists": 'Secret "{name}" already exists',
+    "config.failedToAddSecret": "Failed to add secret: {error}",
+
+    "config.noSecrets": "No Secrets",
+    "config.addSecretHint": "Add a secret to get started",
+    "config.addNewSecret": "Add New Secret",
+    "config.addSecret": "Add Secret",
+    "config.adding": "Adding...",
+    "config.cliAccess": "CLI Access",
+    "config.secretName": "Secret Name",
+    "config.secretValue": "Secret Value",
+    "config.enterSecretValue": "Enter secret value...",
+    "config.enterNewSecretValue": "Enter new secret value...",
+    "config.secretNameRules": "Must start with a letter and contain only letters, numbers, and underscores",
+    "config.secretHiddenNotice": "The current secret value is not shown by default for security purposes.",
+    "config.showSecret": "Show Secret",
+    "config.loadingSecrets": "Loading secrets...",
+    "config.deleteSecretTooltip": "Delete this secret",
+    "config.deleting": "Deleting...",
+
+    "config.waveAiVisualEditor": "Wave AI Modes - Visual Editor",
+    "config.visualEditorComingSoon": "Visual editor coming soon...",
+};

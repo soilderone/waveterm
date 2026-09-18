@@ -8,6 +8,7 @@ import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { WaveEnv, WaveEnvSubset, useWaveEnv } from "@/app/waveenv/waveenv";
 import { Button } from "@/element/button";
 import { validateCssColor } from "@/util/color-validator";
+import { useT } from "@/util/i18n-hooks";
 import { fireAndForget } from "@/util/util";
 import clsx from "clsx";
 import { useAtomValue } from "jotai";
@@ -69,6 +70,7 @@ const TabV = forwardRef<HTMLDivElement, TabVProps>((props, ref) => {
         onRename,
         renameRef,
     } = props;
+    const t = useT();
     const MaxTabNameLength = 14;
     const truncateTabName = (name: string) => [...(name ?? "")].slice(0, MaxTabNameLength).join("");
     const displayName = truncateTabName(tabName);
@@ -185,7 +187,9 @@ const TabV = forwardRef<HTMLDivElement, TabVProps>((props, ref) => {
                 active,
                 dragging: isDragging,
                 "new-tab": isNew,
+                flag: flagColor != null,
             })}
+            style={flagColor != null ? ({ "--tab-flag-color": flagColor } as React.CSSProperties) : undefined}
             onMouseDown={onDragStart}
             onClick={onClick}
             onContextMenu={onContextMenu}
@@ -209,7 +213,7 @@ const TabV = forwardRef<HTMLDivElement, TabVProps>((props, ref) => {
                     className="ghost grey close"
                     onClick={onClose}
                     onMouseDown={handleMouseDownOnClose}
-                    title="Close Tab"
+                    title={t("tabMenu.closeTab")}
                 >
                     <i className="fa fa-solid fa-xmark" />
                 </Button>

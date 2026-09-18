@@ -31,6 +31,7 @@ import {
 import { activeTabIdAtom } from "@/store/tab-model";
 import * as WOS from "@/store/wos";
 import { loadFonts } from "@/util/fontutil";
+import { setLanguage } from "@/util/i18n";
 import { setKeyUtilPlatform } from "@/util/keyutil";
 import { isMacOS, setMacOSVersion } from "@/util/platformutil";
 import { createElement } from "react";
@@ -194,6 +195,10 @@ async function initWave(initOpts: WaveInitOpts) {
     const fullConfig = await RpcApi.GetFullConfigCommand(TabRpcClient);
     console.log("fullconfig", fullConfig);
     globalStore.set(atoms.fullConfigAtom, fullConfig);
+    setLanguage(fullConfig.settings?.["app:language"]);
+    globalStore.sub(atoms.fullConfigAtom, () => {
+        setLanguage(globalStore.get(atoms.fullConfigAtom)?.settings?.["app:language"]);
+    });
     const waveaiModeConfig = await RpcApi.GetWaveAIModeConfigCommand(TabRpcClient);
     globalStore.set(atoms.waveaiModeConfigAtom, waveaiModeConfig.configs);
     console.log("Wave First Render");
@@ -265,6 +270,10 @@ async function initBuilder(initOpts: BuilderInitOpts) {
     const fullConfig = await RpcApi.GetFullConfigCommand(TabRpcClient);
     console.log("fullconfig", fullConfig);
     globalStore.set(atoms.fullConfigAtom, fullConfig);
+    setLanguage(fullConfig.settings?.["app:language"]);
+    globalStore.sub(atoms.fullConfigAtom, () => {
+        setLanguage(globalStore.get(atoms.fullConfigAtom)?.settings?.["app:language"]);
+    });
     const waveaiModeConfig = await RpcApi.GetWaveAIModeConfigCommand(TabRpcClient);
     globalStore.set(atoms.waveaiModeConfigAtom, waveaiModeConfig.configs);
 

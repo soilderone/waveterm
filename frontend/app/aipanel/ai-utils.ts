@@ -1,7 +1,18 @@
 // Copyright 2025, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { t } from "@/util/i18n";
 import { sortByDisplayOrder } from "@/util/util";
+
+const BuilderModeNameKeys: Record<string, string> = {
+    "Builder Default": "ai.builderDefault",
+    "Builder Deep": "ai.builderDeep",
+};
+
+const BuilderModeDescriptionKeys: Record<string, string> = {
+    "Good mix of speed and accuracy\n(gpt-5.4 with minimal thinking)": "ai.builderDefaultDesc",
+    "Slower but most capable\n(gpt-5.4 with full reasoning)": "ai.builderDeepDesc",
+};
 
 const TextFileLimit = 200 * 1024; // 200KB
 const PdfLimit = 5 * 1024 * 1024; // 5MB
@@ -372,8 +383,13 @@ export const validateFileSizeFromInfo = (
 };
 
 export const formatFileSizeError = (error: FileSizeError): string => {
-    const typeLabel = error.fileType === "image" ? "Image" : error.fileType === "pdf" ? "PDF" : "Text file";
-    return `${typeLabel} "${error.fileName}" is too large (${formatFileSize(error.fileSize)}). Maximum size is ${formatFileSize(error.maxSize)}.`;
+    const typeLabel = error.fileType === "image" ? t("ai.image") : error.fileType === "pdf" ? t("ai.pdf") : t("ai.textFile");
+    return t("ai.fileTooLarge", {
+        type: typeLabel,
+        name: error.fileName,
+        size: formatFileSize(error.fileSize),
+        max: formatFileSize(error.maxSize),
+    });
 };
 
 /**
@@ -583,7 +599,8 @@ export const getFilteredAIModeConfigs = (
  */
 export function getModeDisplayName(config: AIModeConfigType): string {
     if (config["display:name"]) {
-        return config["display:name"];
+        const key = BuilderModeNameKeys[config["display:name"]];
+        return key ? t(key) : config["display:name"];
     }
 
     const provider = config["ai:provider"];
@@ -591,8 +608,17 @@ export function getModeDisplayName(config: AIModeConfigType): string {
     const azureResourceName = config["ai:azureresourcename"];
 
     if (provider === "azure-legacy") {
-        return `${azureResourceName || "unknown"} (azure)`;
+        return `${azureResourceName || t("ai.unknown")} (azure)`;
     }
 
-    return `${model || "unknown"} (${provider || "custom"})`;
+    return `${model || t("ai.unknown")} (${provider || t("ai.custom")})`;
+}
+
+export function getModeDisplayDescription(config: AIModeConfigType): string {
+    const description = config["display:description"];
+    if (!description) {
+        return description;
+    }
+    const key = BuilderModeDescriptionKeys[description];
+    return key ? t(key) : description;
 }

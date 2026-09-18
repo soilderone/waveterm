@@ -9,6 +9,7 @@ import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
 import { WorkspaceLayoutModel } from "@/app/workspace/workspace-layout-model";
 import { validateCssColor } from "@/util/color-validator";
+import { useT } from "@/util/i18n-hooks";
 import { cn, fireAndForget } from "@/util/util";
 import { useAtomValue } from "jotai";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
@@ -82,6 +83,7 @@ MacOSHeader.displayName = "MacOSHeader";
 interface VTabBarProps {
     workspace: Workspace;
     className?: string;
+    onCollapse?: () => void;
 }
 
 interface VTabWrapperProps {
@@ -184,8 +186,9 @@ function VTabWrapper({
     );
 }
 
-export function VTabBar({ workspace, className }: VTabBarProps) {
+export function VTabBar({ workspace, className, onCollapse }: VTabBarProps) {
     const env = useWaveEnv<VTabBarEnv>();
+    const t = useT();
     const activeTabId = useAtomValue(env.atoms.staticTabId);
     const reinitVersion = useAtomValue(env.atoms.reinitVersion);
     const documentHasFocus = useAtomValue(env.atoms.documentHasFocus);
@@ -419,18 +422,31 @@ export function VTabBar({ workspace, className }: VTabBarProps) {
                     />
                 )}
             </div>
-            <button
-                type="button"
-                className="group relative flex h-9 w-full shrink-0 cursor-pointer items-center gap-1.5 pl-3 pr-3 text-xs text-secondary/60 transition-colors hover:text-primary select-none whitespace-nowrap"
-                onClick={() => env.electron.createTab()}
-                onMouseEnter={() => setIsNewTabHovered(true)}
-                onMouseLeave={() => setIsNewTabHovered(false)}
-                aria-label="New Tab"
-            >
-                <div className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-sm bg-transparent transition-colors group-hover:bg-hover" />
-                <i className="fa fa-solid fa-plus" style={{ fontSize: "10px" }} />
-                <span>New Tab</span>
-            </button>
+            <div className="flex shrink-0 items-center">
+                <button
+                    type="button"
+                    className="group relative flex h-9 min-w-0 flex-1 cursor-pointer items-center gap-1.5 pl-3 pr-3 text-xs text-secondary/60 transition-colors hover:text-primary select-none whitespace-nowrap"
+                    onClick={() => env.electron.createTab()}
+                    onMouseEnter={() => setIsNewTabHovered(true)}
+                    onMouseLeave={() => setIsNewTabHovered(false)}
+                    aria-label={t("vtab.newTab")}
+                >
+                    <div className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-sm bg-transparent transition-colors group-hover:bg-hover" />
+                    <i className="fa fa-solid fa-plus" style={{ fontSize: "10px" }} />
+                    <span>{t("vtab.newTab")}</span>
+                </button>
+                {onCollapse && (
+                    <button
+                        type="button"
+                        className="mr-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded text-xs text-secondary transition-colors hover:bg-white/10 hover:text-primary"
+                        onClick={onCollapse}
+                        aria-label={t("vtab.collapseTabBar")}
+                        title={t("vtab.collapseTabBar")}
+                    >
+                        <i className="fa-solid fa-angles-left" />
+                    </button>
+                )}
+            </div>
         </div>
     );
 }

@@ -6,11 +6,14 @@ import { globalStore } from "@/app/store/jotaiStore";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { BlockHeaderSuggestionControl } from "@/app/suggestion/suggestion";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
-import { isBlank, makeConnRoute } from "@/util/util";
+import { cn, fireAndForget, isBlank, makeConnRoute } from "@/util/util";
+import { useT } from "@/util/i18n-hooks";
+import { formatRemoteUri } from "@/util/waveutil";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { memo, useEffect } from "react";
+import { memo, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { ImperativePanelHandle, Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { CSVView } from "./csvview";
-import { DirectoryPreview } from "./preview-directory";
+import { FileTree } from "./preview-directory";
 import { CodeEditPreview } from "./preview-edit";
 import { ErrorOverlay } from "./preview-error-overlay";
 import { MarkdownPreview } from "./preview-markdown";
@@ -28,7 +31,6 @@ const SpecializedViewMap: { [view: string]: ({ model }: SpecializedViewProps) =>
     markdown: MarkdownPreview,
     codeedit: CodeEditPreview,
     csv: CSVViewPreview,
-    directory: DirectoryPreview,
 };
 
 function canPreview(mimeType: string): boolean {
@@ -64,6 +66,28 @@ const SpecializedView = memo(({ parentRef, model }: SpecializedViewProps) => {
     return <SpecializedViewComponent key={path} model={model} parentRef={parentRef} />;
 });
 
+SpecializedView.displayName = "SpecializedView";
+
+type PreviewTreeRoot = {
+    connection: string;
+    directory: FileInfo;
+};
+
+export function getPreviewTreeRoot(
+    current: PreviewTreeRoot,
+    connection: string,
+    fileInfo: Loadable<FileInfo>
+): PreviewTreeRoot {
+    const root = current.connection == connection ? current : { connection, directory: null };
+    if (root.directory != null) {
+        return root;
+    }
+    if (fileInfo.state != "hasData" || !fileInfo.data?.isdir) {
+        return root;
+    }
+    return { connection, directory: fileInfo.data };
+}
+
 const fetchSuggestions = async (
     env: PreviewEnv,
     model: PreviewModel,
@@ -96,6 +120,16 @@ const fetchSuggestions = async (
     });
 };
 
+const TabDirtyDot = memo(({ model }: { model: PreviewModel }) => {
+    const dirty = useAtomValue(model.newFileContent) != null;
+    if (!dirty) {
+        return null;
+    }
+    return <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-accent" />;
+});
+
+TabDirtyDot.displayName = "TabDirtyDot";
+
 function PreviewView({
     blockRef,
     contentRef,
@@ -107,18 +141,84 @@ function PreviewView({
     model: PreviewModel;
 }) {
     const env = useWaveEnv<PreviewEnv>();
+    const t = useT();
     const connStatus = useAtomValue(model.connStatus);
     const [errorMsg, setErrorMsg] = useAtom(model.errorMsgAtom);
     const connection = useAtomValue(model.connectionImmediate);
-    const fileInfo = useAtomValue(model.statFile);
+    const loadableFileInfo = useAtomValue(model.loadableFileInfo);
+    const fileInfo = loadableFileInfo.state == "hasData" ? loadableFileInfo.data : null;
+    const metaFilePath = useAtomValue(model.metaFilePath);
+    const openTabs = useAtomValue(model.openTabs);
+    const setOpenTabs = useSetAtom(model.openTabs);
+    const showPreview = openTabs.length > 0 || (fileInfo != null && !fileInfo.isdir);
+    const [treeCollapsed, setTreeCollapsed] = useState(false);
+    const treePanelRef = useRef<ImperativePanelHandle>(null);
+    const [treeRoot, setTreeRoot] = useState<PreviewTreeRoot>({ connection, directory: null });
+    const root = getPreviewTreeRoot(treeRoot, connection, loadableFileInfo);
+
+    const handleTreeUp = useCallback(() => {
+        const parentPath = root.directory?.dir;
+        if (parentPath == null || parentPath == root.directory?.path) {
+            return;
+        }
+        fireAndForget(async () => {
+            try {
+                const directory = await env.rpc.FileInfoCommand(TabRpcClient, {
+                    info: { path: formatRemoteUri(parentPath, connection) },
+                });
+                if (directory?.isdir) {
+                    setTreeRoot({ connection, directory });
+                }
+            } catch (e) {
+                setErrorMsg((current) => current ?? { status: "Cannot Read Directory", text: String(e) });
+            }
+        });
+    }, [root.directory?.dir, root.directory?.path, connection, env.rpc, setErrorMsg]);
 
     useEffect(() => {
-        console.log("fileInfo or connection changed", fileInfo, connection);
+        if (root != treeRoot) {
+            setTreeRoot(root);
+            return;
+        }
+        if (root.directory || !fileInfo?.dir || connStatus?.status != "connected") {
+            return;
+        }
+        let active = true;
+        env.rpc
+            .FileInfoCommand(TabRpcClient, { info: { path: formatRemoteUri(fileInfo.dir, connection) } })
+            .then((directory) => {
+                if (
+                    active &&
+                    directory?.isdir &&
+                    globalStore.get(model.connectionImmediate) == connection &&
+                    globalStore.get(model.metaFilePath) == metaFilePath
+                ) {
+                    setTreeRoot({ connection, directory });
+                }
+            })
+            .catch((e) => {
+                if (active) {
+                    setErrorMsg((current) => current ?? { status: "Cannot Read Directory", text: String(e) });
+                }
+            });
+        return () => {
+            active = false;
+        };
+    }, [root, treeRoot, fileInfo, connection, metaFilePath, connStatus?.status, env.rpc, model, setErrorMsg]);
+
+    useEffect(() => {
+        if (!fileInfo?.path || fileInfo.isdir) {
+            return;
+        }
+        setOpenTabs((tabs) => (tabs.includes(fileInfo.path) ? tabs : [...tabs, fileInfo.path]));
+    }, [fileInfo?.path, fileInfo?.isdir, setOpenTabs]);
+
+    useEffect(() => {
         if (!fileInfo) {
             return;
         }
-        setErrorMsg(null);
-    }, [connection, fileInfo]);
+        setErrorMsg((current) => (current?.level == "warning" ? current : null));
+    }, [connection, fileInfo, setErrorMsg]);
 
     if (connStatus?.status != "connected") {
         return null;
@@ -135,7 +235,7 @@ function PreviewView({
         model.handleOpenFile(s["file:path"]);
         return true;
     };
-    const handleTab = (s: SuggestionType, query: string): string => {
+    const handleTab = (s: SuggestionType): string => {
         if (s["file:mimetype"] == "directory") {
             return s["file:name"] + "/";
         } else {
@@ -146,13 +246,142 @@ function PreviewView({
         return await fetchSuggestions(env, model, query, ctx);
     };
 
+    const toggleTree = () => {
+        const panel = treePanelRef.current;
+        if (panel == null) {
+            return;
+        }
+        if (panel.isCollapsed()) {
+            panel.expand();
+        } else {
+            panel.collapse();
+        }
+    };
+
+    const canNavigateUp = root.directory != null && root.directory.dir != root.directory.path;
+
+    const treeElem = root.directory ? (
+        <FileTree
+            model={model}
+            rootPath={root.directory.path}
+            onNavigateUp={canNavigateUp ? handleTreeUp : null}
+        />
+    ) : null;
+
+    const previewElem = (
+        <div className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
+            <div className="flex h-8 shrink-0 select-none items-stretch border-b border-border bg-white/5">
+                <div
+                    role="tablist"
+                    aria-label={t("preview.openFiles")}
+                    className="flex min-w-0 flex-1 items-stretch overflow-x-auto scrollbar-hide-until-hover"
+                >
+                    {openTabs.map((tabPath) => {
+                        const active = tabPath == metaFilePath;
+                        const name = tabPath.split("/").pop() || tabPath;
+                        return (
+                            <div
+                                key={tabPath}
+                                role="tab"
+                                aria-selected={active}
+                                title={tabPath}
+                                className={cn(
+                                    "group flex h-full min-w-0 max-w-48 shrink-0 cursor-pointer select-none items-center gap-1.5 border-r border-r-border border-t border-t-transparent px-2.5 text-xs transition-colors",
+                                    active
+                                        ? "border-t-accent bg-background text-primary"
+                                        : "text-secondary hover:bg-white/5 hover:text-primary"
+                                )}
+                                onClick={() => fireAndForget(() => model.openTreeFile(tabPath))}
+                            >
+                                <span className="truncate">{name}</span>
+                                {active && <TabDirtyDot model={model} />}
+                                <button
+                                    type="button"
+                                    title={t("preview.closeFile")}
+                                    aria-label={`Close ${name}`}
+                                    className={cn(
+                                        "flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded transition-opacity hover:bg-white/10 focus-visible:opacity-100",
+                                        active ? "opacity-70 hover:opacity-100" : "opacity-0 group-hover:opacity-70"
+                                    )}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        fireAndForget(() => model.closeFileTab(tabPath));
+                                    }}
+                                >
+                                    <i className="fa-solid fa-xmark text-[10px]" />
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
+                {root.directory && (
+                    <button
+                        type="button"
+                        title={treeCollapsed ? t("preview.showFileTree") : t("preview.hideFileTree")}
+                        aria-label={treeCollapsed ? t("preview.showFileTree") : t("preview.hideFileTree")}
+                        aria-expanded={!treeCollapsed}
+                        className="mx-1 flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center self-center rounded text-xs text-secondary transition-colors hover:bg-white/10 hover:text-primary"
+                        onClick={toggleTree}
+                    >
+                        <i className={treeCollapsed ? "fa-solid fa-bars" : "fa-solid fa-columns"} />
+                    </button>
+                )}
+            </div>
+            <div ref={contentRef} className="min-h-0 flex-1 overflow-hidden">
+                {fileInfo?.isdir ? (
+                    <div className="flex h-full flex-col items-center justify-center gap-2 text-secondary">
+                        <i aria-hidden="true" className="fa-solid fa-file text-4xl opacity-20" />
+                        <div className="text-sm">{t("preview.selectFile")}</div>
+                        <div className="text-xs opacity-60">{t("preview.clickFileHint")}</div>
+                    </div>
+                ) : (
+                    <Suspense fallback={<CenteredDiv>{t("preview.loading")}</CenteredDiv>}>
+                        <SpecializedView parentRef={contentRef} model={model} />
+                    </Suspense>
+                )}
+            </div>
+        </div>
+    );
+
     return (
         <>
-            <div key="fullpreview" className="flex flex-col w-full overflow-hidden scrollbar-hide-until-hover">
+            <div
+                key="fullpreview"
+                className="relative flex h-full min-h-0 w-full overflow-hidden scrollbar-hide-until-hover"
+            >
                 {errorMsg && <ErrorOverlay errorMsg={errorMsg} resetOverlay={() => setErrorMsg(null)} />}
-                <div ref={contentRef} className="flex-grow overflow-hidden">
-                    <SpecializedView parentRef={contentRef} model={model} />
-                </div>
+                {showPreview ? (
+                    <PanelGroup direction="horizontal" className="h-full w-full">
+                        {treeElem && (
+                            <>
+                                <Panel
+                                    ref={treePanelRef}
+                                    collapsible
+                                    collapsedSize={0}
+                                    defaultSize={22}
+                                    minSize={12}
+                                    maxSize={45}
+                                    onCollapse={() => setTreeCollapsed(true)}
+                                    onExpand={() => setTreeCollapsed(false)}
+                                    className="overflow-hidden"
+                                >
+                                    {treeElem}
+                                </Panel>
+                                <PanelResizeHandle
+                                    className={cn(
+                                        "w-0.5 bg-border transition-colors",
+                                        !treeCollapsed && "hover:bg-accent"
+                                    )}
+                                />
+                            </>
+                        )}
+                        <Panel minSize={30} className="overflow-hidden">
+                            {previewElem}
+                        </Panel>
+                    </PanelGroup>
+                ) : (
+                    <div className="h-full w-full">{treeElem}</div>
+                )}
             </div>
             <BlockHeaderSuggestionControl
                 blockRef={blockRef}
@@ -161,7 +390,7 @@ function PreviewView({
                 onSelect={handleSelect}
                 onTab={handleTab}
                 fetchSuggestions={fetchSuggestionsFn}
-                placeholderText="Open File..."
+                placeholderText={t("preview.openFilePlaceholder")}
             />
         </>
     );

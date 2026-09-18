@@ -7,6 +7,7 @@ import { atoms } from "@/app/store/global";
 import { modalsModel } from "@/app/store/modalmodel";
 import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
+import { useT } from "@/util/i18n-hooks";
 import { isDev } from "@/util/isdev";
 import { fireAndForget } from "@/util/util";
 import { useAtomValue } from "jotai";
@@ -20,6 +21,7 @@ interface AboutModalVProps {
 }
 
 const AboutModalV = ({ versionString, updaterChannel, onClose }: AboutModalVProps) => {
+    const t = useT();
     const currentDate = new Date();
 
     return (
@@ -30,15 +32,15 @@ const AboutModalV = ({ versionString, updaterChannel, onClose }: AboutModalVProp
                     <Logo />
                     <div className="text-[25px]">Wave Terminal</div>
                     <div className="leading-5">
-                        Open-Source AI-Integrated Terminal
+                        {t("chrome.aboutTagline1")}
                         <br />
-                        Built for Seamless Workflows
+                        {t("chrome.aboutTagline2")}
                     </div>
                 </div>
                 <div className="items-center gap-4 self-stretch w-full text-center">
-                    Client Version {versionString}
+                    {t("chrome.clientVersion", { version: versionString })}
                     <br />
-                    Update Channel: {updaterChannel}
+                    {t("chrome.updateChannel", { channel: updaterChannel })}
                 </div>
                 <div className="grid grid-cols-2 gap-[10px] self-stretch w-full">
                     <a
@@ -55,7 +57,8 @@ const AboutModalV = ({ versionString, updaterChannel, onClose }: AboutModalVProp
                         rel="noopener"
                         className="inline-flex items-center justify-center px-4 py-2 rounded border border-border hover:bg-hoverbg transition-colors duration-200"
                     >
-                        <i className="fa-sharp fa-light fa-globe mr-2"></i>Website
+                        <i className="fa-sharp fa-light fa-globe mr-2"></i>
+                        {t("chrome.website")}
                     </a>
                     <a
                         href="https://github.com/wavetermdev/waveterm/blob/main/ACKNOWLEDGEMENTS.md"
@@ -63,7 +66,8 @@ const AboutModalV = ({ versionString, updaterChannel, onClose }: AboutModalVProp
                         rel="noopener"
                         className="inline-flex items-center justify-center px-4 py-2 rounded border border-border hover:bg-hoverbg transition-colors duration-200"
                     >
-                        <i className="fa-sharp fa-light fa-book mr-2"></i>Open Source
+                        <i className="fa-sharp fa-light fa-book mr-2"></i>
+                        {t("chrome.openSource")}
                     </a>
                     <a
                         href="https://github.com/sponsors/wavetermdev"
@@ -71,7 +75,8 @@ const AboutModalV = ({ versionString, updaterChannel, onClose }: AboutModalVProp
                         rel="noopener"
                         className="inline-flex items-center justify-center px-4 py-2 rounded border border-border hover:bg-hoverbg transition-colors duration-200"
                     >
-                        <i className="fa-sharp fa-light fa-heart mr-2"></i>Sponsor
+                        <i className="fa-sharp fa-light fa-heart mr-2"></i>
+                        {t("chrome.sponsor")}
                     </a>
                 </div>
                 <div className="items-center gap-4 self-stretch w-full text-center">

@@ -2,8 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { renderToStaticMarkup } from "react-dom/server";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { VTab, VTabItem } from "./vtab";
+
+vi.mock("@/util/i18n", () => ({ t: (key: string) => key }));
+vi.mock("@/util/i18n-hooks", () => ({ useT: () => (key: string) => key }));
 
 const OriginalCss = globalThis.CSS;
 const HexColorRegex = /^#([\da-f]{3}|[\da-f]{4}|[\da-f]{6}|[\da-f]{8})$/i;

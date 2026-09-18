@@ -1,6 +1,7 @@
 // Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { useT } from "@/util/i18n-hooks";
 import { useCallback, useLayoutEffect, useRef, useState } from "react";
 import { FakeBlock } from "./onboarding-layout";
 import { FakeTermBlock } from "./onboarding-layout-term";
@@ -88,16 +89,17 @@ export const FakeCommand = ({ command, typeIntervalMs = 100, onComplete, childre
 };
 
 export const ViewShortcutsCommand = ({ isMac, onComplete }: { isMac: boolean; onComplete?: () => void }) => {
+    const t = useT();
     const modKey = isMac ? "⌘ Cmd" : "Alt";
-    const markdown = `### Keyboard Shortcuts
+    const markdown = `### ${t("onboarding.shortcuts.title")}
 
-**Switch Tabs**
-Press ${modKey} + Number (1-9) to quickly switch between tabs.
+**${t("onboarding.shortcuts.switchTabs")}**
+${t("onboarding.shortcuts.switchTabsDesc", { modKey })}
 
-**Navigate Blocks**
-Use Ctrl-Shift + Arrow Keys (←→↑↓) to move between blocks in the current tab.
+**${t("onboarding.shortcuts.navigateBlocks")}**
+${t("onboarding.shortcuts.navigateBlocksDesc")}
 
-Use Ctrl-Shift + Number (1-9) to focus a specific block by its position.`;
+${t("onboarding.shortcuts.focusBlockDesc")}`;
 
     return (
         <FakeCommand command="wsh view keyboard-shortcuts.md" onComplete={onComplete}>

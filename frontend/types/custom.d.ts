@@ -148,6 +148,7 @@ declare global {
         visible?: boolean;
         enabled?: boolean;
         sublabel?: string;
+        icon?: string; // data URL for menu item icon
     };
 
     type ContextMenuItem = {
@@ -160,6 +161,7 @@ declare global {
         visible?: boolean;
         enabled?: boolean;
         sublabel?: string;
+        icon?: string; // data URL for menu item icon
     };
 
     type KeyPressDecl = {

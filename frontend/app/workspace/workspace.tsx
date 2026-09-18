@@ -11,6 +11,7 @@ import { VTabBar } from "@/app/tab/vtabbar";
 import { Widgets } from "@/app/workspace/widgets";
 import { WorkspaceLayoutModel } from "@/app/workspace/workspace-layout-model";
 import { atoms, getApi, getSettingsKeyAtom } from "@/store/global";
+import { useT } from "@/util/i18n-hooks";
 import { isMacOS } from "@/util/platformutil";
 import { useAtomValue } from "jotai";
 import { memo, useEffect, useRef } from "react";
@@ -41,11 +42,13 @@ MacOSTabBarSpacer.displayName = "MacOSTabBarSpacer";
 
 const WorkspaceElem = memo(() => {
     const workspaceLayoutModel = WorkspaceLayoutModel.getInstance();
+    const t = useT();
     const tabId = useAtomValue(atoms.staticTabId);
     const ws = useAtomValue(atoms.workspace);
     const tabBarPosition = useAtomValue(getSettingsKeyAtom("app:tabbar")) ?? "top";
     const showLeftTabBar = tabBarPosition === "left";
     const aiPanelVisible = useAtomValue(workspaceLayoutModel.panelVisibleAtom);
+    const vtabCollapsed = useAtomValue(workspaceLayoutModel.vtabCollapsedAtom);
     const widgetsSidebarVisible = useAtomValue(workspaceLayoutModel.widgetsSidebarVisibleAtom);
     const windowWidth = window.innerWidth;
     const leftGroupInitialPct = workspaceLayoutModel.getLeftGroupInitialPercentage(windowWidth, showLeftTabBar);
@@ -102,9 +105,9 @@ const WorkspaceElem = memo(() => {
         return () => window.removeEventListener("focus", handleFocus);
     }, []);
 
-    const innerHandleVisible = showLeftTabBar && aiPanelVisible;
+    const innerHandleVisible = showLeftTabBar && !vtabCollapsed && aiPanelVisible;
     const innerHandleClass = `bg-transparent hover:bg-zinc-500/20 transition-colors ${innerHandleVisible ? "w-0.5" : "w-0 pointer-events-none"}`;
-    const outerHandleVisible = showLeftTabBar || aiPanelVisible;
+    const outerHandleVisible = (showLeftTabBar && !vtabCollapsed) || aiPanelVisible;
     const outerHandleClass = `bg-transparent hover:bg-zinc-500/20 transition-colors ${outerHandleVisible ? "w-0.5" : "w-0 pointer-events-none"}`;
 
     return (
@@ -132,7 +135,12 @@ const WorkspaceElem = memo(() => {
                                     className="overflow-hidden"
                                 >
                                     <div ref={vtabPanelWrapperRef} className="w-full h-full">
-                                        {showLeftTabBar && <VTabBar workspace={ws} />}
+                                        {showLeftTabBar && (
+                                            <VTabBar
+                                                workspace={ws}
+                                                onCollapse={() => workspaceLayoutModel.setVTabCollapsed(true)}
+                                            />
+                                        )}
                                     </div>
                                 </Panel>
                                 <PanelResizeHandle className={innerHandleClass} />
@@ -154,14 +162,35 @@ const WorkspaceElem = memo(() => {
                         </Panel>
                         <PanelResizeHandle className={outerHandleClass} />
                         <Panel order={1} defaultSize={100 - leftGroupInitialPct}>
-                            {tabId === "" ? (
-                                <CenteredDiv>No Active Tab</CenteredDiv>
-                            ) : (
-                                <div className="flex flex-row h-full">
-                                    <TabContent key={tabId} tabId={tabId} noTopPadding={showLeftTabBar && isMacOS()} />
-                                    {widgetsSidebarVisible && <Widgets />}
+                            <div className="flex flex-row h-full">
+                                {showLeftTabBar && vtabCollapsed && (
+                                    <div className="flex h-full w-6 shrink-0 flex-col items-center border-r border-border bg-panel pt-2">
+                                        <button
+                                            type="button"
+                                            className="flex h-6 w-5 cursor-pointer items-center justify-center rounded text-secondary transition-colors hover:bg-white/10 hover:text-primary"
+                                            onClick={() => workspaceLayoutModel.setVTabCollapsed(false)}
+                                            aria-label={t("vtab.showTabBar")}
+                                            title={t("vtab.showTabBar")}
+                                        >
+                                            <i className="fa-solid fa-angles-right text-[10px]" />
+                                        </button>
+                                    </div>
+                                )}
+                                <div className="flex min-w-0 flex-1 flex-row h-full">
+                                    {tabId === "" ? (
+                                        <CenteredDiv>{t("chrome.noActiveTab")}</CenteredDiv>
+                                    ) : (
+                                        <>
+                                            <TabContent
+                                                key={tabId}
+                                                tabId={tabId}
+                                                noTopPadding={showLeftTabBar && isMacOS()}
+                                            />
+                                            {widgetsSidebarVisible && <Widgets />}
+                                        </>
+                                    )}
                                 </div>
-                            )}
+                            </div>
                         </Panel>
                     </PanelGroup>
                     <ModalsRenderer />

@@ -7,6 +7,8 @@ import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { WebView, WebViewModel } from "@/app/view/webview/webview";
 import * as services from "@/store/services";
+import { t } from "@/util/i18n";
+import { useT } from "@/util/i18n-hooks";
 import * as jotai from "jotai";
 import { memo, useEffect } from "react";
 
@@ -199,15 +201,15 @@ class TsunamiViewModel extends WebViewModel {
         // Add tsunami-specific menu items at the beginning
         const tsunamiItems: ContextMenuItem[] = [
             {
-                label: "Stop WaveApp",
+                label: t("view.stopWaveApp"),
                 click: () => this.destroyController(),
             },
             {
-                label: "Restart WaveApp",
+                label: t("view.restartWaveApp"),
                 click: () => this.restartController(),
             },
             {
-                label: "Restart WaveApp and Force Rebuild",
+                label: t("view.restartWaveAppForceRebuild"),
                 click: () => this.restartAndForceRebuild(),
             },
             {
@@ -218,7 +220,7 @@ class TsunamiViewModel extends WebViewModel {
         if (showRemixOption) {
             tsunamiItems.push(
                 {
-                    label: "Remix WaveApp in Builder",
+                    label: t("view.remixWaveApp"),
                     click: () => this.remixInBuilder(),
                 },
                 {
@@ -233,6 +235,7 @@ class TsunamiViewModel extends WebViewModel {
 
 const TsunamiView = memo((props: ViewComponentProps<TsunamiViewModel>) => {
     const { model } = props;
+    const t = useT();
     const shellProcFullStatus = jotai.useAtomValue(model.shellProcFullStatus);
     const blockData = jotai.useAtomValue(model.blockAtom);
     const isRestarting = jotai.useAtomValue(model.isRestarting);
@@ -249,10 +252,10 @@ const TsunamiView = memo((props: ViewComponentProps<TsunamiViewModel>) => {
     // Check for configuration errors
     const errors = [];
     if (!appPath && !appId) {
-        errors.push("App path or app ID must be set (tsunami:apppath or tsunami:appid)");
+        errors.push(t("view.appPathOrIdRequired"));
     }
     if (controller !== "tsunami") {
-        errors.push("Invalid controller (must be 'tsunami')");
+        errors.push(t("view.invalidController"));
     }
 
     // Show errors if any exist
@@ -298,10 +301,10 @@ const TsunamiView = memo((props: ViewComponentProps<TsunamiViewModel>) => {
                     onClick={() => model.forceRestartController()}
                     className="px-4 py-2 bg-accent-color text-primary-text-color rounded hover:bg-accent-color/80 transition-colors cursor-pointer"
                 >
-                    Start
+                    {t("view.start")}
                 </button>
             )}
-            {isRestarting && <div className="text-sm text-success-color">Starting...</div>}
+            {isRestarting && <div className="text-sm text-success-color">{t("view.starting")}</div>}
         </div>
     );
 });

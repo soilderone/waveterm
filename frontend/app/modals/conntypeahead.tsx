@@ -16,6 +16,8 @@ import { globalRefocusWithTimeout } from "@/app/store/keymodel";
 import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { NodeModel } from "@/layout/index";
+import { t } from "@/util/i18n";
+import { useT } from "@/util/i18n-hooks";
 import * as keyutil from "@/util/keyutil";
 import * as util from "@/util/util";
 import * as jotai from "jotai";
@@ -126,7 +128,7 @@ function getReconnectItem(
         status: "connected",
         icon: "arrow-right-arrow-left",
         iconColor: "var(--grey-text-color)",
-        label: `Reconnect to ${connStatus.connection}`,
+        label: t("chrome.reconnectTo", { conn: connStatus.connection }),
         value: "",
         onSelect: async (_: string) => {
             globalStore.set(changeConnModalAtom, false);
@@ -173,7 +175,7 @@ function getLocalSuggestions(
         return null;
     }
     const localSuggestions: SuggestionConnectionScope = {
-        headerText: "Local",
+        headerText: t("chrome.localScope"),
         items: sortedSuggestionItems,
     };
     return localSuggestions;
@@ -194,7 +196,7 @@ function getRemoteSuggestions(
         return null;
     }
     const remoteSuggestions: SuggestionConnectionScope = {
-        headerText: "Remote",
+        headerText: t("chrome.remoteScope"),
         items: sortedSuggestionItems,
     };
     return remoteSuggestions;
@@ -216,7 +218,7 @@ function getDisconnectItem(
         status: "connected",
         icon: "xmark",
         iconColor: "var(--grey-text-color)",
-        label: `Disconnect ${connStatus.connection}`,
+        label: t("chrome.disconnectFrom", { conn: connStatus.connection }),
         value: "",
         onSelect: async (_: string) => {
             globalStore.set(changeConnModalAtom, false);
@@ -238,8 +240,8 @@ function getConnectionsEditItem(
         status: "disconnected",
         icon: "gear",
         iconColor: "var(--grey-text-color)",
-        value: "Edit Connections",
-        label: "Edit Connections",
+        value: t("chrome.editConnections"),
+        label: t("chrome.editConnections"),
         onSelect: () => {
             util.fireAndForget(async () => {
                 globalStore.set(changeConnModalAtom, false);
@@ -274,7 +276,7 @@ function getNewConnectionSuggestionItem(
         status: "connected",
         icon: "plus",
         iconColor: "var(--grey-text-color)",
-        label: `${connSelected} (New Connection)`,
+        label: t("chrome.newConnection", { name: connSelected }),
         value: "",
         onSelect: (_: string) => {
             changeConnection(connSelected);
@@ -300,6 +302,7 @@ const ChangeConnectionBlockModal = React.memo(
         changeConnModalAtom: jotai.PrimitiveAtom<boolean>;
         nodeModel: NodeModel;
     }) => {
+        const t = useT();
         const [connSelected, setConnSelected] = React.useState("");
         const changeConnModalOpen = jotai.useAtomValue(changeConnModalAtom);
         const [blockData] = WOS.useWaveObjectValue<Block>(WOS.makeORef("block", blockId));
@@ -486,7 +489,7 @@ const ChangeConnectionBlockModal = React.memo(
                 onKeyDown={(e) => keyutil.keydownWrapper(handleTypeAheadKeyDown)(e)}
                 onChange={(current: string) => setConnSelected(current)}
                 value={connSelected}
-                label="Connect to (username@host)..."
+                label={t("chrome.connectToPlaceholder")}
                 onClickBackdrop={() => globalStore.set(changeConnModalAtom, false)}
             />
         );

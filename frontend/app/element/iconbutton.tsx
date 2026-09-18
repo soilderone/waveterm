@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { useLongClick } from "@/app/hook/useLongClick";
+import { useT } from "@/util/i18n-hooks";
 import { makeIconClass } from "@/util/util";
 import clsx from "clsx";
 import { atom, useAtom } from "jotai";
@@ -41,11 +42,12 @@ type ToggleIconButtonProps = { decl: ToggleIconButtonDecl; className?: string };
 
 export const ToggleIconButton = memo(
     forwardRef<HTMLButtonElement, ToggleIconButtonProps>(({ decl, className }, ref) => {
+        const t = useT();
         const activeAtom = useMemo(() => decl.active ?? atom(false), [decl.active]);
         const [active, setActive] = useAtom(activeAtom);
         ref = ref ?? useRef<HTMLButtonElement>(null);
         const spin = decl.iconSpin ?? false;
-        const title = `${decl.title}${active ? " (Active)" : ""}`;
+        const title = `${decl.title}${active ? t("chrome.activeSuffix") : ""}`;
         const disabled = decl.disabled ?? false;
         return (
             <button

@@ -3,6 +3,7 @@
 
 import { CopyButton } from "@/app/element/copybutton";
 import { IconButton } from "@/app/element/iconbutton";
+import { useT } from "@/util/i18n-hooks";
 import { cn, useAtomValueSafe } from "@/util/util";
 import type { Atom } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -125,6 +126,7 @@ type CodeBlockProps = {
 };
 
 const CodeBlock = ({ children, onClickExecute, codeBlockMaxWidthAtom }: CodeBlockProps) => {
+    const t = useT();
     const codeBlockMaxWidth = useAtomValueSafe(codeBlockMaxWidthAtom);
     const getLanguage = (children: any): string => {
         if (children?.props?.className) {
@@ -161,7 +163,7 @@ const CodeBlock = ({ children, onClickExecute, codeBlockMaxWidthAtom }: CodeBloc
             <div className="flex items-center justify-between pl-3 pr-2 pt-2 pb-1.5">
                 <span className="text-[11px] text-white/50">{language}</span>
                 <div className="flex items-center gap-2">
-                    <CopyButton onClick={handleCopy} title="Copy" />
+                    <CopyButton onClick={handleCopy} title={t("chrome.copy")} />
                     {onClickExecute && (
                         <IconButton
                             decl={{
@@ -212,6 +214,7 @@ export const WaveStreamdown = ({
     onClickExecute,
     codeBlockMaxWidthAtom,
 }: WaveStreamdownProps) => {
+    const t = useT();
     const components = useMemo(
         () => ({
             code: Code,
@@ -280,7 +283,7 @@ export const WaveStreamdown = ({
 
                 // Extract summary text and content
                 const summary = childArray.find((c) => c?.props?.node?.tagName === "summary");
-                const summaryText = summary?.props?.children || "Details";
+                const summaryText = summary?.props?.children || t("chrome.details");
                 const content = childArray.filter((c) => c?.props?.node?.tagName !== "summary");
 
                 return (
@@ -298,7 +301,7 @@ export const WaveStreamdown = ({
             ),
             em: (props: React.HTMLAttributes<HTMLElement>) => <em {...props} className="italic text-secondary" />,
         }),
-        [onClickExecute, codeBlockMaxWidthAtom]
+        [onClickExecute, codeBlockMaxWidthAtom, t]
     );
 
     return (

@@ -1,6 +1,7 @@
 // Copyright 2025, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { useT } from "@/util/i18n-hooks";
 import { PLATFORM, PlatformMacOS } from "@/util/platformutil";
 import { FloatingPortal, VirtualElement, flip, offset, shift, useFloating } from "@floating-ui/react";
 import * as React from "react";
@@ -91,6 +92,7 @@ interface TermLinkTooltipProps {
  * prevents unnecessary re-renders of the parent TerminalView.
  */
 export const TermLinkTooltip = React.memo(function TermLinkTooltip({ termWrap }: TermLinkTooltipProps) {
+    const t = useT();
     const [mousePos, setMousePos] = React.useState<{ x: number; y: number } | null>(null);
     const timeoutRef = React.useRef<number | null>(null);
     const maxTimeoutRef = React.useRef<number | null>(null);
@@ -130,5 +132,5 @@ export const TermLinkTooltip = React.memo(function TermLinkTooltip({ termWrap }:
         };
     }, [termWrap]);
 
-    return <TermTooltip mousePos={mousePos} content={<span>{modKey}-click to open link</span>} />;
+    return <TermTooltip mousePos={mousePos} content={<span>{t("term.clickToOpenLink", { modKey })}</span>} />;
 });

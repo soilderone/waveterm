@@ -5,10 +5,12 @@ import { Tooltip } from "@/app/element/tooltip";
 import { atoms, getSettingsKeyAtom } from "@/app/store/global";
 import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
+import { t } from "@/util/i18n";
+import { useT } from "@/util/i18n-hooks";
 import { cn, fireAndForget, makeIconClass } from "@/util/util";
 import { useAtomValue } from "jotai";
 import { memo, useRef, useState } from "react";
-import { getFilteredAIModeConfigs, getModeDisplayName } from "./ai-utils";
+import { getFilteredAIModeConfigs, getModeDisplayDescription, getModeDisplayName } from "./ai-utils";
 import { WaveAIModel } from "./waveai-model";
 
 interface AIModeMenuItemProps {
@@ -22,6 +24,7 @@ interface AIModeMenuItemProps {
 }
 
 const AIModeMenuItem = memo(({ config, isSelected, isDisabled, isPremiumDisabled, onClick, isFirst, isLast }: AIModeMenuItemProps) => {
+    const t = useT();
     return (
         <button
             key={config.mode}
@@ -37,7 +40,7 @@ const AIModeMenuItem = memo(({ config, isSelected, isDisabled, isPremiumDisabled
                 <i className={makeIconClass(config["display:icon"] || "sparkles", false)}></i>
                 <span className={cn("text-sm", isSelected && "font-bold")}>
                     {getModeDisplayName(config)}
-                    {isPremiumDisabled && " (premium)"}
+                    {isPremiumDisabled && t("ai.premiumSuffix")}
                 </span>
                 {isSelected && <i className="fa fa-check ml-auto"></i>}
             </div>
@@ -46,7 +49,7 @@ const AIModeMenuItem = memo(({ config, isSelected, isDisabled, isPremiumDisabled
                     className={cn("text-xs pl-5", isDisabled ? "text-gray-500" : "text-muted")}
                     style={{ whiteSpace: "pre-line" }}
                 >
-                    {config["display:description"]}
+                    {getModeDisplayDescription(config)}
                 </div>
             )}
         </button>
@@ -72,7 +75,7 @@ function computeCompatibleSections(
     const allConfigs = [...waveProviderConfigs, ...otherProviderConfigs];
 
     if (!currentConfig) {
-        return [{ sectionName: "Incompatible Modes", configs: allConfigs, isIncompatible: true }];
+        return [{ sectionName: t("ai.incompatibleModes"), configs: allConfigs, isIncompatible: true }];
     }
 
     const currentSwitchCompat = currentConfig["ai:switchcompat"] || [];
@@ -101,11 +104,11 @@ function computeCompatibleSections(
     }
 
     const sections: ConfigSection[] = [];
-    const compatibleSectionName = compatibleConfigs.length === 1 ? "Current" : "Compatible Modes";
+    const compatibleSectionName = compatibleConfigs.length === 1 ? t("ai.currentMode") : t("ai.compatibleModes");
     sections.push({ sectionName: compatibleSectionName, configs: compatibleConfigs });
 
     if (incompatibleConfigs.length > 0) {
-        sections.push({ sectionName: "Incompatible Modes", configs: incompatibleConfigs, isIncompatible: true });
+        sections.push({ sectionName: t("ai.incompatibleModes"), configs: incompatibleConfigs, isIncompatible: true });
     }
 
     return sections;
@@ -126,7 +129,7 @@ function computeWaveCloudSections(
         });
     }
     if (otherProviderConfigs.length > 0) {
-        sections.push({ sectionName: "Custom", configs: otherProviderConfigs });
+        sections.push({ sectionName: t("ai.custom"), configs: otherProviderConfigs });
     }
 
     return sections;
@@ -137,6 +140,7 @@ interface AIModeDropdownProps {
 }
 
 export const AIModeDropdown = memo(({ compatibilityMode = false }: AIModeDropdownProps) => {
+    const t = useT();
     const model = WaveAIModel.getInstance();
     const currentMode = useAtomValue(model.currentAIMode);
     const aiModeConfigs = useAtomValue(model.aiModeConfigs);
@@ -173,7 +177,7 @@ export const AIModeDropdown = memo(({ compatibilityMode = false }: AIModeDropdow
     };
 
     const displayConfig = aiModeConfigs[currentMode];
-    const displayName = displayConfig ? getModeDisplayName(displayConfig) : `Invalid (${currentMode})`;
+    const displayName = displayConfig ? getModeDisplayName(displayConfig) : t("ai.invalidMode", { mode: currentMode });
     const displayIcon = displayConfig ? displayConfig["display:icon"] || "sparkles" : "question";
     const resolvedConfig = waveaiModeConfigs[currentMode];
     const hasToolsSupport = resolvedConfig && resolvedConfig["ai:capabilities"]?.includes("tools");
@@ -218,7 +222,7 @@ export const AIModeDropdown = memo(({ compatibilityMode = false }: AIModeDropdow
                     "group flex items-center gap-1.5 px-2 py-1 text-xs text-gray-300 hover:text-white rounded transition-colors cursor-pointer border border-gray-600/50",
                     isOpen ? "bg-zinc-700" : "bg-zinc-800/50 hover:bg-zinc-700"
                 )}
-                title={`AI Mode: ${displayName}`}
+                title={t("ai.aiModeTitle", { name: displayName })}
             >
                 <i className={cn(makeIconClass(displayIcon, false), "text-[10px]")}></i>
                 <span className={`text-[11px]`}>{displayName}</span>
@@ -229,16 +233,14 @@ export const AIModeDropdown = memo(({ compatibilityMode = false }: AIModeDropdow
                 <Tooltip
                     content={
                         <div className="max-w-xs">
-                            Warning: This custom mode was configured without the "tools" capability in the
-                            "ai:capabilities" array. Without tool support, Wave AI will not be able to interact with
-                            widgets or files.
+                            {t("ai.noToolsWarning")}
                         </div>
                     }
                     placement="bottom"
                 >
                     <div className="flex items-center gap-1 text-[10px] text-yellow-600 mt-1 ml-1 cursor-default">
                         <i className="fa fa-triangle-exclamation"></i>
-                        <span>No Tools Support</span>
+                        <span>{t("ai.noToolsSupport")}</span>
                     </div>
                 </Tooltip>
             )}
@@ -266,7 +268,7 @@ export const AIModeDropdown = memo(({ compatibilityMode = false }: AIModeDropdow
                                             </div>
                                             {section.isIncompatible && (
                                                 <div className="text-center text-[11px] text-red-300 pb-1">
-                                                    (Start a New Chat to Switch)
+                                                    {t("ai.startNewChatToSwitch")}
                                                 </div>
                                             )}
                                             {section.noTelemetry && (
@@ -274,7 +276,7 @@ export const AIModeDropdown = memo(({ compatibilityMode = false }: AIModeDropdow
                                                     onClick={handleEnableTelemetry}
                                                     className="text-center text-[11px] text-green-300 hover:text-green-200 pb-1 cursor-pointer transition-colors w-full"
                                                 >
-                                                    (enable telemetry to unlock Wave AI Cloud)
+                                                    {t("ai.enableTelemetryUnlock")}
                                                 </button>
                                             )}
                                         </>
@@ -310,14 +312,14 @@ export const AIModeDropdown = memo(({ compatibilityMode = false }: AIModeDropdow
                             className="w-full flex items-center gap-2 px-3 pt-1 pb-1 text-gray-300 hover:bg-zinc-700 cursor-pointer transition-colors text-left"
                         >
                             <i className={makeIconClass("plus", false)}></i>
-                            <span className="text-sm">New Chat</span>
+                            <span className="text-sm">{t("ai.newChat")}</span>
                         </button>
                         <button
                             onClick={handleConfigureClick}
                             className="w-full flex items-center gap-2 px-3 pt-1 pb-2 text-gray-300 hover:bg-zinc-700 cursor-pointer transition-colors text-left"
                         >
                             <i className={makeIconClass("gear", false)}></i>
-                            <span className="text-sm">Configure Modes</span>
+                            <span className="text-sm">{t("ai.configureModes")}</span>
                         </button>
                     </div>
                 </>

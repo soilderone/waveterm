@@ -6,6 +6,7 @@ import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
 import { WorkspaceLayoutModel } from "@/app/workspace/workspace-layout-model";
 import { deleteLayoutModelForTab } from "@/layout/index";
+import { useT } from "@/util/i18n-hooks";
 import { isMacOSTahoeOrLater } from "@/util/platformutil";
 import { fireAndForget } from "@/util/util";
 import { useAtomValue } from "jotai";
@@ -47,6 +48,7 @@ interface TabBarProps {
 
 const WaveAIButton = memo(({ divRef }: { divRef?: React.RefObject<HTMLDivElement> }) => {
     const env = useWaveEnv<TabBarEnv>();
+    const t = useT();
     const aiPanelOpen = useAtomValue(WorkspaceLayoutModel.getInstance().panelVisibleAtom);
     const hideAiButton = useAtomValue(env.getSettingsKeyAtom("app:hideaibutton"));
 
@@ -61,7 +63,7 @@ const WaveAIButton = memo(({ divRef }: { divRef?: React.RefObject<HTMLDivElement
 
     return (
         <Tooltip
-            content="Toggle Wave AI Panel"
+            content={t("chrome.toggleAiPanel")}
             placement="bottom"
             hideOnClick
             divClassName={`flex h-[22px] px-3.5 justify-end mb-1 items-center rounded-md mr-1 box-border cursor-pointer bg-hover hover:bg-hoverbg transition-colors text-[12px] ${aiPanelOpen ? "text-accent" : "text-secondary"}`}
@@ -96,6 +98,7 @@ function strArrayIsEqual(a: string[], b: string[]) {
 
 const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
     const env = useWaveEnv<TabBarEnv>();
+    const t = useT();
     const [tabIds, setTabIds] = useState<string[]>([]);
     const [dragStartPositions, setDragStartPositions] = useState<number[]>([]);
     const [draggingTab, setDraggingTab] = useState<string>();
@@ -615,7 +618,7 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
             )}
             <WaveAIButton divRef={waveAIButtonRef} />
             <Tooltip
-                content="Workspace Switcher"
+                content={t("chrome.workspaceSwitcher")}
                 placement="bottom"
                 hideOnClick
                 divRef={workspaceSwitcherRef}
@@ -657,7 +660,7 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
             </div>
             <button
                 ref={addBtnRef}
-                title="Add Tab"
+                title={t("chrome.addTab")}
                 className={`flex h-[22px] px-2 mb-1 mx-1 items-center rounded-md box-border cursor-pointer hover:bg-hoverbg transition-colors text-[12px] text-secondary hover:text-primary${noTabs ? " invisible" : ""}`}
                 style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={handleAddTab}

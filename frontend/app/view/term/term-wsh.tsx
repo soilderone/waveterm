@@ -8,6 +8,7 @@ import { RpcApi } from "@/app/store/wshclientapi";
 import { makeFeBlockRouteId } from "@/app/store/wshrouter";
 import { TermViewModel } from "@/app/view/term/term-model";
 import { bufferLinesToText } from "@/app/view/term/termutil";
+import { t } from "@/util/i18n";
 import { isBlank } from "@/util/util";
 import debug from "debug";
 
@@ -124,7 +125,7 @@ export class TermWshClient extends WshClient {
 
         if (data.lastcommand) {
             if (globalStore.get(termWrap.shellIntegrationStatusAtom) == null) {
-                throw new Error("Cannot get last command data without shell integration");
+                throw new Error(t("term.noShellIntegrationError"));
             }
 
             let startBufferIndex = 0;

@@ -65,6 +65,21 @@ export function isIconValid(icon: string): boolean {
     return icon.match(iconRegex) != null;
 }
 
+export function getMimeTypeIcon(fullConfig: FullConfigType, mimeType: string): string {
+    while (mimeType.length > 0) {
+        const icon = fullConfig.mimetypes?.[mimeType]?.icon ?? null;
+        if (isIconValid(icon)) {
+            return `fa fa-solid fa-${icon} fa-fw`;
+        }
+        mimeType = mimeType.slice(0, -1);
+    }
+    return "fa fa-solid fa-file fa-fw";
+}
+
+export function getMimeTypeColor(fullConfig: FullConfigType, mimeType: string): string {
+    return fullConfig.mimetypes?.[mimeType]?.color ?? "inherit";
+}
+
 export function getSortIcon(sortType: string | boolean): React.ReactNode {
     switch (sortType) {
         case "asc":
@@ -81,12 +96,40 @@ export function cleanMimetype(input: string): string {
     return truncated.trim();
 }
 
+export type TreeSortType = {
+    field: string;
+    desc: boolean;
+};
+
+export function compareTreeEntries(a: FileInfo, b: FileInfo, sort: TreeSortType): number {
+    const dirCompare = Number(!!b.isdir) - Number(!!a.isdir);
+    if (dirCompare != 0) {
+        return dirCompare;
+    }
+    const dirMul = sort.desc ? -1 : 1;
+    if (sort.field == "modtime") {
+        return ((a.modtime ?? 0) - (b.modtime ?? 0)) * dirMul || a.name.localeCompare(b.name);
+    }
+    if (sort.field == "size") {
+        return ((a.size ?? 0) - (b.size ?? 0)) * dirMul || a.name.localeCompare(b.name);
+    }
+    if (sort.field == "modestr") {
+        return (a.modestr ?? "").localeCompare(b.modestr ?? "") * dirMul || a.name.localeCompare(b.name);
+    }
+    if (sort.field == "mimetype") {
+        const typeCompare = cleanMimetype(a.mimetype ?? "").localeCompare(cleanMimetype(b.mimetype ?? ""));
+        return typeCompare * dirMul || a.name.localeCompare(b.name);
+    }
+    return a.name.localeCompare(b.name) * dirMul;
+}
+
 export function handleRename(
     model: PreviewModel,
     path: string,
     newPath: string,
     isDir: boolean,
-    setErrorMsg: (msg: ErrorMsg) => void
+    setErrorMsg: (msg: ErrorMsg) => void,
+    refresh?: () => void
 ) {
     fireAndForget(async () => {
         try {
@@ -107,7 +150,11 @@ export function handleRename(
             };
             setErrorMsg(errorMsg);
         }
-        model.refreshCallback();
+        if (refresh) {
+            refresh();
+        } else {
+            model.refreshCallback?.();
+        }
     });
 }
 
@@ -115,7 +162,8 @@ export function handleFileDelete(
     model: PreviewModel,
     path: string,
     recursive: boolean,
-    setErrorMsg: (msg: ErrorMsg) => void
+    setErrorMsg: (msg: ErrorMsg) => void,
+    refresh?: () => void
 ) {
     fireAndForget(async () => {
         const formattedPath = await model.formatRemoteUri(path, globalStore.get);
@@ -136,7 +184,7 @@ export function handleFileDelete(
                     buttons: [
                         {
                             text: "Delete Recursively",
-                            onClick: () => handleFileDelete(model, path, true, setErrorMsg),
+                            onClick: () => handleFileDelete(model, path, true, setErrorMsg, refresh),
                         },
                     ],
                 };
@@ -148,7 +196,11 @@ export function handleFileDelete(
             }
             setErrorMsg(errorMsg);
         }
-        model.refreshCallback();
+        if (refresh) {
+            refresh();
+        } else {
+            model.refreshCallback?.();
+        }
     });
 }
 

@@ -24,6 +24,7 @@ import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
 import { IconButton } from "@/element/iconbutton";
 import { NodeModel } from "@/layout/index";
+import { t } from "@/util/i18n";
 import * as util from "@/util/util";
 import { cn, makeIconClass } from "@/util/util";
 import * as jotai from "jotai";
@@ -43,14 +44,14 @@ function handleHeaderContextMenu(
     const magnified = globalStore.get(nodeModel.isMagnified);
     const menu: ContextMenuItem[] = [
         {
-            label: magnified ? "Un-Magnify Block" : "Magnify Block",
+            label: magnified ? t("blockMenu.unMagnifyBlock") : t("blockMenu.magnifyBlock"),
             click: () => {
                 nodeModel.toggleMagnify();
             },
         },
         { type: "separator" },
         {
-            label: "Copy BlockId",
+            label: t("blockMenu.copyBlockId"),
             click: () => {
                 navigator.clipboard.writeText(blockId);
             },
@@ -61,7 +62,7 @@ function handleHeaderContextMenu(
     menu.push(
         { type: "separator" },
         {
-            label: "Close Block",
+            label: t("blockMenu.closeBlock"),
             click: () => uxCloseBlock(blockId),
         }
     );
@@ -102,7 +103,7 @@ const HeaderTextElems = React.memo(({ viewModel, blockId, preview, error }: Head
             <div className="iconbutton disabled" key="controller-status" onClick={copyHeaderErr}>
                 <i
                     className="fa-sharp fa-solid fa-triangle-exclamation"
-                    title={"Error Rendering View Header: " + error.message}
+                    title={t("blockMenu.headerError", { message: error.message })}
                 />
             </div>
         );

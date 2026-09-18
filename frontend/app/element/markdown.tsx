@@ -10,6 +10,7 @@ import {
     transformBlocks,
 } from "@/app/element/markdown-util";
 import remarkMermaidToTag from "@/app/element/remark-mermaid-to-tag";
+import { useT } from "@/util/i18n-hooks";
 import { boundNumber, useAtomValueSafe, cn } from "@/util/util";
 import clsx from "clsx";
 import { Atom } from "jotai";
@@ -69,6 +70,7 @@ const Heading = ({ props, hnum }: { props: React.HTMLAttributes<HTMLHeadingEleme
 };
 
 const Mermaid = ({ chart }: { chart: string }) => {
+    const t = useT();
     const ref = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -97,7 +99,7 @@ const Mermaid = ({ chart }: { chart: string }) => {
                 setIsLoading(false);
             } catch (err) {
                 console.error("Error rendering mermaid diagram:", err);
-                setError(`Failed to render diagram: ${err.message || err}`);
+                setError(t("chrome.failedRenderDiagram", { error: err.message || err }));
                 setIsLoading(false);
             }
         };
@@ -109,10 +111,10 @@ const Mermaid = ({ chart }: { chart: string }) => {
         if (!ref.current) return;
 
         if (error) {
-            ref.current.textContent = `Error: ${error}`;
+            ref.current.textContent = t("chrome.diagramError", { error });
             ref.current.className = "mermaid error";
         } else if (isLoading) {
-            ref.current.textContent = "Loading diagram...";
+            ref.current.textContent = t("chrome.loadingDiagram");
             ref.current.className = "mermaid";
         } else {
             ref.current.className = "mermaid";
@@ -136,6 +138,7 @@ type CodeBlockProps = {
 };
 
 const CodeBlock = ({ children, onClickExecute }: CodeBlockProps) => {
+    const t = useT();
     const getTextContent = (children: any): string => {
         if (typeof children === "string") {
             return children;
@@ -166,7 +169,7 @@ const CodeBlock = ({ children, onClickExecute }: CodeBlockProps) => {
         <pre className="codeblock">
             {children}
             <div className="codeblock-actions">
-                <CopyButton onClick={handleCopy} title="Copy" />
+                <CopyButton onClick={handleCopy} title={t("chrome.copy")} />
                 {onClickExecute && (
                     <IconButton
                         decl={{
@@ -320,6 +323,7 @@ const Markdown = ({
     rehype = true,
     onClickExecute,
 }: MarkdownProps) => {
+    const t = useT();
     const textAtomValue = useAtomValueSafe<string>(textAtom);
     const tocRef = useRef<TocItem[]>([]);
     const showToc = useAtomValueSafe(showTocAtom) ?? false;
@@ -330,7 +334,7 @@ const Markdown = ({
     const [idPrefix] = useState<string>(crypto.randomUUID());
 
     text = textAtomValue ?? text ?? "";
-    const transformedOutput = transformBlocks(text);
+    const transformedOutput = useMemo(() => transformBlocks(text), [text]);
     const transformedText = transformedOutput.content;
     const contentBlocksMap = transformedOutput.blocks;
 
@@ -347,42 +351,47 @@ const Markdown = ({
         }
     }, [focusedHeading]);
 
-    const markdownComponents: Partial<Components> = {
-        a: (props: React.HTMLAttributes<HTMLAnchorElement>) => (
-            <Link props={props} setFocusedHeading={setFocusedHeading} />
-        ),
-        p: (props: React.HTMLAttributes<HTMLParagraphElement>) => <div className="paragraph" {...props} />,
-        h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={1} />,
-        h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={2} />,
-        h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={3} />,
-        h4: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={4} />,
-        h5: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={5} />,
-        h6: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={6} />,
-        img: (props: React.HTMLAttributes<HTMLImageElement>) => <MarkdownImg props={props} resolveOpts={resolveOpts} />,
-        source: (props: React.HTMLAttributes<HTMLSourceElement>) => (
-            <MarkdownSource props={props} resolveOpts={resolveOpts} />
-        ),
-        code: Code,
-        pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
-            <CodeBlock children={props.children} onClickExecute={onClickExecute} />
-        ),
-    };
-    markdownComponents["waveblock"] = (props: any) => <WaveBlock {...props} blockmap={contentBlocksMap} />;
-    markdownComponents["mermaidblock"] = (props: any) => {
-        const getTextContent = (children: any): string => {
-            if (typeof children === "string") {
-                return children;
-            } else if (Array.isArray(children)) {
-                return children.map(getTextContent).join("");
-            } else if (children && typeof children === "object" && children.props && children.props.children) {
-                return getTextContent(children.props.children);
-            }
-            return String(children || "");
+    const markdownComponents: Partial<Components> = useMemo(() => {
+        const components: Partial<Components> = {
+            a: (props: React.HTMLAttributes<HTMLAnchorElement>) => (
+                <Link props={props} setFocusedHeading={setFocusedHeading} />
+            ),
+            p: (props: React.HTMLAttributes<HTMLParagraphElement>) => <div className="paragraph" {...props} />,
+            h1: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={1} />,
+            h2: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={2} />,
+            h3: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={3} />,
+            h4: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={4} />,
+            h5: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={5} />,
+            h6: (props: React.HTMLAttributes<HTMLHeadingElement>) => <Heading props={props} hnum={6} />,
+            img: (props: React.HTMLAttributes<HTMLImageElement>) => (
+                <MarkdownImg props={props} resolveOpts={resolveOpts} />
+            ),
+            source: (props: React.HTMLAttributes<HTMLSourceElement>) => (
+                <MarkdownSource props={props} resolveOpts={resolveOpts} />
+            ),
+            code: Code,
+            pre: (props: React.HTMLAttributes<HTMLPreElement>) => (
+                <CodeBlock children={props.children} onClickExecute={onClickExecute} />
+            ),
         };
+        components["waveblock"] = (props: any) => <WaveBlock {...props} blockmap={contentBlocksMap} />;
+        components["mermaidblock"] = (props: any) => {
+            const getTextContent = (children: any): string => {
+                if (typeof children === "string") {
+                    return children;
+                } else if (Array.isArray(children)) {
+                    return children.map(getTextContent).join("");
+                } else if (children && typeof children === "object" && children.props && children.props.children) {
+                    return getTextContent(children.props.children);
+                }
+                return String(children || "");
+            };
 
-        const chartText = getTextContent(props.children);
-        return <Mermaid chart={chartText} />;
-    };
+            const chartText = getTextContent(props.children);
+            return <Mermaid chart={chartText} />;
+        };
+        return components;
+    }, [resolveOpts, contentBlocksMap, onClickExecute]);
 
     const toc = useMemo(() => {
         if (showToc) {
@@ -405,16 +414,18 @@ const Markdown = ({
                         className="toc-item toc-empty text-secondary"
                         style={{ "--indent-factor": 2 } as React.CSSProperties}
                     >
-                        No sub-headings found
+                        {t("chrome.noSubHeadings")}
                     </div>
                 );
             }
         }
     }, [showToc, tocRef]);
 
-    let rehypePlugins = null;
-    if (rehype) {
-        rehypePlugins = [
+    const rehypePlugins = useMemo(() => {
+        if (!rehype) {
+            return null;
+        }
+        return [
             rehypeRaw,
             rehypeHighlight,
             () =>
@@ -445,13 +456,25 @@ const Markdown = ({
                 }),
             () => rehypeSlug({ prefix: idPrefix }),
         ];
-    }
-    const remarkPlugins: any = [
-        remarkMermaidToTag,
-        remarkGfm,
-        [RemarkFlexibleToc, { tocRef: tocRef.current }],
-        [createContentBlockPlugin, { blocks: contentBlocksMap }],
-    ];
+    }, [rehype, idPrefix]);
+    const remarkPlugins: any = useMemo(
+        () => [
+            remarkMermaidToTag,
+            remarkGfm,
+            [RemarkFlexibleToc, { tocRef: tocRef.current }],
+            [createContentBlockPlugin, { blocks: contentBlocksMap }],
+        ],
+        [contentBlocksMap]
+    );
+
+    const markdownElem = useMemo(
+        () => (
+            <ReactMarkdown remarkPlugins={remarkPlugins} rehypePlugins={rehypePlugins} components={markdownComponents}>
+                {transformedText}
+            </ReactMarkdown>
+        ),
+        [transformedText, remarkPlugins, rehypePlugins, markdownComponents]
+    );
 
     const ScrollableMarkdown = () => {
         return (
@@ -460,29 +483,13 @@ const Markdown = ({
                 className={cn("content", contentClassName)}
                 options={{ scrollbars: { autoHide: "leave" } }}
             >
-                <ReactMarkdown
-                    remarkPlugins={remarkPlugins}
-                    rehypePlugins={rehypePlugins}
-                    components={markdownComponents}
-                >
-                    {transformedText}
-                </ReactMarkdown>
+                {markdownElem}
             </OverlayScrollbarsComponent>
         );
     };
 
     const NonScrollableMarkdown = () => {
-        return (
-            <div className={cn("content non-scrollable", contentClassName)}>
-                <ReactMarkdown
-                    remarkPlugins={remarkPlugins}
-                    rehypePlugins={rehypePlugins}
-                    components={markdownComponents}
-                >
-                    {transformedText}
-                </ReactMarkdown>
-            </div>
-        );
+        return <div className={cn("content non-scrollable", contentClassName)}>{markdownElem}</div>;
     };
 
     const mergedStyle = { ...style };
@@ -498,7 +505,7 @@ const Markdown = ({
             {toc && (
                 <OverlayScrollbarsComponent className="toc mt-1" options={{ scrollbars: { autoHide: "leave" } }}>
                     <div className="toc-inner">
-                        <h4 className="font-bold">Table of Contents</h4>
+                        <h4 className="font-bold">{t("chrome.tableOfContents")}</h4>
                         {toc}
                     </div>
                 </OverlayScrollbarsComponent>

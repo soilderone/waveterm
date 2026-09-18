@@ -46,12 +46,14 @@ class WorkspaceLayoutModel {
     aiPanelWrapperRef: HTMLDivElement | null;
     vtabPanelWrapperRef: HTMLDivElement | null;
     panelVisibleAtom: jotai.PrimitiveAtom<boolean>;
+    vtabCollapsedAtom: jotai.PrimitiveAtom<boolean>;
 
     private inResize: boolean;
     private aiPanelVisible: boolean;
     private aiPanelWidth: number | null;
     private vtabWidth: number;
     private vtabVisible: boolean;
+    private vtabCollapsed: boolean;
     private transitionTimeoutRef: NodeJS.Timeout | null = null;
     private focusTimeoutRef: NodeJS.Timeout | null = null;
     private debouncedPersistAIWidth: () => void;
@@ -71,7 +73,9 @@ class WorkspaceLayoutModel {
         this.aiPanelWidth = null;
         this.vtabWidth = VTabBar_DefaultWidth;
         this.vtabVisible = false;
+        this.vtabCollapsed = false;
         this.panelVisibleAtom = jotai.atom(false);
+        this.vtabCollapsedAtom = jotai.atom(false);
         this.widgetsSidebarVisibleAtom = jotai.atom(
             (get) =>
                 get(getOrefMetaKeyAtom(WOS.makeORef("workspace", this.getWorkspaceId()), "layout:widgetsvisible")) ??
@@ -98,7 +102,7 @@ class WorkspaceLayoutModel {
         }, 300);
 
         this.debouncedPersistVTabWidth = debounce(() => {
-            if (!this.vtabVisible) return;
+            if (!this.isVTabActive()) return;
             const width = this.vtabPanelWrapperRef?.offsetWidth;
             if (width == null || width <= 0) return;
             try {
@@ -141,11 +145,20 @@ class WorkspaceLayoutModel {
         return getOrefMetaKeyAtom(WOS.makeORef("workspace", this.getWorkspaceId()), "layout:vtabbarwidth");
     }
 
+    private getVTabBarCollapsedAtom(): jotai.Atom<boolean> {
+        return getOrefMetaKeyAtom(WOS.makeORef("workspace", this.getWorkspaceId()), "layout:vtabbarcollapsed");
+    }
+
+    private isVTabActive(): boolean {
+        return this.vtabVisible && !this.vtabCollapsed;
+    }
+
     private initializeFromMeta(): void {
         try {
             const savedVisible = globalStore.get(this.getPanelOpenAtom());
             const savedAIWidth = globalStore.get(this.getPanelWidthAtom());
             const savedVTabWidth = globalStore.get(this.getVTabBarWidthAtom());
+            const savedVTabCollapsed = globalStore.get(this.getVTabBarCollapsedAtom());
             if (savedVisible != null) {
                 this.aiPanelVisible = savedVisible;
                 globalStore.set(this.panelVisibleAtom, savedVisible);
@@ -155,6 +168,10 @@ class WorkspaceLayoutModel {
             }
             if (savedVTabWidth != null && savedVTabWidth > 0) {
                 this.vtabWidth = savedVTabWidth;
+            }
+            if (savedVTabCollapsed != null) {
+                this.vtabCollapsed = savedVTabCollapsed;
+                globalStore.set(this.vtabCollapsedAtom, savedVTabCollapsed);
             }
             const tabBarPosition = globalStore.get(getSettingsKeyAtom("app:tabbar")) ?? "top";
             const showLeftTabBar = tabBarPosition === "left" && !isBuilderWindow();
@@ -185,7 +202,7 @@ class WorkspaceLayoutModel {
     // and produces the two percentage arrays for the panel groups.
 
     private computeLayout(windowWidth: number): { outer: number[]; inner: number[] } {
-        const vtabW = this.vtabVisible ? this.getResolvedVTabWidth() : 0;
+        const vtabW = this.isVTabActive() ? this.getResolvedVTabWidth() : 0;
         const aiW = this.aiPanelVisible ? this.getResolvedAIWidth(windowWidth) : 0;
         const leftGroupW = vtabW + aiW;
 
@@ -226,12 +243,12 @@ class WorkspaceLayoutModel {
         const windowWidth = window.innerWidth;
         const newLeftGroupPx = (sizes[0] / 100) * windowWidth;
 
-        if (this.vtabVisible && this.aiPanelVisible) {
+        if (this.isVTabActive() && this.aiPanelVisible) {
             // vtab stays constant, aipanel absorbs the change
             const vtabW = this.getResolvedVTabWidth();
             this.aiPanelWidth = clampAIPanelWidth(newLeftGroupPx - vtabW, windowWidth);
             this.debouncedPersistAIWidth();
-        } else if (this.vtabVisible) {
+        } else if (this.isVTabActive()) {
             this.vtabWidth = clampVTabWidth(newLeftGroupPx);
             this.debouncedPersistVTabWidth();
         } else if (this.aiPanelVisible) {
@@ -244,7 +261,7 @@ class WorkspaceLayoutModel {
 
     handleInnerPanelLayout(sizes: number[]): void {
         if (this.inResize) return;
-        if (!this.vtabVisible || !this.aiPanelVisible) return;
+        if (!this.isVTabActive() || !this.aiPanelVisible) return;
 
         const windowWidth = window.innerWidth;
         const vtabW = this.getResolvedVTabWidth();
@@ -312,7 +329,7 @@ class WorkspaceLayoutModel {
             }
         }
         if (this.vtabPanelRef) {
-            if (this.vtabVisible) {
+            if (this.isVTabActive()) {
                 this.vtabPanelRef.expand();
             } else {
                 this.vtabPanelRef.collapse();
@@ -361,13 +378,13 @@ class WorkspaceLayoutModel {
     // ---- Initial percentage helpers (used by workspace.tsx for defaultSize) ----
 
     getLeftGroupInitialPercentage(windowWidth: number, showLeftTabBar: boolean): number {
-        const vtabW = showLeftTabBar && !isBuilderWindow() ? this.getResolvedVTabWidth() : 0;
+        const vtabW = showLeftTabBar && !isBuilderWindow() && !this.vtabCollapsed ? this.getResolvedVTabWidth() : 0;
         const aiW = this.aiPanelVisible ? this.getResolvedAIWidth(windowWidth) : 0;
         return ((vtabW + aiW) / windowWidth) * 100;
     }
 
     getInnerVTabInitialPercentage(windowWidth: number, showLeftTabBar: boolean): number {
-        if (!showLeftTabBar || isBuilderWindow()) return 0;
+        if (!showLeftTabBar || isBuilderWindow() || this.vtabCollapsed) return 0;
         const vtabW = this.getResolvedVTabWidth();
         const aiW = this.aiPanelVisible ? this.getResolvedAIWidth(windowWidth) : 0;
         const total = vtabW + aiW;
@@ -376,7 +393,7 @@ class WorkspaceLayoutModel {
     }
 
     getInnerAIPanelInitialPercentage(windowWidth: number, showLeftTabBar: boolean): number {
-        const vtabW = showLeftTabBar && !isBuilderWindow() ? this.getResolvedVTabWidth() : 0;
+        const vtabW = showLeftTabBar && !isBuilderWindow() && !this.vtabCollapsed ? this.getResolvedVTabWidth() : 0;
         const aiW = this.aiPanelVisible ? this.getResolvedAIWidth(windowWidth) : 0;
         const total = vtabW + aiW;
         if (total === 0) return 50;
@@ -426,9 +443,30 @@ class WorkspaceLayoutModel {
         }
     }
 
+    setVTabCollapsed(collapsed: boolean): void {
+        if (this.vtabCollapsed === collapsed) return;
+        this.vtabCollapsed = collapsed;
+        globalStore.set(this.vtabCollapsedAtom, collapsed);
+        RpcApi.SetMetaCommand(TabRpcClient, {
+            oref: WOS.makeORef("workspace", this.getWorkspaceId()),
+            meta: { "layout:vtabbarcollapsed": collapsed },
+        });
+        this.enableTransitions(250);
+        this.syncPanelCollapse();
+        this.commitLayouts(window.innerWidth);
+    }
+
     setShowLeftTabBar(showLeftTabBar: boolean): void {
         if (this.vtabVisible === showLeftTabBar) return;
         this.vtabVisible = showLeftTabBar;
+        if (showLeftTabBar && this.vtabCollapsed) {
+            this.vtabCollapsed = false;
+            globalStore.set(this.vtabCollapsedAtom, false);
+            RpcApi.SetMetaCommand(TabRpcClient, {
+                oref: WOS.makeORef("workspace", this.getWorkspaceId()),
+                meta: { "layout:vtabbarcollapsed": false },
+            });
+        }
         this.enableTransitions(250);
         this.syncPanelCollapse();
         this.commitLayouts(window.innerWidth);

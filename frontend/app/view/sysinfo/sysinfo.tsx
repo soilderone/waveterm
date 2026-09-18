@@ -3,6 +3,8 @@
 
 import { globalStore } from "@/app/store/jotaiStore";
 import { makeORef } from "@/app/store/wos";
+import { t } from "@/util/i18n";
+import { useT } from "@/util/i18n-hooks";
 import * as util from "@/util/util";
 import * as Plot from "@observablehq/plot";
 import clsx from "clsx";
@@ -81,13 +83,26 @@ const PlotTypes: object = {
 
 const DefaultPlotMeta = {
     cpu: defaultCpuMeta("CPU %"),
-    "mem:total": defaultMemMeta("Memory Total", "mem:total"),
-    "mem:used": defaultMemMeta("Memory Used", "mem:total"),
-    "mem:free": defaultMemMeta("Memory Free", "mem:total"),
-    "mem:available": defaultMemMeta("Memory Available", "mem:total"),
+    "mem:total": defaultMemMeta(t("view.memoryTotal"), "mem:total"),
+    "mem:used": defaultMemMeta(t("view.memoryUsed"), "mem:total"),
+    "mem:free": defaultMemMeta(t("view.memoryFree"), "mem:total"),
+    "mem:available": defaultMemMeta(t("view.memoryAvailable"), "mem:total"),
 };
 for (let i = 0; i < 32; i++) {
-    DefaultPlotMeta[`cpu:${i}`] = defaultCpuMeta(`Core ${i}`);
+    DefaultPlotMeta[`cpu:${i}`] = defaultCpuMeta(t("view.core", { index: i }));
+}
+
+function getPlotTypeLabel(plotType: string): string {
+    if (plotType == "Mem") {
+        return t("view.plotMem");
+    }
+    if (plotType == "CPU + Mem") {
+        return t("view.plotCpuMem");
+    }
+    if (plotType == "All CPU") {
+        return t("view.plotAllCpu");
+    }
+    return t("view.plotCpu");
 }
 
 function convertWaveEventToDataItem(event: Extract<WaveEvent, { event: "sysinfo" }>): DataItem {
@@ -221,7 +236,7 @@ class SysinfoViewModel implements ViewModel {
             return "chart-line"; // should not be hardcoded
         });
         this.viewName = jotai.atom((get) => {
-            return get(this.plotTypeSelectedAtom);
+            return getPlotTypeLabel(get(this.plotTypeSelectedAtom));
         });
         this.incrementCount = jotai.atom(null, async (get, _set) => {
             const count = get(this.env.getBlockMetaKeyAtom(blockId, "count")) ?? 0;
@@ -293,7 +308,7 @@ class SysinfoViewModel implements ViewModel {
                 const dataTypes = PlotTypes[plotType](plotData[plotData.length - 1]);
                 const currentlySelected = globalStore.get(this.plotTypeSelectedAtom);
                 const menuItem: ContextMenuItem = {
-                    label: plotType,
+                    label: getPlotTypeLabel(plotType),
                     type: "radio",
                     checked: currentlySelected == plotType,
                     click: async () => {
@@ -308,7 +323,7 @@ class SysinfoViewModel implements ViewModel {
         }
 
         fullMenu.push({
-            label: "Plot Type",
+            label: t("view.plotType"),
             submenu: submenu,
         });
         fullMenu.push({ type: "separator" });
@@ -414,6 +429,7 @@ function SingleLinePlot({
     sparkline = false,
     targetLen,
 }: SingleLinePlotProps) {
+    const t = useT();
     const containerRef = React.useRef<HTMLInputElement>(null);
     const domRect = useDimensionsWithExistingRef(containerRef, 300);
     const plotHeight = domRect?.height ?? 0;
@@ -501,7 +517,7 @@ function SingleLinePlot({
         axis: !sparkline,
         x: {
             grid: true,
-            label: "time",
+            label: t("view.time"),
             tickFormat: (d) => `${dayjs.unix(d / 1000).format("HH:mm:ss")}`,
             domain: [minX, maxX],
         },

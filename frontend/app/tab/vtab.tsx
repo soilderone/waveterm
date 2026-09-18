@@ -3,6 +3,7 @@
 
 import { refocusNode } from "@/app/store/global";
 import { validateCssColor } from "@/util/color-validator";
+import { useT } from "@/util/i18n-hooks";
 import { cn } from "@/util/util";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { TabBadges } from "./tabbadges";
@@ -52,6 +53,7 @@ export function VTab({
     onHoverChanged,
     renameRef,
 }: VTabProps) {
+    const t = useT();
     const [originalName, setOriginalName] = useState(tab.name);
     const [isEditable, setIsEditable] = useState(false);
     const editableRef = useRef<HTMLDivElement>(null);
@@ -168,6 +170,12 @@ export function VTab({
                 isDragging && "opacity-50"
             )}
         >
+            {flagColor != null && (
+                <div
+                    className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-sm"
+                    style={{ background: `color-mix(in srgb, ${flagColor} ${active ? 38 : 22}%, transparent)` }}
+                />
+            )}
             {active && (
                 <div className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-sm bg-foreground/10" />
             )}
@@ -194,7 +202,7 @@ export function VTab({
                 )}
                 contentEditable={isEditable}
                 role="textbox"
-                aria-label="Tab name"
+                aria-label={t("chrome.tabName")}
                 aria-readonly={!isEditable}
                 onBlur={handleBlur}
                 onKeyDown={handleKeyDown}
@@ -213,7 +221,7 @@ export function VTab({
                         event.stopPropagation();
                         onClose();
                     }}
-                    aria-label="Close tab"
+                    aria-label={t("tabMenu.closeTab")}
                 >
                     <i className="fa fa-solid fa-xmark" />
                 </button>

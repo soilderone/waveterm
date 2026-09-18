@@ -1,4 +1,5 @@
 import { createBlock, getApi } from "@/app/store/global";
+import { t } from "@/util/i18n";
 import { makeNativeLabel } from "./platformutil";
 import { fireAndForget } from "./util";
 import { formatRemoteUri } from "./waveutil";
@@ -30,7 +31,7 @@ export function addOpenMenuItems(menu: ContextMenuItem[], conn: string, finfo: F
         }
     } else {
         menu.push({
-            label: "Download File",
+            label: t("common.downloadFile"),
             click: () => {
                 const remoteUri = formatRemoteUri(finfo.path, conn);
                 getApi().downloadFile(remoteUri);
@@ -42,7 +43,7 @@ export function addOpenMenuItems(menu: ContextMenuItem[], conn: string, finfo: F
     });
     if (!finfo.isdir) {
         menu.push({
-            label: "Open Preview in New Block",
+            label: t("common.openPreviewInNewBlock"),
             click: () =>
                 fireAndForget(async () => {
                     const blockDef: BlockDef = {
@@ -57,7 +58,7 @@ export function addOpenMenuItems(menu: ContextMenuItem[], conn: string, finfo: F
         });
     }
     menu.push({
-        label: "Open Terminal Here",
+        label: t("common.openTerminalHere"),
         click: () => {
             const termBlockDef: BlockDef = {
                 meta: {

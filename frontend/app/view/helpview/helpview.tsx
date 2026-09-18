@@ -5,6 +5,7 @@ import { globalStore, WOS } from "@/app/store/global";
 import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { WebView, WebViewModel } from "@/app/view/webview/webview";
+import { t } from "@/util/i18n";
 import { atom } from "jotai";
 
 const docsiteUrl = "https://docs.waveterm.dev/?ref=app";
@@ -43,7 +44,7 @@ class HelpViewModel extends WebViewModel {
         this.homepageUrl = atom(docsiteUrl);
         this.viewType = "help";
         this.viewIcon = atom("circle-question");
-        this.viewName = atom("Help");
+        this.viewName = atom(t("view.help"));
     }
 
     setZoomFactor(factor: number | null) {
@@ -84,7 +85,7 @@ class HelpViewModel extends WebViewModel {
             };
         }
         zoomSubMenu.push({
-            label: "Reset",
+            label: t("view.reset"),
             click: () => {
                 model.setZoomFactor(null);
             },
@@ -104,7 +105,9 @@ class HelpViewModel extends WebViewModel {
 
         return [
             {
-                label: this.webviewRef.current?.isDevToolsOpened() ? "Close DevTools" : "Open DevTools",
+                label: this.webviewRef.current?.isDevToolsOpened()
+                    ? t("view.closeDevTools")
+                    : t("view.openDevTools"),
                 click: async () => {
                     if (this.webviewRef.current) {
                         if (this.webviewRef.current.isDevToolsOpened()) {
@@ -116,7 +119,7 @@ class HelpViewModel extends WebViewModel {
                 },
             },
             {
-                label: "Set Zoom Factor",
+                label: t("view.setZoomFactor"),
                 submenu: zoomSubMenu,
             },
         ];

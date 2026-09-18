@@ -3,6 +3,8 @@
 
 import { Tooltip } from "@/element/tooltip";
 import { WaveEnv, WaveEnvSubset, useWaveEnv } from "@/app/waveenv/waveenv";
+import { t } from "@/util/i18n";
+import { useT } from "@/util/i18n-hooks";
 import { useAtomValue } from "jotai";
 import { memo, useCallback } from "react";
 
@@ -18,11 +20,11 @@ type UpdateBannerEnv = WaveEnvSubset<{
 function getUpdateStatusMessage(status: string): string {
     switch (status) {
         case "ready":
-            return "Update";
+            return t("chrome.update");
         case "downloading":
-            return "Downloading";
+            return t("chrome.downloading");
         case "installing":
-            return "Installing";
+            return t("chrome.installing");
         default:
             return null;
     }
@@ -30,6 +32,7 @@ function getUpdateStatusMessage(status: string): string {
 
 const UpdateStatusBannerComponent = () => {
     const env = useWaveEnv<UpdateBannerEnv>();
+    const t = useT();
     const appUpdateStatus = useAtomValue(env.atoms.updaterStatusAtom);
     const updateStatusMessage = getUpdateStatusMessage(appUpdateStatus);
 
@@ -42,7 +45,7 @@ const UpdateStatusBannerComponent = () => {
     }
 
     const isReady = appUpdateStatus === "ready";
-    const tooltipContent = isReady ? "Click to Install Update" : updateStatusMessage;
+    const tooltipContent = isReady ? t("chrome.clickInstallUpdate") : updateStatusMessage;
 
     return (
         <Tooltip

@@ -5,6 +5,8 @@ import logoUrl from "@/app/asset/logo.svg?url";
 import type { BlockNodeModel } from "@/app/block/blocktypes";
 import { atoms, globalStore, replaceBlock } from "@/app/store/global";
 import type { TabModel } from "@/app/store/tab-model";
+import { t } from "@/util/i18n";
+import { useT } from "@/util/i18n-hooks";
 import { checkKeyPressed, keydownWrapper } from "@/util/keyutil";
 import { isBlank, makeIconClass } from "@/util/util";
 import clsx from "clsx";
@@ -26,7 +28,7 @@ export class LauncherViewModel implements ViewModel {
     tabModel: TabModel;
     viewType = "launcher";
     viewIcon = atom("shapes");
-    viewName = atom("Widget Launcher");
+    viewName = atom(t("view.widgetLauncher"));
     viewComponent = LauncherView;
     noHeader = atom(true);
     inputRef = { current: null } as React.RefObject<HTMLInputElement>;
@@ -138,6 +140,7 @@ export class LauncherViewModel implements ViewModel {
 }
 
 function LauncherView({ blockId, model }: ViewComponentProps<LauncherViewModel>) {
+    const t = useT();
     // Search and selection state
     const [searchTerm, setSearchTerm] = useAtom(model.searchTerm);
     const [selectedIndex, setSelectedIndex] = useAtom(model.selectedIndex);
@@ -219,7 +222,7 @@ function LauncherView({ blockId, model }: ViewComponentProps<LauncherViewModel>)
                 onKeyDown={keydownWrapper(model.keyDownHandler.bind(model))}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="sr-only dummy"
-                aria-label="Search widgets"
+                aria-label={t("view.searchWidgets")}
             />
 
             {/* Logo */}
@@ -272,11 +275,12 @@ function LauncherView({ blockId, model }: ViewComponentProps<LauncherViewModel>)
             {/* Search instructions */}
             <div className="mt-4 text-secondary text-xs">
                 {filteredWidgets.length === 0 ? (
-                    <span>No widgets found. Press Escape to clear search.</span>
+                    <span>{t("view.noWidgetsFound")}</span>
                 ) : (
                     <span>
-                        {searchTerm == "" ? "Type to Filter" : "Searching " + '"' + searchTerm + '"'}, Enter to Launch,
-                        {searchTerm == "" ? "Arrow Keys to Navigate" : null}
+                        {searchTerm == "" ? t("view.typeToFilter") : t("view.searching", { term: searchTerm })},{" "}
+                        {t("view.enterToLaunch")},
+                        {searchTerm == "" ? t("view.arrowKeysToNavigate") : null}
                     </span>
                 )}
             </div>

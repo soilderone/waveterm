@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { MagnifyIcon } from "@/app/element/magnify";
+import { useT } from "@/util/i18n-hooks";
 import { cn, makeIconClass } from "@/util/util";
 import { useCallback, useLayoutEffect, useState } from "react";
 import { CommandReveal } from "./onboarding-command";
@@ -74,20 +75,21 @@ export const FakeTermBlock = ({
     );
 };
 
-const deployMessages = [
-    "[1/8] Installing dependencies...",
-    "[2/8] Generating TypeScript types from Go...",
-    "[3/8] Building Go backend (wavesrv)...",
-    "[4/8] Compiling TypeScript frontend...",
-    "[5/8] Bundling Electron renderer...",
-    "[6/8] Packaging application artifacts...",
-    "[7/8] Code signing binaries...",
-    "[8/8] Deploy complete ✓",
+const deployMessageKeys = [
+    "onboarding.deploy.step1",
+    "onboarding.deploy.step2",
+    "onboarding.deploy.step3",
+    "onboarding.deploy.step4",
+    "onboarding.deploy.step5",
+    "onboarding.deploy.step6",
+    "onboarding.deploy.step7",
+    "onboarding.deploy.step8",
 ];
 
 type OverlayState = null | "disconnected" | "connected";
 
 const ConnectionOverlay = ({ state }: { state: OverlayState }) => {
+    const t = useT();
     if (!state) return null;
 
     const isConnected = state === "connected";
@@ -103,7 +105,7 @@ const ConnectionOverlay = ({ state }: { state: OverlayState }) => {
                     )}
                 />
                 <div className="text-2xl font-semibold text-foreground">
-                    {isConnected ? "Connected" : "Disconnected"}
+                    {isConnected ? t("onboarding.connected") : t("onboarding.disconnected")}
                 </div>
             </div>
         </div>
@@ -117,6 +119,7 @@ const DeployLogOutput = ({
     onComplete?: () => void;
     onOverlayStateChange?: (state: OverlayState) => void;
 }) => {
+    const t = useT();
     const [key, setKey] = useState(0);
     const [commandComplete, setCommandComplete] = useState(false);
     const [visibleLines, setVisibleLines] = useState(0);
@@ -228,9 +231,9 @@ const DeployLogOutput = ({
                 />
                 {commandComplete && (
                     <>
-                        {deployMessages.slice(0, visibleLines).map((msg, idx) => (
+                        {deployMessageKeys.slice(0, visibleLines).map((msgKey, idx) => (
                             <div key={idx} className="text-foreground/70">
-                                {msg}
+                                {t(msgKey)}
                             </div>
                         ))}
                         {showPrompt && (

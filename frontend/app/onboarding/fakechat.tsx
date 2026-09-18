@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { WaveStreamdown } from "@/app/element/streamdown";
+import { useT } from "@/util/i18n-hooks";
 import { memo, useEffect, useRef, useState } from "react";
 
 interface ChatConfig {
@@ -11,83 +12,34 @@ interface ChatConfig {
     markdownResponse: string;
 }
 
-const chatConfigs: ChatConfig[] = [
+const chatConfigKeys = [
     {
-        userPrompt: "Check out ~/waveterm and summarize the project — what it does and how it's organized.",
+        userPrompt: "onboarding.fakechat.prompt1",
         toolName: "read_dir",
-        toolDescription: 'reading directory "~/waveterm"',
-        markdownResponse: `Here's a quick, file-structure–driven overview of this repo (Wave Terminal):
-
-## What it is
-- Electron + React front end with a Go backend ("wavesrv"). Provides a terminal with GUI widgets, previews, web, and AI. (README.md)
-- Licensed Apache-2.0. (LICENSE)
-
-## Architecture at a glance
-- **Electron main process:** \`emain/*.ts\` configures windows, menus, preload scripts, updater, and ties into the Go backend via local RPC. (\`emain/\`)
-- **Renderer UI:** React/TS built with Vite, Tailwind. (\`frontend/\`, \`index.html\`, \`electron.vite.config.ts\`)
-- **Go backend ("wavesrv"):** starts services, web and websocket listeners, telemetry loops, config watcher, local RPC, filestore and SQLite-backed object store. (\`cmd/server/main-server.go\`, \`pkg/*\`)
-- **CLI/helper ("wsh"):** built for multiple OS/arch; used for shell integration and remote operations. (\`cmd/wsh/\`, \`Taskfile.yml build:wsh\`)
-
-## Key directories
-- **cmd/:** entrypoints and generators
-  - \`server/\`: wavesrv main
-  - \`generategs/\`, \`generatego/\`: TS/Go bindings generation
-  - \`wsh/\`: shell helper
-
-- **pkg/:** backend packages
-  - \`wcore/\`: startup coordination, initial data, window/workspace creation
-  - \`web/\`: HTTP+WS servers, Unix listener
-  - \`waveai/\`: AI backends (OpenAI, Anthropic, Google, Perplexity)
-  - \`wshrpc\`, \`wshutil\`, \`wslconn\`, \`remote/*\`: local/remote RPC, WSL, SSH, fileshare
-  - \`wstore/\`: persistent store (SQLite via sqlx); \`waveobj/\`: object model
-  - \`filestore/\`: local file cache/storage
-  - \`telemetry/\`: metrics/events, periodic reporting`,
+        toolDescription: "onboarding.fakechat.readDir",
+        markdownResponse: "onboarding.fakechat.response1",
     },
     {
-        userPrompt: "can you analyze the log output in my terminal?",
+        userPrompt: "onboarding.fakechat.prompt2",
         toolName: "term_get_scrollback",
-        toolDescription: "reading terminal output from widget",
-        markdownResponse: `Here's what your log shows:
-
-- Normal startup/init at 18:06:51 (router/register, DBGetAllObjsByType, Stat/Read).
-- Many FocusWindow events — normal UI activity.
-- 18:08:28.558 WebSocket ReadPump error: close 1001 (going away) — usually a tab/app reload, sleep, or brief network hiccup.
-- 18:08:29 re-init + new WebSocket connection — successful auto-reconnect.
-- SetMetaCommand and periodic filestore flushes with err: — normal; no failures.
-- No panics/fatal errors; just the transient disconnect.
-
-If that disconnect was unexpected, check for a tab reload/sleep at 18:08:28, and watch for repeats.
-
-Want deeper triage? Run these and paste results:
-
-\`\`\`bash
-# 1) Scan recent logs for problems
-grep -Ei 'error|panic|fatal|websocket|1006|1011' \\
-  "$HOME/Library/Application Support/waveterm-dev/waveapp.log" | tail -n 200
-
-# 2) Inspect around the disconnect window
-awk '($0 ~ /2025-10-10 18:08:2[0-9]/){print}' \\
-  "$HOME/Library/Application Support/waveterm-dev/waveapp.log"
-
-# 3) Live follow for recurring drops
-tail -f "$HOME/Library/Application Support/waveterm-dev/waveapp.log" \\
-  | grep -Ei 'error|panic|fatal|websocket|close'
-\`\`\`
-
-Need me to look at a longer slice (e.g., last 1000 lines) or a different time range?`,
+        toolDescription: "onboarding.fakechat.readTerm",
+        markdownResponse: "onboarding.fakechat.response2",
     },
 ];
 
-const AIThinking = memo(() => (
-    <div className="flex items-center gap-2">
-        <div className="animate-pulse flex items-center">
-            <i className="fa fa-circle text-[10px]"></i>
-            <i className="fa fa-circle text-[10px] mx-1"></i>
-            <i className="fa fa-circle text-[10px]"></i>
+const AIThinking = memo(() => {
+    const t = useT();
+    return (
+        <div className="flex items-center gap-2">
+            <div className="animate-pulse flex items-center">
+                <i className="fa fa-circle text-[10px]"></i>
+                <i className="fa fa-circle text-[10px] mx-1"></i>
+                <i className="fa fa-circle text-[10px]"></i>
+            </div>
+            <span className="text-sm text-gray-400">{t("onboarding.fakechat.thinking")}</span>
         </div>
-        <span className="text-sm text-gray-400">AI is thinking...</span>
-    </div>
-));
+    );
+});
 
 AIThinking.displayName = "AIThinking";
 
@@ -200,6 +152,7 @@ const FakeAssistantMessage = memo(({ config, onComplete }: { config: ChatConfig;
 FakeAssistantMessage.displayName = "FakeAssistantMessage";
 
 const FakeAIPanelHeader = memo(() => {
+    const t = useT();
     return (
         <div className="py-2 pl-3 pr-1 border-b border-gray-600 flex items-center justify-between min-w-0 bg-zinc-900">
             <h2 className="text-white text-sm font-semibold flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
@@ -209,21 +162,21 @@ const FakeAIPanelHeader = memo(() => {
 
             <div className="flex items-center flex-shrink-0 whitespace-nowrap">
                 <div className="flex items-center text-sm whitespace-nowrap">
-                    <span className="text-gray-300 mr-1 text-[12px]">Context</span>
+                    <span className="text-gray-300 mr-1 text-[12px]">{t("onboarding.fakechat.context")}</span>
                     <button
                         className="relative inline-flex h-6 w-14 items-center rounded-full transition-colors bg-accent-600"
-                        title="Widget Access ON"
+                        title={t("onboarding.fakechat.widgetAccessOn")}
                     >
                         <span className="absolute inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-8" />
                         <span className="relative z-10 text-xs text-white transition-all ml-2.5 mr-6 text-left font-bold">
-                            ON
+                            {t("onboarding.fakechat.on")}
                         </span>
                     </button>
                 </div>
 
                 <button
                     className="text-gray-400 transition-colors p-1 rounded flex-shrink-0 ml-2 focus:outline-none"
-                    title="More options"
+                    title={t("onboarding.fakechat.moreOptions")}
                 >
                     <i className="fa fa-ellipsis-vertical"></i>
                 </button>
@@ -235,9 +188,16 @@ const FakeAIPanelHeader = memo(() => {
 FakeAIPanelHeader.displayName = "FakeAIPanelHeader";
 
 export const FakeChat = memo(() => {
+    const t = useT();
     const scrollRef = useRef<HTMLDivElement>(null);
     const [chatIndex, setChatIndex] = useState(1);
-    const config = chatConfigs[chatIndex] || chatConfigs[0];
+    const rawConfig = chatConfigKeys[chatIndex] || chatConfigKeys[0];
+    const config: ChatConfig = {
+        userPrompt: t(rawConfig.userPrompt),
+        toolName: rawConfig.toolName,
+        toolDescription: t(rawConfig.toolDescription),
+        markdownResponse: t(rawConfig.markdownResponse),
+    };
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -251,7 +211,7 @@ export const FakeChat = memo(() => {
 
     const handleComplete = () => {
         setTimeout(() => {
-            setChatIndex((prev) => (prev + 1) % chatConfigs.length);
+            setChatIndex((prev) => (prev + 1) % chatConfigKeys.length);
         }, 2000);
     };
 

@@ -108,6 +108,47 @@
             padding: 0.143em 0.286em 0.143em 0.429em;
         }
 
+        table {
+            display: block;
+            width: max-content;
+            max-width: 100%;
+            overflow: auto;
+            border-spacing: 0;
+            border-collapse: collapse;
+            margin: 0.571em 0 0.857em;
+            font-variant-numeric: tabular-nums;
+
+            th,
+            td {
+                padding: 0.286em 0.714em;
+                border: 1px solid var(--border-color);
+            }
+
+            th {
+                font-weight: 600;
+                text-align: left;
+                background-color: var(--panel-bg-color);
+            }
+
+            th[align="center"],
+            td[align="center"] {
+                text-align: center;
+            }
+
+            th[align="right"],
+            td[align="right"] {
+                text-align: right;
+            }
+
+            tr {
+                background-color: transparent;
+
+                &:nth-child(2n) {
+                    background-color: var(--highlight-bg-color);
+                }
+            }
+        }
+
         pre.codeblock {
             background-color: var(--panel-bg-color);
             margin: 0.286em 0.714em;

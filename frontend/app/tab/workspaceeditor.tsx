@@ -1,3 +1,4 @@
+import { useT } from "@/util/i18n-hooks";
 import { fireAndForget, makeIconClass } from "@/util/util";
 import clsx from "clsx";
 import { memo, useEffect, useRef, useState } from "react";
@@ -80,6 +81,7 @@ const WorkspaceEditorComponent = ({
     onIconChange,
     onDeleteWorkspace,
 }: WorkspaceEditorProps) => {
+    const t = useT();
     const inputRef = useRef<HTMLInputElement>(null);
 
     const [colors, setColors] = useState<string[]>([]);
@@ -115,7 +117,7 @@ const WorkspaceEditorComponent = ({
             <IconSelector selectedIcon={icon} icons={icons} onSelect={onIconChange} />
             <div className="delete-ws-btn-wrapper">
                 <Button className="ghost red text-[12px] bold" onClick={onDeleteWorkspace}>
-                    Delete workspace
+                    {t("chrome.deleteWorkspace")}
                 </Button>
             </div>
         </div>

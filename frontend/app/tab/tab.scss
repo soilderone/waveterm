@@ -124,6 +124,19 @@ body.nohover .tab.active .close {
     visibility: visible;
 }
 
+.tab.flag .tab-inner {
+    background: color-mix(in srgb, var(--tab-flag-color) 22%, transparent);
+}
+
+.tab.flag.active .tab-inner {
+    background: color-mix(in srgb, var(--tab-flag-color) 38%, transparent);
+}
+
+body:not(.nohover) .tab.flag:hover .tab-inner,
+body:not(.nohover) .tab.flag.dragging .tab-inner {
+    background: color-mix(in srgb, var(--tab-flag-color) 32%, transparent);
+}
+
 @keyframes expandWidthAndFadeIn {
     from {
         width: var(--initial-tab-width);

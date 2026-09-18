@@ -1,0 +1,143 @@
+// Copyright 2026, Command Line Inc.
+// SPDX-License-Identifier: Apache-2.0
+
+export const enAi: Record<string, string> = {
+    "ai.dropFilesHere": "Drop files here",
+    "ai.dropFilesSupported": "Images, PDFs, and text/code files supported",
+    "ai.welcomeTitle": "Welcome to Wave AI",
+    "ai.welcomeDesc":
+        "Wave AI is your terminal assistant with context. I can read your terminal output, analyze widgets, access files, and help you solve problems faster.",
+    "ai.gettingStarted": "Getting Started:",
+    "ai.widgetContext": "Widget Context",
+    "ai.widgetContextOnDesc": "When ON, I can read your terminal and analyze widgets.",
+    "ai.widgetContextOffDesc": "When OFF, I'm sandboxed with no system access.",
+    "ai.dragDropHint": "Drag & drop files or images for analysis",
+    "ai.shortcutNewChat": "to start a new chat",
+    "ai.shortcutTogglePanel": "to toggle panel",
+    "ai.shortcutFocus": "to focus",
+    "ai.questionsFeedback": "Questions or feedback?",
+    "ai.joinDiscord": "Join our Discord",
+    "ai.betaNotice": "BETA: Free to use. Daily limits keep our costs in check.",
+    "ai.builderWelcomeDesc":
+        "The WaveApp builder helps create wave widgets that integrate seamlessly into Wave Terminal.",
+    "ai.closeError": "Close error",
+    "ai.newChat": "New Chat",
+    "ai.fileRejected":
+        "{count} file rejected (unsupported type): {names}. Supported: images, PDFs, and text/code files.",
+    "ai.filesRejected":
+        "{count} files rejected (unsupported type): {names}. Supported: images, PDFs, and text/code files.",
+    "ai.errorOccurred": "An error occurred",
+
+    "ai.aiThinking": "AI is thinking...",
+    "ai.waitingApprovals": "Waiting for Tool Approvals...",
+    "ai.file": "File",
+    "ai.noTextContent": "(no text content)",
+
+    "ai.premiumSuffix": " (premium)",
+    "ai.incompatibleModes": "Incompatible Modes",
+    "ai.currentMode": "Current",
+    "ai.compatibleModes": "Compatible Modes",
+    "ai.custom": "Custom",
+    "ai.unknown": "unknown",
+    "ai.invalidMode": "Invalid ({mode})",
+    "ai.aiModeTitle": "AI Mode: {name}",
+    "ai.noToolsWarning":
+        'Warning: This custom mode was configured without the "tools" capability in the "ai:capabilities" array. Without tool support, Wave AI will not be able to interact with widgets or files.',
+    "ai.noToolsSupport": "No Tools Support",
+    "ai.startNewChatToSwitch": "(Start a New Chat to Switch)",
+    "ai.enableTelemetryUnlock": "(enable telemetry to unlock Wave AI Cloud)",
+    "ai.configureModes": "Configure Modes",
+    "ai.configureAIModes": "Configure AI Modes",
+
+    "ai.placeholderContinue": "Continue...",
+    "ai.placeholderBuilder": "What would you like to build...",
+    "ai.placeholderAsk": "Ask Wave AI anything...",
+    "ai.attachFiles": "Attach files",
+    "ai.stopResponse": "Stop Response",
+    "ai.sendMessage": "Send message (Enter)",
+
+    "ai.contextShort": "Context",
+    "ai.widgetAccessTitle": "Widget Access {state}",
+    "ai.on": "ON",
+    "ai.off": "OFF",
+    "ai.moreOptions": "More options",
+
+    "ai.notApproved": "Not approved",
+    "ai.readingFiles": "Reading Files",
+    "ai.approve": "Approve",
+    "ai.approveAll": "Approve All ({count})",
+    "ai.deny": "Deny",
+    "ai.denyAll": "Deny All",
+    "ai.restoreBackupTooltip": "Restore backup file",
+    "ai.revertFile": "Revert File",
+    "ai.openInDiffViewer": "Open in diff viewer",
+    "ai.showDiff": "Show Diff",
+
+    "ai.getMore": "Get More",
+    "ai.soon": "soon",
+    "ai.hoursShort": "{hours}h",
+    "ai.minutesShort": "{minutes}m",
+    "ai.premiumUsed": "{used}/{limit} Premium Used",
+    "ai.premiumCount": "{used}/{limit} Premium",
+    "ai.nowOnBasic": "Now on Basic",
+    "ai.reqsUsed": "{used}/{limit} Reqs",
+    "ai.limitReached": "Limit Reached",
+    "ai.resetsIn": "Resets in {time}",
+
+    "ai.goodResponse": "Good Response",
+    "ai.badResponse": "Bad Response",
+    "ai.copyMessage": "Copy Message",
+
+    "ai.byokTitle": "New: BYOK & Local AI Support",
+    "ai.byokDesc":
+        "Wave AI now supports bring-your-own-key (BYOK) with OpenAI, Google Gemini, Azure, and OpenRouter, plus local models via Ollama, LM Studio, and other OpenAI-compatible providers.",
+    "ai.viewDocs": "View Docs",
+
+    "ai.close": "Close",
+    "ai.backupRestored": "Backup Successfully Restored",
+    "ai.backupRestoredPrefix": "The file ",
+    "ai.backupRestoredSuffix": " has been restored to its previous state.",
+    "ai.backupRestoreFailed": "Failed to Restore Backup",
+    "ai.backupRestoreErrorDesc": "An error occurred while restoring the backup:",
+    "ai.restoring": "Restoring...",
+    "ai.confirmRestore": "Confirm Restore",
+    "ai.restoreFileBackup": "Restore File Backup",
+    "ai.restoreBackupPrefix": "This will restore ",
+    "ai.restoreBackupSuffix": " to its state before this edit was made",
+    "ai.sentenceEnd": ".",
+    "ai.restoreBackupWarning": "Any changes made by this edit and subsequent edits will be lost.",
+
+    "ai.telemetryDesc":
+        "Wave AI is free to use and provides integrated AI chat that can interact with your widgets, help you with code, analyze files, and assist with your terminal workflows.",
+    "ai.telemetryKeepsFree": "Telemetry keeps Wave AI free",
+    "ai.telemetryAnonymousPrefix": "To keep Wave AI free for everyone, we require a small amount of ",
+    "ai.anonymous": "anonymous",
+    "ai.telemetryAnonymousSuffix": " usage data (app version, feature usage, system info).",
+    "ai.telemetryAbuse":
+        "This helps us block abuse by automated systems and ensure it's used by real people like you.",
+    "ai.telemetryPrivacy":
+        "We never collect your files, prompts, keystrokes, hostnames, or personally identifying information. Wave AI is powered by OpenAI's APIs, please refer to OpenAI's privacy policy for details on how they handle your data.",
+    "ai.telemetryByokPrefix": "For information about BYOK and local model support, see ",
+    "ai.enabling": "Enabling...",
+    "ai.enableTelemetry": "Enable Telemetry and Continue",
+    "ai.privacyPolicy": "Privacy Policy",
+
+    "ai.cannotAddDirs": "Cannot add directories to Wave AI. Please select a file.",
+    "ai.fileNotFound": "File not found: {name}",
+    "ai.failedReadFile": "Failed to read file: {name}",
+    "ai.fileTypeNotSupported":
+        "File type not supported: {name}. Supported: images, PDFs, and text/code files.",
+    "ai.failedAddFile": "Failed to add file: {error}",
+    "ai.failedLoadChat": "Failed to load chat. Starting new chat...",
+    "ai.builderDefault": "Builder Default",
+    "ai.builderDeep": "Builder Deep",
+    "ai.builderDefaultDesc": "Good mix of speed and accuracy\n(gpt-5.4 with minimal thinking)",
+    "ai.builderDeepDesc": "Slower but most capable\n(gpt-5.4 with full reasoning)",
+    "ai.image": "Image",
+    "ai.pdf": "PDF",
+    "ai.textFile": "Text file",
+    "ai.fileTooLarge": '{type} "{name}" is too large ({size}). Maximum size is {max}.',
+
+    "ai.maxOutputTokens": "Max Output Tokens",
+    "ai.hideWaveAI": "Hide Wave AI",
+};
