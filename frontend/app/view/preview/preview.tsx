@@ -364,10 +364,10 @@ function PreviewView({
             >
                 {errorMsg && <ErrorOverlay errorMsg={errorMsg} resetOverlay={() => setErrorMsg(null)} />}
                 {showPreview ? (
-                    {/* The tree panel is conditional, so both panels need stable id/order --
-                        without them the group registers panels in mount order and the resize
-                        handle ends up driving the wrong one, which inverts the drag direction. */}
                     <PanelGroup direction="horizontal" className="h-full w-full">
+                        {/* The tree panel is conditional, so both panels need stable id/order --
+                            without them the group registers panels in mount order and the resize
+                            handle ends up driving the wrong one, which inverts the drag direction. */}
                         {treeElem && (
                             <>
                                 <Panel
