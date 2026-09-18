@@ -1281,8 +1281,11 @@ export const FileTree = React.memo(function FileTree({
     const setErrorMsg = useSetAtom(model.errorMsgAtom);
     const [versionAtom] = useState(() => atom<TreeVersionState>({ all: 0, dirs: {} }));
     const setVersion = useSetAtom(versionAtom);
-    const rootActiveAtom = useMemo(() => atom((get) => get(model.metaFilePath) == rootPath), [model, rootPath]);
-    const rootIsActive = useAtomValue(rootActiveAtom);
+    const loadableFileInfo = useAtomValue(model.loadableFileInfo);
+    // getPreviewTreeRoot makes the root the active directory, so "the block sits on a directory"
+    // and "the block sits on the root" are the same thing -- checked that way rather than by
+    // comparing path strings, which normalize differently depending on how the user navigated.
+    const rootIsActive = loadableFileInfo.state == "hasData" && loadableFileInfo.data?.isdir == true;
 
     const [entryManagerPropsAtom] = useState(
         atom<EntryManagerOverlayProps>(null) as PrimitiveAtom<EntryManagerOverlayProps>
@@ -1295,6 +1298,23 @@ export const FileTree = React.memo(function FileTree({
     });
     const dismiss = useDismiss(context);
     const { getFloatingProps } = useInteractions([dismiss]);
+
+    // Nothing else is mounted while the block sits on a directory, so the tree owns the block's
+    // Refresh button then. It bumps model.refreshVersion like every other preview does, which the
+    // per-directory version atoms already fold in.
+    const refreshTree = useCallback(() => globalStore.set(model.refreshVersion, (version) => version + 1), [model]);
+
+    useEffect(() => {
+        if (!rootIsActive) {
+            return;
+        }
+        model.refreshCallback = refreshTree;
+        return () => {
+            if (model.refreshCallback === refreshTree) {
+                model.refreshCallback = null;
+            }
+        };
+    }, [rootIsActive, model, refreshTree]);
 
     const refreshDir = useCallback(
         (dirPath: string) =>

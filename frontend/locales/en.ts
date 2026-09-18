@@ -19,6 +19,8 @@ export const enUS: Record<string, string> = {
     "common.openPreviewInNewBlock": "Open Preview in New Block",
     "common.deleteRecursively": "Delete Recursively",
 
+    "preview.selectFile": "Select a file to preview",
+    "preview.clickFileHint": "Click a file in the tree to open it here",
     "preview.loading": "Loading...",
     "preview.treeShowMore": "{count} more — click to show",
     "preview.parentDirectory": "Parent directory",

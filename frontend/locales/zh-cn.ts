@@ -19,6 +19,8 @@ export const zhCN: Record<string, string> = {
     "common.openPreviewInNewBlock": "在新块中打开预览",
     "common.deleteRecursively": "递归删除",
 
+    "preview.selectFile": "选择一个文件以预览",
+    "preview.clickFileHint": "点击左侧文件树中的文件在此打开",
     "preview.loading": "加载中…",
     "preview.treeShowMore": "还有 {count} 项，点击展开",
     "preview.parentDirectory": "上级目录",
