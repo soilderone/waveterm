@@ -50,9 +50,9 @@ export const RestoreBackupModal = memo(({ part }: RestoreBackupModalProps) => {
             >
                 <div className="flex flex-col gap-4 pt-4 pb-4 max-w-xl">
                     <div className="font-semibold text-lg text-green-500">{t("ai.backupRestored")}</div>
-                    <div className="text-sm text-gray-300 leading-relaxed">
+                    <div className="text-sm text-secondary leading-relaxed">
                         {t("ai.backupRestoredPrefix")}
-                        <span className="font-mono text-white break-all">{toolData.inputfilename}</span>
+                        <span className="font-mono text-primary break-all">{toolData.inputfilename}</span>
                         {t("ai.backupRestoredSuffix")}
                     </div>
                 </div>
@@ -70,8 +70,8 @@ export const RestoreBackupModal = memo(({ part }: RestoreBackupModalProps) => {
             >
                 <div className="flex flex-col gap-4 pt-4 pb-4 max-w-xl">
                     <div className="font-semibold text-lg text-red-500">{t("ai.backupRestoreFailed")}</div>
-                    <div className="text-sm text-gray-300 leading-relaxed">{t("ai.backupRestoreErrorDesc")}</div>
-                    <div className="text-sm text-red-400 font-mono bg-zinc-800 p-3 rounded break-all">{error}</div>
+                    <div className="text-sm text-secondary leading-relaxed">{t("ai.backupRestoreErrorDesc")}</div>
+                    <div className="text-sm text-red-400 font-mono bg-raise p-3 rounded break-all">{error}</div>
                 </div>
             </Modal>
         );
@@ -92,14 +92,14 @@ export const RestoreBackupModal = memo(({ part }: RestoreBackupModalProps) => {
         >
             <div className="flex flex-col gap-4 pt-4 pb-4 max-w-xl">
                 <div className="font-semibold text-lg">{t("ai.restoreFileBackup")}</div>
-                <div className="text-sm text-gray-300 leading-relaxed">
+                <div className="text-sm text-secondary leading-relaxed">
                     {t("ai.restoreBackupPrefix")}
-                    <span className="font-mono text-white break-all">{toolData.inputfilename}</span>
+                    <span className="font-mono text-primary break-all">{toolData.inputfilename}</span>
                     {t("ai.restoreBackupSuffix")}
                     {toolData.runts && <span> ({formatTimestamp(toolData.runts)})</span>}
                     {t("ai.sentenceEnd")}
                 </div>
-                <div className="text-sm text-gray-300 leading-relaxed">{t("ai.restoreBackupWarning")}</div>
+                <div className="text-sm text-secondary leading-relaxed">{t("ai.restoreBackupWarning")}</div>
             </div>
         </Modal>
     );

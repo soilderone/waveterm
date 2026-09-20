@@ -77,7 +77,7 @@ const KeyCap = memo(({ children, className }: { children: React.ReactNode; class
     return (
         <kbd
             className={cn(
-                "px-1.5 py-0.5 text-xs bg-zinc-700 border border-zinc-600 rounded-sm shadow-sm font-mono",
+                "px-1.5 py-0.5 text-xs bg-raise border border-border rounded-sm shadow-sm font-mono",
                 className
             )}
         >
@@ -96,7 +96,7 @@ const AIWelcomeMessage = memo(() => {
     return (
         <div className="text-secondary py-8">
             <div className="text-center">
-                <i className="fa fa-sparkles text-4xl text-accent mb-2 block"></i>
+                <i className="fa fa-sparkles text-4xl text-typeai mb-2 block"></i>
                 <p className="text-lg font-bold text-primary">{t("ai.welcomeTitle")}</p>
             </div>
             <div className="mt-4 text-left max-w-md mx-auto">
@@ -186,7 +186,7 @@ const AIBuilderWelcomeMessage = memo(() => {
     return (
         <div className="text-secondary py-8">
             <div className="text-center">
-                <i className="fa fa-sparkles text-4xl text-accent mb-4 block"></i>
+                <i className="fa fa-sparkles text-4xl text-typeai mb-4 block"></i>
                 <p className="text-lg font-bold text-primary">{t("ai.waveAppBuilder")}</p>
             </div>
             <div className="mt-4 text-left max-w-md mx-auto">
@@ -555,10 +555,10 @@ const AIPanelComponentInner = memo(({ roundTopLeft }: AIPanelComponentInnerProps
             ref={containerRef}
             data-waveai-panel="true"
             className={cn(
-                "@container bg-zinc-900/70 flex flex-col relative",
+                "@container bg-surface/70 flex flex-col relative",
                 model.inBuilder ? "mt-0 h-full" : "mt-1 h-[calc(100%-4px)]",
-                (isDragOver || isReactDndDragOver) && "bg-zinc-800 border-accent",
-                isFocused && !borderColor ? "border-2 border-accent" : "border-2 border-transparent"
+                (isDragOver || isReactDndDragOver) && "bg-raise border-accent",
+                isFocused && !borderColor ? "border-2 border-typeai" : "border-2 border-transparent"
             )}
             style={{
                 borderTopLeftRadius: roundTopLeft ? 10 : 0,
@@ -566,6 +566,7 @@ const AIPanelComponentInner = memo(({ roundTopLeft }: AIPanelComponentInnerProps
                 borderBottomRightRadius: model.inBuilder ? 0 : 10,
                 borderBottomLeftRadius: 10,
                 borderColor: borderColor ?? undefined,
+                boxShadow: isFocused && !borderColor ? "0 0 22px -6px var(--type-ai)" : undefined,
             }}
             onFocusCapture={handleFocusCapture}
             onPointerEnter={handlePointerEnter}
