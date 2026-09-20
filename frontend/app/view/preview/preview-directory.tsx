@@ -1029,7 +1029,7 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
             role={root ? "tree" : "group"}
             aria-label={root ? path : undefined}
             aria-busy={loading}
-            className={cn("m-0 list-none p-0", !root && "ml-[13px] border-l border-white/10 pl-1")}
+            className={cn("m-0 list-none p-0", !root && "ml-[13px] border-l border-border pl-1")}
         >
             {root && onNavigateUp && (
                 <li role="none">
@@ -1037,7 +1037,7 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
                         type="button"
                         data-tree-row=""
                         title={t("preview.parentDirectory")}
-                        className="flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-white/5 focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2"
+                        className="flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-hover focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2"
                         onClick={onNavigateUp}
                     >
                         <i
@@ -1066,7 +1066,7 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
                     </div>
                     <button
                         type="button"
-                        className="mt-0.5 cursor-pointer rounded px-1.5 py-0.5 text-secondary transition-colors hover:bg-white/10 hover:text-primary focus-visible:outline focus-visible:outline-accent"
+                        className="mt-0.5 cursor-pointer rounded px-1.5 py-0.5 text-secondary transition-colors hover:bg-hover hover:text-primary focus-visible:outline focus-visible:outline-accent"
                         onClick={() => setRetryVersion((version) => version + 1)}
                     >
                         {t("preview.retry")}
@@ -1086,7 +1086,7 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
                     <button
                         type="button"
                         data-tree-row=""
-                        className="flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] text-secondary transition-colors hover:bg-white/5 hover:text-primary focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2"
+                        className="flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] text-secondary transition-colors hover:bg-hover hover:text-primary focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2"
                         onClick={() => setRenderLimit((limit) => limit + TreeRenderChunkSize)}
                     >
                         <i aria-hidden="true" className="fa-solid fa-ellipsis w-3 shrink-0 text-[10px] opacity-70" />
@@ -1235,7 +1235,7 @@ const FileTreeEntry = React.memo(function FileTreeEntry({
                 data-tree-row=""
                 title={entry.path}
                 className={cn(
-                    "flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-white/5 focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2",
+                    "flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-hover focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2",
                     selected && "bg-accentbg text-primary"
                 )}
                 onKeyDown={handleKeyDown}
@@ -1464,7 +1464,7 @@ export const FileTree = React.memo(function FileTree({
                     type="button"
                     title={rootPath}
                     className={cn(
-                        "flex h-7 w-full shrink-0 cursor-pointer select-none items-center gap-1.5 border-b border-border px-2 text-left text-xs font-medium transition-colors hover:bg-white/5",
+                        "flex h-7 w-full shrink-0 cursor-pointer select-none items-center gap-1.5 border-b border-border px-2 text-left text-xs font-medium transition-colors hover:bg-hover",
                         rootIsActive ? "text-primary" : "text-secondary"
                     )}
                     onClick={() => fireAndForget(() => model.goHistory(rootPath))}

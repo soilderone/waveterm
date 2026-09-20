@@ -328,7 +328,7 @@ const BuilderFilesTab = memo(() => {
                         <i className="fa fa-refresh" />
                     </button>
                     <button
-                        className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-primary hover:bg-accent transition-colors cursor-pointer"
+                        className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-onaccent hover:bg-accent transition-colors cursor-pointer"
                         onClick={() => fileInputRef.current?.click()}
                         disabled={loading}
                     >

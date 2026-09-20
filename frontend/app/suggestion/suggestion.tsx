@@ -118,7 +118,7 @@ function SuggestionContent({ suggestion }: { suggestion: SuggestionType }) {
         return (
             <div className="flex flex-col">
                 {/* Title on the first line, with highlighting */}
-                <div className="truncate text-white">{highlightPositions(suggestion.display, suggestion.matchpos)}</div>
+                <div className="truncate text-primary">{highlightPositions(suggestion.display, suggestion.matchpos)}</div>
                 {/* Subtext on the second line in a smaller, grey style */}
                 <div className="truncate text-sm text-secondary">
                     {highlightPositions(suggestion.subtext, suggestion.submatchpos)}
@@ -154,7 +154,7 @@ function SuggestionControlNoResults({ children }: { children?: React.ReactNode }
     const t = useT();
     return (
         <div className="flex items-center justify-center min-h-[120px] p-4">
-            {children ?? <span className="text-gray-500">{t("chrome.noSuggestions")}</span>}
+            {children ?? <span className="text-muted">{t("chrome.noSuggestions")}</span>}
         </div>
     );
 }
@@ -163,7 +163,7 @@ function SuggestionControlNoData({ children }: { children?: React.ReactNode }) {
     const t = useT();
     return (
         <div className="flex items-center justify-center min-h-[120px] p-4">
-            {children ?? <span className="text-gray-500">{t("chrome.noSuggestions")}</span>}
+            {children ?? <span className="text-muted">{t("chrome.noSuggestions")}</span>}
         </div>
     );
 }
@@ -294,7 +294,7 @@ function SuggestionControlInner({
     return (
         <div
             className={clsx(
-                "w-96 rounded-lg bg-modalbg shadow-lg border border-gray-700 z-[var(--zindex-typeahead-modal)] absolute",
+                "w-96 rounded-lg bg-modalbg shadow-lg border border-border z-[var(--zindex-typeahead-modal)] absolute",
                 middlewareData?.offset == null ? "opacity-0" : null,
                 className
             )}
@@ -311,7 +311,7 @@ function SuggestionControlInner({
                         setSelectedIndex(0);
                     }}
                     onKeyDown={handleKeyDown}
-                    className="w-full bg-zinc-900 text-gray-100 px-4 py-2 rounded-md border border-gray-700 focus:outline-none focus:border-accent placeholder-secondary"
+                    className="w-full bg-surface text-primary px-4 py-2 rounded-md border border-border focus:outline-none focus:border-accent placeholder-secondary"
                     placeholder={placeholderText}
                 />
             </div>
@@ -324,7 +324,7 @@ function SuggestionControlInner({
                                 className={clsx(
                                     "flex items-center gap-3 px-4 py-2 cursor-pointer",
                                     index === selectedIndex ? "bg-accentbg" : "hover:bg-hoverbg",
-                                    "text-gray-100"
+                                    "text-primary"
                                 )}
                                 onClick={() => {
                                     onSelect(suggestion, query);

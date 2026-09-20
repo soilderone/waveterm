@@ -56,7 +56,7 @@ export const TermTooltip = React.memo(function TermTooltip({ mousePos, content }
             <div
                 ref={refs.setFloating}
                 style={floatingStyles}
-                className="bg-zinc-800/70 rounded-md px-2 py-1 text-xs text-secondary shadow-xl z-50 pointer-events-none select-none"
+                className="bg-raise/70 rounded-md px-2 py-1 text-xs text-secondary shadow-xl z-50 pointer-events-none select-none"
             >
                 {content}
             </div>

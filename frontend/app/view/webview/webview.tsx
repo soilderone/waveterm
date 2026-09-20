@@ -789,8 +789,8 @@ const BookmarkTypeahead = memo(
             >
                 <SuggestionControlNoData>
                     <div className="text-center">
-                        <p className="text-lg font-bold text-gray-100">{t("web.noBookmarksConfigured")}</p>
-                        <p className="text-sm text-gray-400 mt-1">
+                        <p className="text-lg font-bold text-primary">{t("web.noBookmarksConfigured")}</p>
+                        <p className="text-sm text-secondary mt-1">
                             {t("web.editBookmarksPrefix")}{" "}
                             <code className="font-mono">bookmarks.json</code> {t("web.editBookmarksSuffix")}
                         </p>
@@ -805,7 +805,7 @@ const BookmarkTypeahead = memo(
 
                 <SuggestionControlNoResults>
                     <div className="text-center">
-                        <p className="text-sm text-gray-400">{t("web.noMatchingBookmarks")}</p>
+                        <p className="text-sm text-secondary">{t("web.noMatchingBookmarks")}</p>
                         <button
                             onClick={openBookmarksJson}
                             className="mt-3 px-4 py-2 text-sm font-medium text-black bg-accent hover:bg-accenthover rounded-lg cursor-pointer"

@@ -36,7 +36,7 @@ const AIThinking = memo(() => {
                 <i className="fa fa-circle text-[10px] mx-1"></i>
                 <i className="fa fa-circle text-[10px]"></i>
             </div>
-            <span className="text-sm text-gray-400">{t("onboarding.fakechat.thinking")}</span>
+            <span className="text-sm text-secondary">{t("onboarding.fakechat.thinking")}</span>
         </div>
     );
 });
@@ -45,11 +45,11 @@ AIThinking.displayName = "AIThinking";
 
 const FakeToolCall = memo(({ toolName, toolDescription }: { toolName: string; toolDescription: string }) => {
     return (
-        <div className="flex items-start gap-1 p-2 rounded bg-zinc-800 border border-gray-700 text-success">
+        <div className="flex items-start gap-1 p-2 rounded bg-raise border border-border text-success">
             <span className="font-bold">✓</span>
             <div className="flex-1">
                 <div className="font-semibold">{toolName}</div>
-                <div className="text-sm text-gray-400">{toolDescription}</div>
+                <div className="text-sm text-secondary">{toolDescription}</div>
             </div>
         </div>
     );
@@ -60,7 +60,7 @@ FakeToolCall.displayName = "FakeToolCall";
 const FakeUserMessage = memo(({ userPrompt }: { userPrompt: string }) => {
     return (
         <div className="flex justify-end">
-            <div className="px-2 py-2 rounded-lg bg-zinc-700 text-white max-w-[calc(100%-20px)]">
+            <div className="px-2 py-2 rounded-lg bg-raise text-primary max-w-[calc(100%-20px)]">
                 <div className="whitespace-pre-wrap break-words">{userPrompt}</div>
             </div>
         </div>
@@ -141,7 +141,7 @@ const FakeAssistantMessage = memo(({ config, onComplete }: { config: ChatConfig;
                         <div className="mb-2">
                             <FakeToolCall toolName={config.toolName} toolDescription={config.toolDescription} />
                         </div>
-                        <WaveStreamdown text={streamedText} parseIncompleteMarkdown={true} className="text-gray-100" />
+                        <WaveStreamdown text={streamedText} parseIncompleteMarkdown={true} className="text-primary" />
                     </>
                 )}
             </div>
@@ -154,28 +154,28 @@ FakeAssistantMessage.displayName = "FakeAssistantMessage";
 const FakeAIPanelHeader = memo(() => {
     const t = useT();
     return (
-        <div className="py-2 pl-3 pr-1 border-b border-gray-600 flex items-center justify-between min-w-0 bg-zinc-900">
-            <h2 className="text-white text-sm font-semibold flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
+        <div className="py-2 pl-3 pr-1 border-b border-border flex items-center justify-between min-w-0 bg-surface">
+            <h2 className="text-primary text-sm font-semibold flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
                 <i className="fa fa-sparkles text-accent"></i>
                 Wave AI
             </h2>
 
             <div className="flex items-center flex-shrink-0 whitespace-nowrap">
                 <div className="flex items-center text-sm whitespace-nowrap">
-                    <span className="text-gray-300 mr-1 text-[12px]">{t("onboarding.fakechat.context")}</span>
+                    <span className="text-secondary mr-1 text-[12px]">{t("onboarding.fakechat.context")}</span>
                     <button
                         className="relative inline-flex h-6 w-14 items-center rounded-full transition-colors bg-accent-600"
                         title={t("onboarding.fakechat.widgetAccessOn")}
                     >
-                        <span className="absolute inline-block h-4 w-4 transform rounded-full bg-white transition-transform translate-x-8" />
-                        <span className="relative z-10 text-xs text-white transition-all ml-2.5 mr-6 text-left font-bold">
+                        <span className="absolute inline-block h-4 w-4 transform rounded-full bg-primary transition-transform translate-x-8" />
+                        <span className="relative z-10 text-xs text-primary transition-all ml-2.5 mr-6 text-left font-bold">
                             {t("onboarding.fakechat.on")}
                         </span>
                     </button>
                 </div>
 
                 <button
-                    className="text-gray-400 transition-colors p-1 rounded flex-shrink-0 ml-2 focus:outline-none"
+                    className="text-secondary transition-colors p-1 rounded flex-shrink-0 ml-2 focus:outline-none"
                     title={t("onboarding.fakechat.moreOptions")}
                 >
                     <i className="fa fa-ellipsis-vertical"></i>
@@ -219,7 +219,7 @@ export const FakeChat = memo(() => {
         <div className="flex flex-col w-full h-full">
             <FakeAIPanelHeader />
             <div className="flex-1 overflow-hidden">
-                <div ref={scrollRef} className="flex flex-col gap-1 p-2 h-full overflow-y-auto bg-zinc-900">
+                <div ref={scrollRef} className="flex flex-col gap-1 p-2 h-full overflow-y-auto bg-surface">
                     <FakeUserMessage userPrompt={config.userPrompt} />
                     <FakeAssistantMessage config={config} onComplete={handleComplete} />
                 </div>

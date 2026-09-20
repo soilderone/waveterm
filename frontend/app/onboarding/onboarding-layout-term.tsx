@@ -96,7 +96,7 @@ const ConnectionOverlay = ({ state }: { state: OverlayState }) => {
 
     return (
         <div className="absolute inset-0 flex items-center justify-center z-10">
-            <div className="bg-white/20 backdrop-blur-[2px] rounded-lg flex flex-col items-center justify-center gap-4 px-12 py-8 w-[50%]">
+            <div className="bg-hoverbg backdrop-blur-[2px] rounded-lg flex flex-col items-center justify-center gap-4 px-12 py-8 w-[50%]">
                 <i
                     className={cn(
                         "fa-sharp fa-solid",

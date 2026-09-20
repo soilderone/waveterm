@@ -28,7 +28,7 @@ function CodePlain({ className = "", isCodeBlock, text }: { className?: string; 
     }
 
     return (
-        <code className={cn("text-secondary font-mono text-[12px] rounded-sm bg-zinc-800/80 px-1.5 py-0.5", className)}>
+        <code className={cn("text-secondary font-mono text-[12px] rounded-sm bg-raise/80 px-1.5 py-0.5", className)}>
             {text}
         </code>
     );
@@ -153,7 +153,7 @@ const CodeBlock = ({ children, onClickExecute, codeBlockMaxWidthAtom }: CodeBloc
 
     return (
         <div
-            className={cn("rounded-lg overflow-hidden bg-black my-4", codeBlockMaxWidth && "max-w-full")}
+            className={cn("code-block rounded-lg overflow-hidden bg-ink my-4", codeBlockMaxWidth && "max-w-full")}
             style={
                 codeBlockMaxWidth
                     ? { maxWidth: codeBlockMaxWidth, minWidth: Math.min(400, codeBlockMaxWidth) }
@@ -161,7 +161,7 @@ const CodeBlock = ({ children, onClickExecute, codeBlockMaxWidthAtom }: CodeBloc
             }
         >
             <div className="flex items-center justify-between pl-3 pr-2 pt-2 pb-1.5">
-                <span className="text-[11px] text-white/50">{language}</span>
+                <span className="text-[11px] text-secondary">{language}</span>
                 <div className="flex items-center gap-2">
                     <CopyButton onClick={handleCopy} title={t("chrome.copy")} />
                     {onClickExecute && (

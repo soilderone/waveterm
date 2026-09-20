@@ -183,7 +183,7 @@ const BuilderConfigDataTab = memo(() => {
                 <h3 className="text-lg font-semibold text-primary">{t("builder.configDataTitle")}</h3>
                 <button
                     onClick={handleRefresh}
-                    className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-primary hover:bg-accent transition-colors cursor-pointer flex items-center gap-2"
+                    className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-onaccent hover:bg-accent transition-colors cursor-pointer flex items-center gap-2"
                 >
                     <i className="fa fa-refresh" />
                     {t("builder.refresh")}

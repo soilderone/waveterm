@@ -32,8 +32,8 @@ ErrorDisplay.displayName = "ErrorDisplay";
 const LoadingSpinner = memo(({ message }: { message: string }) => {
     return (
         <div className="flex flex-col items-center justify-center gap-3 py-12">
-            <i className="fa-sharp fa-solid fa-spinner fa-spin text-2xl text-zinc-400" />
-            <span className="text-zinc-400">{message}</span>
+            <i className="fa-sharp fa-solid fa-spinner fa-spin text-2xl text-secondary" />
+            <span className="text-secondary">{message}</span>
         </div>
     );
 });
@@ -42,10 +42,10 @@ LoadingSpinner.displayName = "LoadingSpinner";
 const EmptyState = memo(({ onAddSecret }: { onAddSecret: () => void }) => {
     const t = useT();
     return (
-        <div className="flex flex-col items-center justify-center gap-4 py-12 h-full bg-zinc-800/50 rounded-lg">
-            <i className="fa-sharp fa-solid fa-key text-4xl text-zinc-600" />
-            <h3 className="text-lg font-semibold text-zinc-400">{t("config.noSecrets")}</h3>
-            <p className="text-zinc-500">{t("config.addSecretHint")}</p>
+        <div className="flex flex-col items-center justify-center gap-4 py-12 h-full bg-raise/50 rounded-lg">
+            <i className="fa-sharp fa-solid fa-key text-4xl text-muted" />
+            <h3 className="text-lg font-semibold text-secondary">{t("config.noSecrets")}</h3>
+            <p className="text-muted">{t("config.addSecretHint")}</p>
             <button
                 className="flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-500 rounded cursor-pointer transition-colors"
                 onClick={onAddSecret}
@@ -61,12 +61,12 @@ EmptyState.displayName = "EmptyState";
 const CLIInfoBubble = memo(() => {
     const t = useT();
     return (
-        <div className="flex flex-col gap-2 p-4 m-4 bg-zinc-800/50 rounded-lg">
+        <div className="flex flex-col gap-2 p-4 m-4 bg-raise/50 rounded-lg">
             <div className="flex items-center gap-2">
-                <i className="fa-sharp fa-solid fa-terminal text-zinc-400" />
-                <div className="text-sm font-medium text-zinc-300">{t("config.cliAccess")}</div>
+                <i className="fa-sharp fa-solid fa-terminal text-secondary" />
+                <div className="text-sm font-medium text-secondary">{t("config.cliAccess")}</div>
             </div>
-            <div className="font-mono text-xs bg-black/20 px-3 py-2 rounded leading-relaxed text-zinc-300">
+            <div className="font-mono text-xs bg-ink/20 px-3 py-2 rounded leading-relaxed text-secondary">
                 wsh secret list
                 <br />
                 wsh secret get [name]
@@ -93,18 +93,18 @@ const SecretListView = memo(({ secretNames, onSelectSecret, onAddSecret }: Secre
                     <div
                         key={name}
                         className={cn(
-                            "flex items-center gap-3 p-4 hover:bg-zinc-700/50 cursor-pointer transition-colors"
+                            "flex items-center gap-3 p-4 hover:bg-raise/50 cursor-pointer transition-colors"
                         )}
                         onClick={() => onSelectSecret(name)}
                     >
                         <i className="fa-sharp fa-solid fa-key text-accent-500" />
                         <span className="flex-1 font-mono">{name}</span>
-                        <i className="fa-sharp fa-solid fa-chevron-right text-zinc-500 text-sm" />
+                        <i className="fa-sharp fa-solid fa-chevron-right text-muted text-sm" />
                     </div>
                 ))}
                 <div
                     className={cn(
-                        "flex items-center justify-center gap-2 p-4 hover:bg-zinc-700/50 cursor-pointer transition-colors border-t-2 border-zinc-600"
+                        "flex items-center justify-center gap-2 p-4 hover:bg-raise/50 cursor-pointer transition-colors border-t-2 border-border"
                     )}
                     onClick={onAddSecret}
                 >
@@ -142,29 +142,29 @@ const AddSecretForm = memo(
         const isNameInvalid = newSecretName !== "" && !SecretNameRegex.test(newSecretName);
 
         return (
-            <div className="flex flex-col gap-4 min-h-full p-6 bg-zinc-800/50 rounded-lg">
+            <div className="flex flex-col gap-4 min-h-full p-6 bg-raise/50 rounded-lg">
                 <h3 className="text-lg font-semibold">{t("config.addNewSecret")}</h3>
                 <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium">{t("config.secretName")}</label>
                     <input
                         type="text"
                         className={cn(
-                            "px-3 py-2 bg-zinc-800 border rounded focus:outline-none",
+                            "px-3 py-2 bg-raise border rounded focus:outline-none",
                             isNameInvalid
                                 ? "border-red-500 focus:border-red-500"
-                                : "border-zinc-600 focus:border-accent-500"
+                                : "border-border focus:border-accent-500"
                         )}
                         value={newSecretName}
                         onChange={(e) => onNameChange(e.target.value)}
                         placeholder="MY_SECRET_NAME"
                         disabled={isLoading}
                     />
-                    <div className="text-xs text-zinc-400">{t("config.secretNameRules")}</div>
+                    <div className="text-xs text-secondary">{t("config.secretNameRules")}</div>
                 </div>
                 <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium">{t("config.secretValue")}</label>
                     <textarea
-                        className="px-3 py-2 bg-zinc-800 border border-zinc-600 rounded focus:outline-none focus:border-accent-500 font-mono text-sm"
+                        className="px-3 py-2 bg-raise border border-border rounded focus:outline-none focus:border-accent-500 font-mono text-sm"
                         value={newSecretValue}
                         onChange={(e) => onValueChange(e.target.value)}
                         placeholder={t("config.enterSecretValue")}
@@ -174,7 +174,7 @@ const AddSecretForm = memo(
                 </div>
                 <div className="flex gap-2 justify-end">
                     <button
-                        className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-raise hover:bg-hoverbg rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={onCancel}
                         disabled={isLoading}
                     >
@@ -218,7 +218,7 @@ const SecretDetailView = memo(({ model }: SecretDetailViewProps) => {
     }
 
     return (
-        <div className="flex flex-col gap-4 min-h-full p-6 bg-zinc-800/50 rounded-lg">
+        <div className="flex flex-col gap-4 min-h-full p-6 bg-raise/50 rounded-lg">
             <div className="flex items-center gap-2">
                 <i className="fa-sharp fa-solid fa-key text-accent-500" />
                 <h3 className="text-lg font-semibold">{secretName}</h3>
@@ -232,7 +232,7 @@ const SecretDetailView = memo(({ model }: SecretDetailViewProps) => {
                             ref.focus();
                         }
                     }}
-                    className="px-3 py-2 bg-zinc-800 border border-zinc-600 rounded focus:outline-none focus:border-accent-500 font-mono text-sm"
+                    className="px-3 py-2 bg-raise border border-border rounded focus:outline-none focus:border-accent-500 font-mono text-sm"
                     value={secretValue}
                     onChange={(e) => setSecretValue(e.target.value)}
                     onKeyDown={(e) => {
@@ -245,10 +245,10 @@ const SecretDetailView = memo(({ model }: SecretDetailViewProps) => {
                     placeholder={!secretShown ? t("config.enterNewSecretValue") : ""}
                 />
                 {!secretShown && (
-                    <div className="text-sm text-zinc-400">
+                    <div className="text-sm text-secondary">
                         {t("config.secretHiddenNotice")}{" "}
                         {isLoading ? (
-                            <span className="text-zinc-500">
+                            <span className="text-muted">
                                 <i className="fa-sharp fa-solid fa-spinner fa-spin" /> {t("preview.loading")}
                             </span>
                         ) : (
@@ -284,7 +284,7 @@ const SecretDetailView = memo(({ model }: SecretDetailViewProps) => {
                 </button>
                 <div className="flex gap-2">
                     <button
-                        className="px-4 py-2 bg-zinc-700 hover:bg-zinc-600 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="px-4 py-2 bg-raise hover:bg-hoverbg rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         onClick={() => model.closeSecretView()}
                         disabled={isLoading}
                     >

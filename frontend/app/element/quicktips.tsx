@@ -8,7 +8,7 @@ import { cn } from "@/util/util";
 
 const KeyCap = ({ children }: { children: React.ReactNode }) => {
     return (
-        <div className="inline-block px-2 py-1 mx-[1px] font-mono text-[0.85em] text-foreground bg-highlightbg rounded-[3px] border border-gray-700 whitespace-nowrap">
+        <div className="inline-block px-2 py-1 mx-[1px] font-mono text-[0.85em] text-foreground bg-highlightbg rounded-[3px] border border-border whitespace-nowrap">
             {children}
         </div>
     );
@@ -17,7 +17,7 @@ const KeyCap = ({ children }: { children: React.ReactNode }) => {
 const IconBox = ({ children, variant = "accent" }: { children: React.ReactNode; variant?: "accent" | "secondary" }) => {
     const colorClasses =
         variant === "secondary"
-            ? "text-secondary bg-white/5 border-white/10 [&_svg]:fill-secondary [&_svg_#arrow1]:fill-primary [&_svg_#arrow2]:fill-primary"
+            ? "text-secondary bg-hover border-border [&_svg]:fill-secondary [&_svg_#arrow1]:fill-primary [&_svg_#arrow2]:fill-primary"
             : "text-accent-400 bg-accent-400/10 border-accent-400/20 [&_svg]:fill-accent-400 [&_svg_#arrow1]:fill-accent-400 [&_svg_#arrow2]:fill-accent-400";
 
     return (
@@ -98,13 +98,13 @@ const QuickTips = () => {
     const t = useT();
     return (
         <div className="flex flex-col w-full gap-6 @container">
-            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-white/10 hover:border-accent-400/20 transition-all duration-300">
+            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-border hover:border-accent-400/20 transition-all duration-300">
                 <div className="flex items-center gap-2 text-xl font-bold">
                     <div className="w-1 h-6 bg-accent-400 rounded-full"></div>
                     <span className="text-foreground">{t("chrome.headerIcons")}</span>
                 </div>
                 <div className="grid grid-cols-1 @lg:grid-cols-2 gap-3">
-                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-hover transition-colors">
                         <IconBox variant="secondary">
                             <MagnifyIcon enabled={false} />
                         </IconBox>
@@ -113,7 +113,7 @@ const QuickTips = () => {
                             <KeyBinding keyDecl="Cmd:m" />
                         </div>
                     </div>
-                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-hover transition-colors">
                         <IconBox variant="secondary">
                             <i className="fa-solid fa-sharp fa-laptop fa-fw" />
                         </IconBox>
@@ -122,13 +122,13 @@ const QuickTips = () => {
                             <KeyBinding keyDecl="Cmd:g" />
                         </div>
                     </div>
-                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-hover transition-colors">
                         <IconBox variant="secondary">
                             <i className="fa-solid fa-sharp fa-cog fa-fw" />
                         </IconBox>
                         <span className="text-[15px]">{t("chrome.blockSettings")}</span>
                     </div>
-                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-hover transition-colors">
                         <IconBox variant="secondary">
                             <i className="fa-solid fa-sharp fa-xmark-large fa-fw" />
                         </IconBox>
@@ -140,7 +140,7 @@ const QuickTips = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-white/10 hover:border-accent-400/20 transition-all duration-300">
+            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-border hover:border-accent-400/20 transition-all duration-300">
                 <div className="flex items-center gap-2 text-xl font-bold">
                     <div className="w-1 h-6 bg-accent-400 rounded-full"></div>
                     <span className="text-foreground">{t("chrome.importantKeybindings")}</span>
@@ -151,15 +151,15 @@ const QuickTips = () => {
                         <div className="text-sm text-accent-400 font-semibold uppercase tracking-wide mb-1">
                             {t("chrome.mainKeybindings")}
                         </div>
-                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-white/5 transition-colors">
+                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("vtab.newTab")}</span>
                             <KeyBinding keyDecl="Cmd:t" />
                         </div>
-                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-white/5 transition-colors">
+                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("chrome.newTerminalBlock")}</span>
                             <KeyBinding keyDecl="Cmd:n" />
                         </div>
-                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-white/5 transition-colors">
+                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("chrome.openAiPanel")}</span>
                             <KeyBinding keyDecl="Cmd:Shift:a" />
                         </div>
@@ -169,15 +169,15 @@ const QuickTips = () => {
                         <div className="text-sm text-accent-400 font-semibold uppercase tracking-wide mb-1">
                             {t("chrome.tabSwitching", { key: PLATFORM === PlatformMacOS ? "Cmd" : "Alt" })}
                         </div>
-                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-white/5 transition-colors">
+                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("chrome.switchNthTab")}</span>
                             <KeyBinding keyDecl="Cmd:Digit" />
                         </div>
-                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-white/5 transition-colors">
+                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("chrome.previousTab")}</span>
                             <KeyBinding keyDecl="Cmd:[" />
                         </div>
-                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-white/5 transition-colors">
+                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("chrome.nextTab")}</span>
                             <KeyBinding keyDecl="Cmd:]" />
                         </div>
@@ -187,15 +187,15 @@ const QuickTips = () => {
                         <div className="text-sm text-accent-400 font-semibold uppercase tracking-wide mb-1">
                             {t("chrome.blockNavigation")}
                         </div>
-                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-white/5 transition-colors">
+                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("chrome.navigateBlocks")}</span>
                             <KeyBinding keyDecl="Ctrl:Shift:Arrows" />
                         </div>
-                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-white/5 transition-colors">
+                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("chrome.focusNthBlock")}</span>
                             <KeyBinding keyDecl="Ctrl:Shift:Digit" />
                         </div>
-                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-white/5 transition-colors">
+                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("chrome.focusAi")}</span>
                             <KeyBinding keyDecl="Ctrl:Shift:0" />
                         </div>
@@ -205,15 +205,15 @@ const QuickTips = () => {
                         <div className="text-sm text-accent-400 font-semibold uppercase tracking-wide mb-1">
                             {t("chrome.splitBlocks")}
                         </div>
-                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-white/5 transition-colors">
+                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("chrome.splitRight")}</span>
                             <KeyBinding keyDecl="Cmd:d" />
                         </div>
-                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-white/5 transition-colors">
+                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("chrome.splitBelow")}</span>
                             <KeyBinding keyDecl="Cmd:Shift:d" />
                         </div>
-                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-white/5 transition-colors">
+                        <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("chrome.splitDirection")}</span>
                             <KeyBinding keyDecl="Ctrl:Shift:s + Arrows" />
                         </div>
@@ -221,13 +221,13 @@ const QuickTips = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-white/10 hover:border-accent-400/20 transition-all duration-300">
+            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-border hover:border-accent-400/20 transition-all duration-300">
                 <div className="flex items-center gap-2 text-xl font-bold">
                     <div className="w-1 h-6 bg-accent-400 rounded-full"></div>
                     <span className="text-foreground">{t("chrome.wshCommands")}</span>
                 </div>
                 <div className="grid grid-cols-1 @md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-2 p-4 bg-black/20 rounded-lg border border-accent-400/30 hover:border-accent-400/50 transition-colors">
+                    <div className="flex flex-col gap-2 p-4 bg-ink/20 rounded-lg border border-accent-400/30 hover:border-accent-400/50 transition-colors">
                         <code className="font-mono text-sm">
                             <span className="text-secondary">&gt; </span>
                             <span className="text-accent-400 font-semibold">wsh view</span>
@@ -235,7 +235,7 @@ const QuickTips = () => {
                         </code>
                         <div className="text-secondary text-sm mt-1">{t("chrome.wshViewDesc")}</div>
                     </div>
-                    <div className="flex flex-col gap-2 p-4 bg-black/20 rounded-lg border border-accent-400/30 hover:border-accent-400/50 transition-colors">
+                    <div className="flex flex-col gap-2 p-4 bg-ink/20 rounded-lg border border-accent-400/30 hover:border-accent-400/50 transition-colors">
                         <code className="font-mono text-sm">
                             <span className="text-secondary">&gt; </span>
                             <span className="text-accent-400 font-semibold">wsh edit</span>
@@ -246,13 +246,13 @@ const QuickTips = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-white/10 hover:border-accent-400/20 transition-all duration-300">
+            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-border hover:border-accent-400/20 transition-all duration-300">
                 <div className="flex items-center gap-2 text-xl font-bold">
                     <div className="w-1 h-6 bg-accent-400 rounded-full"></div>
                     <span className="text-foreground">{t("chrome.moreTips")}</span>
                 </div>
                 <div className="flex flex-col gap-2">
-                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-hover transition-colors">
                         <IconBox variant="secondary">
                             <i className="fa-solid fa-sharp fa-computer-mouse fa-fw" />
                         </IconBox>
@@ -261,7 +261,7 @@ const QuickTips = () => {
                             {t("chrome.tipTabsDesc")}
                         </span>
                     </div>
-                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-hover transition-colors">
                         <IconBox variant="secondary">
                             <i className="fa-solid fa-sharp fa-cog fa-fw" />
                         </IconBox>
@@ -270,7 +270,7 @@ const QuickTips = () => {
                             {t("chrome.tipWebViewDesc")}
                         </span>
                     </div>
-                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-white/5 transition-colors">
+                    <div className="flex items-center gap-3 p-2 rounded-md hover:bg-hover transition-colors">
                         <IconBox variant="secondary">
                             <i className="fa-solid fa-sharp fa-cog fa-fw" />
                         </IconBox>
@@ -282,13 +282,13 @@ const QuickTips = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-white/10 hover:border-accent-400/20 transition-all duration-300">
+            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-border hover:border-accent-400/20 transition-all duration-300">
                 <div className="flex items-center gap-2 text-xl font-bold">
                     <div className="w-1 h-6 bg-accent-400 rounded-full"></div>
                     <span className="text-foreground">{t("chrome.needMoreHelp")}</span>
                 </div>
                 <div className="grid grid-cols-1 @sm:grid-cols-2 gap-2">
-                    <div className="flex items-center gap-3 p-3 rounded-md bg-black/20 hover:bg-black/30 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3 p-3 rounded-md bg-ink/20 hover:bg-ink/30 transition-colors cursor-pointer">
                         <IconBox variant="secondary">
                             <i className="fa-brands fa-discord fa-fw" />
                         </IconBox>
@@ -301,7 +301,7 @@ const QuickTips = () => {
                             {t("chrome.joinDiscord")}
                         </a>
                     </div>
-                    <div className="flex items-center gap-3 p-3 rounded-md bg-black/20 hover:bg-black/30 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3 p-3 rounded-md bg-ink/20 hover:bg-ink/30 transition-colors cursor-pointer">
                         <IconBox variant="secondary">
                             <i className="fa-solid fa-sharp fa-sliders fa-fw" />
                         </IconBox>
@@ -314,7 +314,7 @@ const QuickTips = () => {
                             {t("chrome.configOptions")}
                         </a>
                     </div>
-                    <div className="flex items-center gap-3 p-3 rounded-md bg-black/20 hover:bg-black/30 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3 p-3 rounded-md bg-ink/20 hover:bg-ink/30 transition-colors cursor-pointer">
                         <IconBox variant="secondary">
                             <i className="fa-solid fa-sharp fa-keyboard fa-fw" />
                         </IconBox>
@@ -327,7 +327,7 @@ const QuickTips = () => {
                             {t("chrome.allKeybindings")}
                         </a>
                     </div>
-                    <div className="flex items-center gap-3 p-3 rounded-md bg-black/20 hover:bg-black/30 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3 p-3 rounded-md bg-ink/20 hover:bg-ink/30 transition-colors cursor-pointer">
                         <IconBox variant="secondary">
                             <i className="fa-solid fa-sharp fa-book fa-fw" />
                         </IconBox>

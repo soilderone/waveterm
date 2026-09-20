@@ -26,11 +26,11 @@ const StatusDot = memo(() => {
     const builderStatus = useAtomValue(model.builderStatusAtom);
 
     const getStatusDotColor = (status: string | null | undefined): string => {
-        if (!status) return "bg-gray-500";
+        if (!status) return "bg-hoverbg";
         switch (status) {
             case "init":
             case "stopped":
-                return "bg-gray-500";
+                return "bg-hoverbg";
             case "building":
                 return "bg-warning";
             case "running":
@@ -38,7 +38,7 @@ const StatusDot = memo(() => {
             case "error":
                 return "bg-error";
             default:
-                return "bg-gray-500";
+                return "bg-hoverbg";
         }
     };
 
@@ -64,7 +64,7 @@ const TabButton = memo(({ label, tabType, isActive, isAppFocused, onClick, showS
             className={cn(
                 "px-4 py-2 text-sm font-medium transition-colors cursor-pointer",
                 isActive
-                    ? `text-primary border-b-2 ${isAppFocused ? "border-accent" : "border-gray-500"}`
+                    ? `text-primary border-b-2 ${isAppFocused ? "border-accent" : "border-borderstrong"}`
                     : "text-secondary hover:text-primary border-b-2 border-transparent"
             )}
             onClick={onClick}
@@ -352,7 +352,7 @@ const BuilderAppPanel = memo(() => {
                     </div>
                     <div className="flex items-center gap-2 mr-2">
                         <button
-                            className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-primary hover:bg-accent transition-colors cursor-pointer"
+                            className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-onaccent hover:bg-accent transition-colors cursor-pointer"
                             onClick={handlePublishClick}
                         >
                             {t("builder.publishApp")}

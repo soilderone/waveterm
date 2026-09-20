@@ -276,7 +276,7 @@ function PreviewView({
 
     const previewElem = (
         <div className="relative flex h-full min-h-0 min-w-0 flex-col overflow-hidden">
-            <div className="flex h-8 shrink-0 select-none items-stretch border-b border-border bg-white/5">
+            <div className="flex h-8 shrink-0 select-none items-stretch border-b border-border bg-hover">
                 <div
                     role="tablist"
                     aria-label={t("preview.openFiles")}
@@ -295,7 +295,7 @@ function PreviewView({
                                     "group flex h-full min-w-0 max-w-48 shrink-0 cursor-pointer select-none items-center gap-1.5 border-r border-r-border border-t border-t-transparent px-2.5 text-xs transition-colors",
                                     active
                                         ? "border-t-accent bg-background text-primary"
-                                        : "text-secondary hover:bg-white/5 hover:text-primary"
+                                        : "text-secondary hover:bg-hover hover:text-primary"
                                 )}
                                 onClick={() => fireAndForget(() => model.openTreeFile(tabPath))}
                                 onAuxClick={(e) => {
@@ -313,7 +313,7 @@ function PreviewView({
                                     title={t("preview.closeFile")}
                                     aria-label={t("preview.closeFileNamed", { name })}
                                     className={cn(
-                                        "flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded transition-opacity hover:bg-white/10 focus-visible:opacity-100",
+                                        "flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded transition-opacity hover:bg-hover focus-visible:opacity-100",
                                         active ? "opacity-70 hover:opacity-100" : "opacity-0 group-hover:opacity-70"
                                     )}
                                     onClick={(e) => {
@@ -333,7 +333,7 @@ function PreviewView({
                         title={treeCollapsed ? t("preview.showFileTree") : t("preview.hideFileTree")}
                         aria-label={treeCollapsed ? t("preview.showFileTree") : t("preview.hideFileTree")}
                         aria-expanded={!treeCollapsed}
-                        className="mx-1 flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center self-center rounded text-xs text-secondary transition-colors hover:bg-white/10 hover:text-primary"
+                        className="mx-1 flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center self-center rounded text-xs text-secondary transition-colors hover:bg-hover hover:text-primary"
                         onClick={toggleTree}
                     >
                         <i className={treeCollapsed ? "fa-solid fa-bars" : "fa-solid fa-columns"} />

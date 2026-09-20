@@ -53,7 +53,7 @@ const SecretRow = memo(({ secretName, secretMeta, currentBinding, availableSecre
                 {!isMapped && hasMatchingSecret && (
                     <button
                         onClick={() => onMapDefault(secretName)}
-                        className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-primary hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
+                        className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-onaccent hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
                     >
                         {t("builder.mapDefault")}
                     </button>
@@ -61,7 +61,7 @@ const SecretRow = memo(({ secretName, secretMeta, currentBinding, availableSecre
                 {!isMapped && !hasMatchingSecret && (
                     <button
                         onClick={() => onSetAndMapDefault(secretName)}
-                        className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-primary hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
+                        className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-onaccent hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
                     >
                         {t("builder.setAndMapDefault")}
                     </button>
