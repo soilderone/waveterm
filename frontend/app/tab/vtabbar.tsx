@@ -39,7 +39,7 @@ const VTabBarAIButton = memo(() => {
             content="Toggle Wave AI Panel"
             placement="bottom"
             hideOnClick
-            divClassName={`flex h-[22px] px-3.5 justify-end mb-1 items-center rounded-md mr-1 box-border cursor-pointer bg-hover hover:bg-hoverbg transition-colors text-[12px] ${aiPanelOpen ? "text-accent" : "text-secondary"}`}
+            divClassName={`flex h-[22px] px-3.5 justify-end mb-1 items-center rounded-md mr-1 box-border cursor-pointer bg-hover hover:bg-hoverbg transition-colors text-[12px] ${aiPanelOpen ? "text-typeai" : "text-secondary"}`}
             divStyle={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             divOnClick={onClick}
         >
@@ -330,7 +330,7 @@ export function VTabBar({ workspace, className, onCollapse }: VTabBarProps) {
     return (
         <div
             className={cn("flex h-full flex-col overflow-hidden", className)}
-            style={{ backdropFilter: "blur(20px)", background: "rgba(0, 0, 0, 0.35)" }}
+            style={{ backdropFilter: "blur(20px)", background: "rgb(from var(--sage-surface) r g b / 0.55)" }}
             onContextMenu={handleTabBarContextMenu}
         >
             {env.isMacOS() && <MacOSHeader />}
@@ -438,7 +438,7 @@ export function VTabBar({ workspace, className, onCollapse }: VTabBarProps) {
                 {onCollapse && (
                     <button
                         type="button"
-                        className="mr-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded text-xs text-secondary transition-colors hover:bg-white/10 hover:text-primary"
+                        className="mr-1 flex h-7 w-7 shrink-0 cursor-pointer items-center justify-center rounded text-xs text-secondary transition-colors hover:bg-hover hover:text-primary"
                         onClick={onCollapse}
                         aria-label={t("vtab.collapseTabBar")}
                         title={t("vtab.collapseTabBar")}

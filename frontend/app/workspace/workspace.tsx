@@ -32,7 +32,7 @@ const MacOSTabBarSpacer = memo(({ tall }: { tall?: boolean }) => {
                     height: tall ? "calc(28px * var(--zoomfactor-inv))" : "calc(8px * var(--zoomfactor-inv))",
                     WebkitAppRegion: "drag",
                     backdropFilter: "blur(20px)",
-                    background: "rgba(0, 0, 0, 0.35)",
+                    background: "rgb(from var(--sage-surface) r g b / 0.55)",
                 } as React.CSSProperties
             }
         />
@@ -106,9 +106,9 @@ const WorkspaceElem = memo(() => {
     }, []);
 
     const innerHandleVisible = showLeftTabBar && !vtabCollapsed && aiPanelVisible;
-    const innerHandleClass = `bg-transparent hover:bg-zinc-500/20 transition-colors ${innerHandleVisible ? "w-0.5" : "w-0 pointer-events-none"}`;
+    const innerHandleClass = `bg-transparent hover:bg-hoverbg transition-colors ${innerHandleVisible ? "w-0.5" : "w-0 pointer-events-none"}`;
     const outerHandleVisible = (showLeftTabBar && !vtabCollapsed) || aiPanelVisible;
-    const outerHandleClass = `bg-transparent hover:bg-zinc-500/20 transition-colors ${outerHandleVisible ? "w-0.5" : "w-0 pointer-events-none"}`;
+    const outerHandleClass = `bg-transparent hover:bg-hoverbg transition-colors ${outerHandleVisible ? "w-0.5" : "w-0 pointer-events-none"}`;
 
     return (
         <div className="flex flex-col w-full flex-grow overflow-hidden">
@@ -167,7 +167,7 @@ const WorkspaceElem = memo(() => {
                                     <div className="flex h-full w-6 shrink-0 flex-col items-center border-r border-border bg-panel">
                                         <button
                                             type="button"
-                                            className="mt-1 flex h-6 w-5 cursor-pointer items-center justify-center rounded text-secondary transition-colors hover:bg-white/10 hover:text-primary"
+                                            className="mt-1 flex h-6 w-5 cursor-pointer items-center justify-center rounded text-secondary transition-colors hover:bg-hover hover:text-primary"
                                             onClick={() => workspaceLayoutModel.setVTabCollapsed(false)}
                                             aria-label={t("vtab.showTabBar")}
                                             title={t("vtab.showTabBar")}

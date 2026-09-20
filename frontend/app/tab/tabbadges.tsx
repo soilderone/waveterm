@@ -34,7 +34,7 @@ export function TabBadges({ badges, flagColor, className }: TabBadgesProps) {
         <div className={cn(DefaultClassName, className)}>
             <i
                 className={makeIconClass(firstBadge.icon, true, { defaultIcon: "circle-small" }) + " text-[12px]"}
-                style={{ color: firstBadge.color || "#fbbf24" }}
+                style={{ color: firstBadge.color || "var(--warning-color)" }}
             />
             {extraBadges.length > 0 && (
                 <div className="ml-[2px] flex flex-col items-center justify-center gap-[2px]">
@@ -42,7 +42,7 @@ export function TabBadges({ badges, flagColor, className }: TabBadgesProps) {
                         <div
                             key={idx}
                             className="h-[4px] w-[4px] rounded-full"
-                            style={{ backgroundColor: badge.color || "#fbbf24" }}
+                            style={{ backgroundColor: badge.color || "var(--warning-color)" }}
                         />
                     ))}
                 </div>
