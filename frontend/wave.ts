@@ -1,7 +1,8 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { App } from "@/app/app";
+import { applyUITheme } from "@/app/uitheme";
 import { loadMonaco } from "@/app/monaco/monaco-env";
 import { loadBadges } from "@/app/store/badge";
 import { GlobalModel } from "@/app/store/global-model";
@@ -195,6 +196,7 @@ async function initWave(initOpts: WaveInitOpts) {
     const fullConfig = await RpcApi.GetFullConfigCommand(TabRpcClient);
     console.log("fullconfig", fullConfig);
     globalStore.set(atoms.fullConfigAtom, fullConfig);
+    applyUITheme(fullConfig.settings?.["app:uitheme"]);
     setLanguage(fullConfig.settings?.["app:language"]);
     globalStore.sub(atoms.fullConfigAtom, () => {
         setLanguage(globalStore.get(atoms.fullConfigAtom)?.settings?.["app:language"]);
@@ -270,6 +272,7 @@ async function initBuilder(initOpts: BuilderInitOpts) {
     const fullConfig = await RpcApi.GetFullConfigCommand(TabRpcClient);
     console.log("fullconfig", fullConfig);
     globalStore.set(atoms.fullConfigAtom, fullConfig);
+    applyUITheme(fullConfig.settings?.["app:uitheme"]);
     setLanguage(fullConfig.settings?.["app:language"]);
     globalStore.sub(atoms.fullConfigAtom, () => {
         setLanguage(globalStore.get(atoms.fullConfigAtom)?.settings?.["app:language"]);

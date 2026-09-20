@@ -17,6 +17,7 @@ import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker"
 import ymlWorker from "./yamlworker?worker";
 
 let monacoConfigured = false;
+let themeObserver: MutationObserver = null;
 
 window.MonacoEnvironment = {
     getWorker(_, label) {
@@ -39,6 +40,11 @@ window.MonacoEnvironment = {
     },
 };
 
+export function syncMonacoTheme() {
+    const light = document.documentElement.dataset.uitheme === "light";
+    monaco.editor.setTheme(light ? "wave-theme-light" : "wave-theme-dark");
+}
+
 export function loadMonaco() {
     if (monacoConfigured) {
         return;
@@ -60,7 +66,7 @@ export function loadMonaco() {
         inherit: true,
         rules: [],
         colors: {
-            "editor.background": "#fefefe",
+            "editor.background": "#00000000",
             focusBorder: "#00000000",
         },
     });
@@ -68,7 +74,11 @@ export function loadMonaco() {
         validate: true,
         schemas: [],
     });
-    monaco.editor.setTheme("wave-theme-dark");
+    syncMonacoTheme();
+    // the editor is created lazily, so it follows data-uitheme from the DOM instead of
+    // reaching back into the settings atoms (which would pull monaco into the app bundle)
+    themeObserver = new MutationObserver(syncMonacoTheme);
+    themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ["data-uitheme"] });
     // Disable default validation errors for typescript and javascript
     monaco.typescript.typescriptDefaults.setDiagnosticsOptions({
         noSemanticValidation: true,

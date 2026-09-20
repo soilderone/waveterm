@@ -6,7 +6,15 @@ import { waveEventSubscribeSingle } from "@/app/store/wps";
 import { RpcApi } from "@/app/store/wshclientapi";
 import { setLanguage, t } from "@/util/i18n";
 import { fireAndForget } from "@/util/util";
-import { BaseWindow, BaseWindowConstructorOptions, dialog, globalShortcut, ipcMain, screen, webContents } from "electron";
+import {
+    BaseWindow,
+    BaseWindowConstructorOptions,
+    dialog,
+    globalShortcut,
+    ipcMain,
+    screen,
+    webContents,
+} from "electron";
 import { globalEvents } from "emain/emain-events";
 import path from "path";
 import { debounce } from "throttle-debounce";
@@ -20,6 +28,7 @@ import {
 import { log } from "./emain-log";
 import { getElectronAppBasePath, isDev, unamePlatform } from "./emain-platform";
 import { getOrCreateWebViewForTab, getWaveTabViewByWebContentsId, WaveTabView } from "./emain-tabview";
+import { getChromeTheme, subscribeChromeTheme } from "./emain-theme";
 import { delay, ensureBoundsAreVisible, waveKeyToElectronKey } from "./emain-util";
 import { ElectronWshClient } from "./emain-wsh";
 import { updater } from "./updater";
@@ -171,6 +180,7 @@ export class WaveBrowserWindow extends BaseWindow {
 
         const isTransparent = settings?.["window:transparent"] ?? false;
         const isBlur = !isTransparent && (settings?.["window:blur"] ?? false);
+        const { background: chromeBgColor, symbol: chromeSymbolColor } = getChromeTheme();
 
         if (opts.unamePlatform === "darwin") {
             winOpts.titleBarStyle = "hiddenInset";
@@ -182,12 +192,12 @@ export class WaveBrowserWindow extends BaseWindow {
             } else if (isBlur) {
                 winOpts.vibrancy = "fullscreen-ui";
             } else {
-                winOpts.backgroundColor = "#222222";
+                winOpts.backgroundColor = chromeBgColor;
             }
         } else if (opts.unamePlatform === "linux") {
             winOpts.titleBarStyle = settings["window:nativetitlebar"] ? "default" : "hidden";
             winOpts.titleBarOverlay = {
-                symbolColor: "white",
+                symbolColor: chromeSymbolColor,
                 color: "#00000000",
             };
             winOpts.icon = path.join(getElectronAppBasePath(), "public/logos/wave-logo-dark.png");
@@ -195,13 +205,13 @@ export class WaveBrowserWindow extends BaseWindow {
             if (isTransparent) {
                 winOpts.transparent = true;
             } else {
-                winOpts.backgroundColor = "#222222";
+                winOpts.backgroundColor = chromeBgColor;
             }
         } else if (opts.unamePlatform === "win32") {
             winOpts.titleBarStyle = "hidden";
             winOpts.titleBarOverlay = {
-                color: "#222222",
-                symbolColor: "#c3c8c2",
+                color: chromeBgColor,
+                symbolColor: chromeSymbolColor,
                 height: 32,
             };
             if (isTransparent) {
@@ -209,11 +219,22 @@ export class WaveBrowserWindow extends BaseWindow {
             } else if (isBlur) {
                 winOpts.backgroundMaterial = "acrylic";
             } else {
-                winOpts.backgroundColor = "#222222";
+                winOpts.backgroundColor = chromeBgColor;
             }
         }
 
         super(winOpts);
+
+        const unsubscribeTheme = subscribeChromeTheme(() => {
+            const theme = getChromeTheme();
+            if (!isTransparent && (!isBlur || opts.unamePlatform === "linux")) {
+                this.setBackgroundColor(theme.background);
+            }
+            if (opts.unamePlatform === "win32" || (opts.unamePlatform === "linux" && !settings?.["window:nativetitlebar"])) {
+                this.setTitleBarOverlay({ color: "#00000000", symbolColor: theme.symbol });
+            }
+        });
+        this.once("closed", unsubscribeTheme);
 
         if (opts.unamePlatform === "win32") {
             this.setMenu(null);

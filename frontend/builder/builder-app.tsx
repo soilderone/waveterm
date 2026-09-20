@@ -3,6 +3,7 @@
 
 import { ModalsRenderer } from "@/app/modals/modalsrenderer";
 import { globalStore } from "@/app/store/jotaiStore";
+import { UIThemeUpdater } from "@/app/uitheme";
 import { WaveEnvContext } from "@/app/waveenv/waveenv";
 import { makeWaveEnvImpl } from "@/app/waveenv/waveenvimpl";
 import { AppSelectionModal } from "@/builder/app-selection-modal";
@@ -39,8 +40,9 @@ function BuilderAppInner() {
     const hasDraftApp = !isBlank(builderAppId) && builderAppId.startsWith("draft/");
 
     return (
-        <div className="w-full h-full flex flex-col bg-main-bg text-main-text">
+        <div className="w-full h-full flex flex-col bg-background text-foreground">
             <BuilderKeyHandlers />
+            <UIThemeUpdater />
             <div
                 className="h-9 shrink-0 border-b border-b-border flex items-center justify-center gap-2"
                 style={{ WebkitAppRegion: "drag" } as React.CSSProperties}

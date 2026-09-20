@@ -6,6 +6,7 @@
     "app:defaultnewblock": "term",
     "app:tabbar": "top",
     "app:language": "en",
+    "app:uitheme": "dark",
     "app:confirmquit": true,
     "app:hideaibutton": false,
     "term:showsplitbuttons": false,

@@ -132,6 +132,10 @@ export const enUS: Record<string, string> = {
     "tabMenu.tabBarPosition": "Tab Bar Position",
     "tabMenu.positionTop": "Top",
     "tabMenu.positionLeft": "Left",
+    "tabMenu.appearance": "Appearance",
+    "tabMenu.themeDark": "Dark",
+    "tabMenu.themeLight": "Light",
+    "tabMenu.themeSystem": "Match System",
     "tabMenu.closeTab": "Close Tab",
 
     "vtab.newTab": "New Tab",

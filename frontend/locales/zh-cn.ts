@@ -132,6 +132,10 @@ export const zhCN: Record<string, string> = {
     "tabMenu.tabBarPosition": "标签栏位置",
     "tabMenu.positionTop": "顶部",
     "tabMenu.positionLeft": "左侧",
+    "tabMenu.appearance": "外观",
+    "tabMenu.themeDark": "深色",
+    "tabMenu.themeLight": "浅色",
+    "tabMenu.themeSystem": "跟随系统",
     "tabMenu.closeTab": "关闭标签页",
 
     "vtab.newTab": "新建标签页",

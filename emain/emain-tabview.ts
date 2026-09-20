@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { RpcApi } from "@/app/store/wshclientapi";
@@ -19,6 +19,7 @@ import {
     shFrameNavHandler,
     shNavHandler,
 } from "./emain-util";
+import { getChromeTheme, subscribeChromeTheme } from "./emain-theme";
 import { ElectronWshClient } from "./emain-wsh";
 
 // Background tabs stay attached and are parked far off-screen rather than hidden, so they keep
@@ -112,7 +113,7 @@ function computeBgColor(fullConfig: FullConfigType): string {
     } else if (isBlur) {
         return "#00000000";
     } else {
-        return "#222222";
+        return getChromeTheme().background;
     }
 }
 
@@ -169,6 +170,11 @@ export class WaveTabView extends WebContentsView {
         });
         const wcId = this.webContents.id;
         wcIdToWaveTabMap.set(wcId, this);
+        const transparentBackground = computeBgColor(fullConfig) === "#00000000";
+        const unsubscribeTheme = subscribeChromeTheme(() => {
+            this.setBackgroundColor(transparentBackground ? "#00000000" : getChromeTheme().background);
+        });
+        this.webContents.once("destroyed", unsubscribeTheme);
         if (isDevVite) {
             this.webContents.loadURL(`${process.env.ELECTRON_RENDERER_URL}/index.html`);
         } else {
@@ -179,7 +185,6 @@ export class WaveTabView extends WebContentsView {
             removeWaveTabView(this.waveTabId);
             this.isDestroyed = true;
         });
-        this.setBackgroundColor(computeBgColor(fullConfig));
     }
 
     get waveTabId(): string {

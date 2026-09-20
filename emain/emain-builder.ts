@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { ClientService } from "@/app/store/services";
@@ -9,6 +9,7 @@ import { globalEvents } from "emain/emain-events";
 import path from "path";
 import { getElectronAppBasePath, isDevVite, unamePlatform } from "./emain-platform";
 import { calculateWindowBounds, MinWindowHeight, MinWindowWidth } from "./emain-window";
+import { getChromeTheme, subscribeChromeTheme } from "./emain-theme";
 import { ElectronWshClient } from "./emain-wsh";
 
 export type BuilderWindowType = BrowserWindow & {
@@ -63,13 +64,15 @@ export async function createBuilderWindow(appId: string): Promise<BuilderWindowT
                 ? path.join(getElectronAppBasePath(), "public/logos/wave-logo-dark.png")
                 : undefined,
         show: false,
-        backgroundColor: "#222222",
+        backgroundColor: getChromeTheme().background,
         webPreferences: {
             preload: path.join(getElectronAppBasePath(), "preload", "index.cjs"),
             webviewTag: true,
         },
     });
 
+    const unsubscribeTheme = subscribeChromeTheme(() => builderWindow.setBackgroundColor(getChromeTheme().background));
+    builderWindow.once("closed", unsubscribeTheme);
     if (isDevVite) {
         await builderWindow.loadURL(`${process.env.ELECTRON_RENDERER_URL}/index.html`);
     } else {

@@ -54,7 +54,31 @@ export function buildTabBarContextMenu(env: TabEnv): ContextMenuItem[] {
             click: () => fireAndForget(() => env.rpc.SetConfigCommand(TabRpcClient, { "app:tabbar": "left" })),
         },
     ];
-    return [{ label: t("tabMenu.tabBarPosition"), type: "submenu", submenu: tabBarSubmenu }];
+    const currentUITheme = globalStore.get(env.getSettingsKeyAtom("app:uitheme")) ?? "dark";
+    const appearanceSubmenu: ContextMenuItem[] = [
+        {
+            label: t("tabMenu.themeDark"),
+            type: "checkbox",
+            checked: currentUITheme === "dark",
+            click: () => fireAndForget(() => env.rpc.SetConfigCommand(TabRpcClient, { "app:uitheme": "dark" })),
+        },
+        {
+            label: t("tabMenu.themeLight"),
+            type: "checkbox",
+            checked: currentUITheme === "light",
+            click: () => fireAndForget(() => env.rpc.SetConfigCommand(TabRpcClient, { "app:uitheme": "light" })),
+        },
+        {
+            label: t("tabMenu.themeSystem"),
+            type: "checkbox",
+            checked: currentUITheme === "system",
+            click: () => fireAndForget(() => env.rpc.SetConfigCommand(TabRpcClient, { "app:uitheme": "system" })),
+        },
+    ];
+    return [
+        { label: t("tabMenu.tabBarPosition"), type: "submenu", submenu: tabBarSubmenu },
+        { label: t("tabMenu.appearance"), type: "submenu", submenu: appearanceSubmenu },
+    ];
 }
 
 export function buildTabContextMenu(
