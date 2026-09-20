@@ -5,36 +5,48 @@
 
 @source "../node_modules/streamdown/dist/index.js";
 
+/* Colors resolve through the sage primitives in app/theme.scss rather than holding literals,
+   so the whole utility layer follows a theme switch there instead of being re-audited. */
 @theme {
-    --color-background: rgb(34, 34, 34);
-    --color-foreground: #f7f7f7;
-    --color-white: #f7f7f7;
-    --color-primary: #f7f7f7;
-    --color-muted-foreground: rgb(195, 200, 194);
-    --color-secondary: rgb(195, 200, 194);
-    --color-muted: rgb(140, 145, 140);
-    --color-accent-50: rgb(236, 253, 232);
-    --color-accent-100: rgb(209, 250, 202);
-    --color-accent-200: rgb(167, 243, 168);
-    --color-accent-300: rgb(110, 231, 133);
-    --color-accent-400: rgb(88, 193, 66); /* main accent color */
-    --color-accent-500: rgb(63, 162, 51);
-    --color-accent-600: rgb(47, 133, 47);
-    --color-accent-700: rgb(34, 104, 43);
-    --color-accent-800: rgb(22, 81, 35);
-    --color-accent-900: rgb(15, 61, 29);
-    --color-error: rgb(229, 77, 46);
-    --color-warning: rgb(224, 185, 86);
-    --color-success: rgb(78, 154, 6);
-    --color-panel: rgba(31, 33, 31, 0.5);
-    --color-hover: rgba(255, 255, 255, 0.1);
-    --color-border: rgba(255, 255, 255, 0.16);
-    --color-modalbg: #232323;
-    --color-accentbg: rgba(88, 193, 66, 0.5);
-    --color-hoverbg: rgba(255, 255, 255, 0.2);
-    --color-highlightbg: rgba(255, 255, 255, 0.2);
-    --color-accent: rgb(88, 193, 66);
-    --color-accenthover: rgb(118, 223, 96);
+    --color-background: var(--sage-bg);
+    --color-foreground: var(--sage-text);
+    --color-white: var(--sage-text);
+    --color-primary: var(--sage-text);
+    --color-muted-foreground: var(--sage-text-2);
+    --color-secondary: var(--sage-text-2);
+    --color-muted: var(--sage-text-3);
+    --color-accent-50: #eef5e9;
+    --color-accent-100: #d8e9cd;
+    --color-accent-200: #c0dbb1;
+    --color-accent-300: #a9cd95;
+    --color-accent-400: #93b97e; /* main accent color */
+    --color-accent-500: #7aa065;
+    --color-accent-600: #618350;
+    --color-accent-700: #4a663e;
+    --color-accent-800: #34432f;
+    --color-accent-900: #22301f;
+    --color-error: var(--sage-error);
+    --color-warning: var(--sage-warning);
+    --color-success: var(--sage-success);
+    --color-panel: var(--panel-bg-color);
+    --color-surface: var(--sage-surface);
+    --color-ink: var(--sage-ink);
+    --color-hover: var(--sage-overlay);
+    --color-border: var(--sage-line);
+    --color-borderstrong: var(--sage-line-strong);
+    --color-modalbg: var(--sage-panel);
+    --color-raise: var(--sage-raise);
+    --color-accentbg: var(--sage-accent-deep);
+    --color-hoverbg: var(--sage-overlay-strong);
+    --color-highlightbg: var(--sage-overlay-strong);
+    --color-accent: var(--sage-accent);
+    --color-accenthover: var(--sage-accent-hover);
+    --color-onaccent: var(--sage-on-accent);
+    --color-typeterm: var(--type-term);
+    --color-typefiles: var(--type-files);
+    --color-typeweb: var(--type-web);
+    --color-typeai: var(--type-ai);
+    --color-typesys: var(--type-sys);
 
     --font-sans: "Inter", sans-serif;
     --font-mono: "Hack", monospace;

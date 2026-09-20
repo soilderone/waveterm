@@ -1,48 +1,79 @@
-// Copyright 2024, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 :root {
-    --main-text-color: #f7f7f7;
+    color-scheme: dark;
+
+    /* sage palette primitives — every semantic token below resolves to one of these,
+       so a future light theme only has to redefine this block (see [data-uitheme="light"]) */
+    --sage-ink: #101613;
+    --sage-bg: #141b17;
+    --sage-surface: #1c2420;
+    --sage-panel: #242d27;
+    --sage-raise: #2d3730;
+    --sage-text: #e1e8df;
+    --sage-text-2: #a0ada0;
+    --sage-text-3: #7d8a7d;
+    --sage-line: rgba(225, 232, 223, 0.12);
+    --sage-line-strong: rgba(225, 232, 223, 0.2);
+    --sage-overlay: rgba(225, 232, 223, 0.08);
+    --sage-overlay-strong: rgba(225, 232, 223, 0.16);
+    --sage-accent: #93b97e;
+    --sage-accent-hover: #abd095;
+    --sage-accent-deep: #34432f;
+    --sage-on-accent: #172414;
+    --sage-error: #e08c85;
+    --sage-warning: #e0bd72;
+    --sage-success: #8fbf78;
+
+    /* per-view accents used by block frames (see blockutil.blockViewToAccentVar) */
+    --type-term: var(--sage-accent);
+    --type-files: #d6a85f;
+    --type-web: #7fb0d6;
+    --type-ai: #b3a0e6;
+    --type-sys: #7fc7bd;
+
+    --main-text-color: var(--sage-text);
     --title-font-size: 18px;
     --window-opacity: 1;
-    --secondary-text-color: rgb(195, 200, 194);
-    --grey-text-color: #666;
-    --main-bg-color: rgb(34, 34, 34);
-    --border-color: rgba(255, 255, 255, 0.16);
+    --secondary-text-color: var(--sage-text-2);
+    --grey-text-color: var(--sage-text-3);
+    --main-bg-color: var(--sage-bg);
+    --border-color: var(--sage-line);
     --base-font: normal 14px / normal "Inter", sans-serif;
     --fixed-font: normal 12px / normal "Hack", monospace;
-    --accent-color: rgb(88, 193, 66);
-    --panel-bg-color: rgba(31, 33, 31, 0.5);
-    --highlight-bg-color: rgba(255, 255, 255, 0.2);
+    --accent-color: var(--sage-accent);
+    --panel-bg-color: rgba(28, 36, 32, 0.5);
+    --highlight-bg-color: var(--sage-overlay-strong);
     --markdown-font-family:
         -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji",
         "Segoe UI Emoji";
     --markdown-font-size: 14px;
     --markdown-fixed-font-size: 12px;
-    --error-color: rgb(229, 77, 46);
-    --warning-color: rgb(224, 185, 86);
-    --success-color: rgb(78, 154, 6);
-    --hover-bg-color: rgba(255, 255, 255, 0.1);
-    --block-bg-color: rgba(0, 0, 0, 0.5);
-    --block-bg-solid-color: rgb(0, 0, 0);
-    --block-border-radius: 8px;
+    --error-color: var(--sage-error);
+    --warning-color: var(--sage-warning);
+    --success-color: var(--sage-success);
+    --hover-bg-color: var(--sage-overlay);
+    --block-bg-color: rgba(16, 22, 19, 0.55);
+    --block-bg-solid-color: var(--sage-ink);
+    --block-border-radius: 10px;
 
-    --keybinding-color: #e0e0e0;
-    --keybinding-bg-color: #333;
-    --keybinding-border-color: #444;
+    --keybinding-color: var(--sage-text);
+    --keybinding-bg-color: var(--sage-raise);
+    --keybinding-border-color: var(--sage-line-strong);
 
     /* scrollbar colors */
     --scrollbar-background-color: transparent;
-    --scrollbar-thumb-color: rgba(255, 255, 255, 0.15);
-    --scrollbar-thumb-hover-color: rgba(255, 255, 255, 0.5);
-    --scrollbar-thumb-active-color: rgba(255, 255, 255, 0.6);
+    --scrollbar-thumb-color: rgba(225, 232, 223, 0.15);
+    --scrollbar-thumb-hover-color: rgba(225, 232, 223, 0.4);
+    --scrollbar-thumb-active-color: rgba(225, 232, 223, 0.55);
 
-    --header-font: 700 11px / normal "Inter", sans-serif;
+    --header-font: 600 11.5px / normal "Inter", sans-serif;
     --header-icon-size: 14px;
     --header-icon-width: 16px;
     --header-height: 30px;
 
-    --tab-green: rgb(88, 193, 66);
+    --tab-green: var(--sage-accent);
 
     /* z-index values */
     --zindex-header-hover: 100;
@@ -78,9 +109,9 @@
     // xterm-decoration-top: 2
 
     // modal colors
-    --modal-bg-color: #232323;
-    --modal-header-bottom-border-color: rgba(241, 246, 243, 0.15);
-    --modal-border-color: rgba(255, 255, 255, 0.12); /* toggle colors */
+    --modal-bg-color: var(--sage-panel);
+    --modal-header-bottom-border-color: var(--sage-line-strong);
+    --modal-border-color: var(--sage-line); /* toggle colors */
     --modal-border-radius: 6px;
     --toggle-bg-color: var(--border-color);
     --modal-shadow-color: rgba(0, 0, 0, 0.8);
@@ -90,15 +121,15 @@
     --toggle-checked-bg-color: var(--accent-color);
 
     // link color
-    --link-color: #58c142;
+    --link-color: var(--sage-accent);
 
     // form colors
-    --form-element-border-color: rgba(241, 246, 243, 0.15);
+    --form-element-border-color: var(--sage-line-strong);
     --form-element-bg-color: var(--main-bg-color);
     --form-element-text-color: var(--main-text-color);
     --form-element-primary-text-color: var(--main-text-color);
     --form-element-primary-color: var(--accent-color);
-    --form-element-secondary-color: rgba(255, 255, 255, 0.2);
+    --form-element-secondary-color: var(--sage-overlay-strong);
     --form-element-error-color: var(--error-color);
 
     --conn-icon-color: #53b4ea;
@@ -112,8 +143,8 @@
     --conn-icon-color-8: #58c142;
     --conn-status-overlay-bg-color: rgba(230, 186, 30, 0.2);
 
-    --sysinfo-cpu-color: #58c142;
-    --sysinfo-mem-color: #53b4ea;
+    --sysinfo-cpu-color: var(--sage-accent);
+    --sysinfo-mem-color: var(--type-web);
 
     --bulb-color: rgb(255, 221, 51);
 
@@ -144,17 +175,93 @@
     --term-cursor-accent: #000000;
 
     // button colors
-    --button-text-color: #000000;
+    --button-text-color: var(--sage-on-accent);
     --button-green-bg: var(--term-green);
     --button-green-border-color: #29f200;
-    --button-grey-bg: rgba(255, 255, 255, 0.04);
-    --button-grey-hover-bg: rgba(255, 255, 255, 0.09);
-    --button-grey-border-color: rgba(255, 255, 255, 0.1);
-    --button-grey-outlined-color: rgba(255, 255, 255, 0.6);
+    --button-grey-bg: rgba(225, 232, 223, 0.05);
+    --button-grey-hover-bg: rgba(225, 232, 223, 0.1);
+    --button-grey-border-color: var(--sage-line);
+    --button-grey-outlined-color: rgba(225, 232, 223, 0.6);
     --button-red-bg: #cc0000;
     --button-red-hover-bg: #f93939;
     --button-red-border-color: #fc3131;
     --button-red-outlined-color: #ff3c3c;
     --button-yellow-bg: #c4a000;
     --button-yellow-hover-bg: #fce94f;
+}
+
+/* Light skin of the same sage palette. data-uitheme is set on <html> from the app:uitheme
+   setting (see app/uitheme.tsx); only the primitives are redefined here, every semantic token
+   above resolves through them. The terminal stays ink in both themes — that is deliberate. */
+:root[data-uitheme="light"] {
+    color-scheme: light;
+
+    --sage-ink: #19221e;
+    --sage-bg: #e8eae5;
+    --sage-surface: #f6f7f3;
+    --sage-panel: #ffffff;
+    --sage-raise: #eef1ea;
+    --sage-text: #252d29;
+    --sage-text-2: #59665c;
+    --sage-text-3: #606b62;
+    --sage-line: rgba(37, 45, 41, 0.12);
+    --sage-line-strong: rgba(37, 45, 41, 0.2);
+    --sage-overlay: rgba(37, 45, 41, 0.06);
+    --sage-overlay-strong: rgba(37, 45, 41, 0.12);
+    --sage-accent: #305d42;
+    --sage-accent-hover: #3f7655;
+    --sage-accent-deep: #e3ebdf;
+    --sage-on-accent: #f2f7ef;
+    --sage-error: #b4453c;
+    --sage-warning: #a8781d;
+    --sage-success: #3f7a4d;
+
+    --type-files: #9c6b2f;
+    --type-web: #3f6f93;
+    --type-ai: #6f5fa6;
+    --type-sys: #2f7d74;
+
+    --panel-bg-color: rgba(246, 247, 243, 0.72);
+    --toggle-thumb-color: var(--sage-panel);
+    --modal-shadow-color: rgba(36, 51, 38, 0.18);
+    --conn-status-overlay-bg-color: rgba(168, 120, 29, 0.16);
+    --bulb-color: #c9a227;
+    --block-bg-color: rgba(255, 255, 255, 0.82);
+    --block-bg-solid-color: #ffffff;
+    --scrollbar-thumb-color: rgba(37, 45, 41, 0.2);
+    --scrollbar-thumb-hover-color: rgba(37, 45, 41, 0.35);
+    --scrollbar-thumb-active-color: rgba(37, 45, 41, 0.5);
+}
+
+// Dark content surfaces need local semantic colors even when the surrounding UI is light.
+.block[data-view="term"] .block-frame-default-header,
+.code-block {
+    --main-text-color: #e1e8df;
+    --secondary-text-color: #a0ada0;
+    --grey-text-color: #a0ada0;
+    --accent-color: #93b97e;
+    --block-accent: #93b97e;
+    --border-color: rgba(225, 232, 223, 0.2);
+    --highlight-bg-color: rgba(225, 232, 223, 0.16);
+    --hover-bg-color: rgba(225, 232, 223, 0.08);
+    --error-color: #e08c85;
+    --warning-color: #e0bd72;
+    --success-color: #8fbf78;
+    --color-primary: #e1e8df;
+    --color-foreground: #e1e8df;
+    --color-white: #e1e8df;
+    --color-secondary: #a0ada0;
+    --color-muted: #a0ada0;
+    --color-accent: #93b97e;
+    --color-warning: #e0bd72;
+    --color-error: #e08c85;
+    --color-success: #8fbf78;
+    --color-hover: rgba(225, 232, 223, 0.08);
+    --color-hoverbg: rgba(225, 232, 223, 0.16);
+    color: var(--main-text-color);
+    color-scheme: dark;
+}
+
+.block[data-view="term"] .block-frame-default-header {
+    background-color: #202b24;
 }
