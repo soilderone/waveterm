@@ -3,7 +3,7 @@
 
 import { BlockModel } from "@/app/block/block-model";
 import { BlockFrame_Header } from "@/app/block/blockframe-header";
-import { blockViewToIcon, getViewIconElem, useTabBackground } from "@/app/block/blockutil";
+import { blockViewToAccentVar, blockViewToIcon, getViewIconElem, useTabBackground } from "@/app/block/blockutil";
 import { ConnStatusOverlay } from "@/app/block/connstatusoverlay";
 import { ChangeConnectionBlockModal } from "@/app/modals/conntypeahead";
 import { getBlockComponentModel, globalStore, useBlockAtom } from "@/app/store/global";
@@ -55,7 +55,7 @@ const BlockMask = React.memo(({ nodeModel }: { nodeModel: NodeModel }) => {
             style.borderColor = frameBorderColor;
         }
         if (isEphemeral && !style.borderColor) {
-            style.borderColor = "rgba(255, 255, 255, 0.7)";
+            style.borderColor = "rgb(from var(--sage-text) r g b / 0.7)";
         }
     }
 
@@ -175,6 +175,7 @@ const BlockFrame_Default_Component = (props: BlockFrameProps) => {
                 magnified: isMagnified,
             })}
             data-blockid={nodeModel.blockId}
+            data-view={metaView}
             onClick={blockModel?.onClick}
             onPointerEnter={blockModel?.onPointerEnter}
             onFocusCapture={blockModel?.onFocusCapture}
@@ -183,6 +184,7 @@ const BlockFrame_Default_Component = (props: BlockFrameProps) => {
                 {
                     "--magnified-block-opacity": magnifiedBlockOpacity,
                     "--magnified-block-blur": `${magnifiedBlockBlur}px`,
+                    "--block-accent": blockViewToAccentVar(metaView),
                 } as React.CSSProperties
             }
             inert={preview || undefined}

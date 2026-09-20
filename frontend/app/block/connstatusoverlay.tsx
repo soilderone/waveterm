@@ -90,7 +90,7 @@ const StalledOverlay = React.memo(
                         className="fa-solid fa-triangle-exclamation text-warning text-base shrink-0"
                         title={t("conn.connectionStalled")}
                     ></i>
-                    <div className="text-[11px] font-semibold leading-4 tracking-[0.11px] text-white min-w-0 flex-1 break-words @max-xxs:hidden">
+                    <div className="text-[11px] font-semibold leading-4 tracking-[0.11px] text-primary min-w-0 flex-1 break-words @max-xxs:hidden">
                         {t("conn.stalledTo", { conn: connName })}
                         {elapsedTime && ` ${t("conn.noActivityFor", { elapsed: elapsedTime })}`}
                     </div>

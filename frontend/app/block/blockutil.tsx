@@ -48,6 +48,25 @@ export function blockViewToIcon(view: string): string {
     return "square";
 }
 
+export function blockViewToAccentVar(view: string): string {
+    if (view == "term") {
+        return "var(--type-term)";
+    }
+    if (view == "preview" || view == "waveconfig" || view == "directory") {
+        return "var(--type-files)";
+    }
+    if (view == "web" || view == "help") {
+        return "var(--type-web)";
+    }
+    if (view == "waveai" || view == "tips") {
+        return "var(--type-ai)";
+    }
+    if (view == "processviewer" || view == "sysinfo") {
+        return "var(--type-sys)";
+    }
+    return "var(--accent-color)";
+}
+
 export function blockViewToName(view: string): string {
     if (util.isBlank(view)) {
         return "(No View)";
