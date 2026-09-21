@@ -1,12 +1,14 @@
 // Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import logoUrl from "@/app/asset/logo.svg?url";
 import { Tooltip } from "@/app/element/tooltip";
+import "@/app/shellchrome.scss";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
+import { WorkspaceJump } from "@/app/workspace/workspace-jump";
 import { WorkspaceLayoutModel } from "@/app/workspace/workspace-layout-model";
 import { ShellToolbar } from "@/app/workspace/workspace-shell";
-import logoUrl from "@/app/asset/logo.svg?url";
 import { deleteLayoutModelForTab } from "@/layout/index";
 import { useT } from "@/util/i18n-hooks";
 import { isMacOSTahoeOrLater } from "@/util/platformutil";
@@ -196,11 +198,7 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
         const workspaceSwitcherWidth = workspaceSwitcherRef.current?.getBoundingClientRect().width ?? 0;
 
         const nonTabElementsWidth =
-            windowDragLeftWidth +
-            rightContainerWidth +
-            addBtnWidth +
-            appMenuButtonWidth +
-            workspaceSwitcherWidth;
+            windowDragLeftWidth + rightContainerWidth + addBtnWidth + appMenuButtonWidth + workspaceSwitcherWidth;
         const spaceForTabs = tabbarWrapperWidth - nonTabElementsWidth;
 
         const numberOfTabs = tabIds.length;
@@ -579,9 +577,7 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
     // Calculate window drag left width based on platform and state
     let windowDragLeftWidth = 10;
     if (env.isMacOS() && !isFullScreen) {
-        const trafficLightsWidth = isMacOSTahoeOrLater()
-            ? MacOSTahoeTrafficLightsWidth
-            : MacOSTrafficLightsWidth;
+        const trafficLightsWidth = isMacOSTahoeOrLater() ? MacOSTahoeTrafficLightsWidth : MacOSTrafficLightsWidth;
         if (zoomFactor > 0) {
             windowDragLeftWidth = trafficLightsWidth / zoomFactor;
         } else {
@@ -623,7 +619,10 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
                 divRef={workspaceSwitcherRef}
                 divClassName="shell-brand-workspace"
             >
-                <span className="shell-brand"><img src={logoUrl} alt="" /><span>wave</span></span>
+                <span className="shell-brand">
+                    <img src={logoUrl} alt="" />
+                    <span>wave</span>
+                </span>
                 <WorkspaceSwitcher />
             </Tooltip>
             <div className="tab-bar" ref={tabBarRef} data-overlayscrollbars-initialize>
@@ -667,9 +666,12 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
             >
                 <i className="fa fa-solid fa-plus" />
             </button>
+            {!env.isMock && <WorkspaceJump />}
             <div className="flex-1" />
             <div ref={rightContainerRef} className="shell-titlebar-actions">
-                <ShellToolbar />
+                {/* the toolbar reaches into the tab's layout model and the global store, neither of
+                    which the preview server's mock env provides */}
+                {!env.isMock && <ShellToolbar />}
                 <WaveAIButton divRef={waveAIButtonRef} />
                 <UpdateStatusBanner />
                 <div
