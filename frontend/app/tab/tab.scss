@@ -52,7 +52,9 @@
             border-radius: 6px;
             background: rgb(from var(--sage-panel) r g b / 0.8);
             box-shadow: inset 0 0 0 1px var(--border-color);
-            &::before { background: var(--accent-color); }
+            &::before {
+                background: var(--accent-color);
+            }
         }
 
         .name {

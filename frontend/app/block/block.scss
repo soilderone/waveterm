@@ -50,11 +50,11 @@
         position: absolute;
         top: 0;
         width: 100%;
-        height: 30px;
+        height: var(--header-height);
         z-index: var(--zindex-header-hover);
 
         &.is-showing {
-            max-height: 30px;
+            max-height: var(--header-height);
         }
     }
 
@@ -65,6 +65,8 @@
     &.block-frame-default {
         position: relative;
         padding: 1px;
+        box-shadow: 0 6px 18px -14px rgb(from var(--sage-ink) r g b / 0.45);
+        transition: box-shadow 0.25s ease;
 
         .block-frame-default-inner {
             background-color: var(--block-bg-color);
@@ -80,7 +82,7 @@
                 max-height: var(--header-height);
                 min-height: var(--header-height);
                 display: flex;
-                padding: 4px 5px 4px 7px;
+                padding: 4px 9px 4px 12px;
                 align-items: center;
                 gap: 8px;
                 font: var(--header-font);
@@ -269,7 +271,7 @@
                 .wave-iconbutton {
                     opacity: 0.7;
                     font-size: 45px;
-                    margin: -30px 0 0 0;
+                    margin: calc(-1 * var(--header-height)) 0 0 0;
                 }
             }
         }
@@ -435,24 +437,20 @@
         }
 
         &.block-focused {
-            .block-frame-default-inner {
-                border-color: color-mix(in srgb, var(--block-accent, var(--accent-color)) 35%, transparent);
-            }
+            box-shadow:
+                0 0 0 3px color-mix(in srgb, var(--block-accent, var(--accent-color)) 10%, transparent),
+                0 14px 40px -20px color-mix(in srgb, var(--block-accent, var(--accent-color)) 45%, transparent);
 
-            .block-mask {
-                border: 2px solid color-mix(in srgb, var(--block-accent, var(--accent-color)) 65%, transparent);
-                box-shadow: 0 0 22px -6px color-mix(in srgb, var(--block-accent, var(--accent-color)) 55%, transparent);
+            .block-frame-default-inner {
+                border-color: color-mix(in srgb, var(--block-accent, var(--accent-color)) 45%, transparent);
             }
 
             &.block-no-highlight,
             &.block-preview {
+                box-shadow: 0 6px 18px -14px rgb(from var(--sage-ink) r g b / 0.45);
+
                 .block-frame-default-inner {
                     border-color: var(--border-color);
-                }
-
-                .block-mask {
-                    border: 2px solid rgb(from var(--border-color) r g b / 10%) !important;
-                    box-shadow: none;
                 }
             }
         }

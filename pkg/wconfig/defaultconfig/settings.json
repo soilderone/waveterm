@@ -21,7 +21,7 @@
     "editor:minimapenabled": true,
     "web:defaulturl": "https://github.com/wavetermdev/waveterm",
     "web:defaultsearch": "https://www.google.com/search?q={query}",
-    "window:tilegapsize": 3,
+    "window:tilegapsize": 12,
     "window:maxtabcachesize": 10,
     "window:nativetitlebar": true,
     "window:magnifiedblockopacity": 0.6,
@@ -40,6 +40,7 @@
     "term:copyonselect": true,
     "term:trimtrailingwhitespace": true,
     "term:durable": false,
+    "term:transparency": 0,
     "waveai:showcloudmodes": true,
     "waveai:defaultmode": "waveai@balanced",
     "preview:defaultsort": "name"
