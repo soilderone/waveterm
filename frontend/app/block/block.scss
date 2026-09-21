@@ -233,12 +233,6 @@
                 .block-frame-end-icons {
                     display: flex;
                     flex-shrink: 0;
-                    opacity: 0;
-                    pointer-events: none;
-                    transform: translateX(3px);
-                    transition:
-                        opacity 0.18s ease,
-                        transform 0.18s ease;
 
                     .wave-iconbutton {
                         display: flex;
@@ -438,22 +432,6 @@
                     opacity: 0.7;
                 }
             }
-        }
-
-        // header controls stay out of the way until the block is the one being worked in
-        &:hover,
-        &.block-focused {
-            .block-frame-end-icons {
-                opacity: 1;
-                pointer-events: auto;
-                transform: none;
-            }
-        }
-
-        .block-frame-default-header:focus-within .block-frame-end-icons {
-            opacity: 1;
-            pointer-events: auto;
-            transform: none;
         }
 
         &.block-focused {
