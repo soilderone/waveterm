@@ -26,6 +26,14 @@
     --sage-warning: #e0bd72;
     --sage-success: #8fbf78;
 
+    /* ink surface — the terminal keeps these in both themes, see .block[data-view="term"] below */
+    --ink-bg: #19221e;
+    --ink-raise: #202b24;
+    --ink-line: #344038;
+    --ink-text: #dae1da;
+    --ink-muted: #8b9a8b;
+    --ink-accent: #93b97e;
+
     /* per-view accents used by block frames (see blockutil.blockViewToAccentVar) */
     --type-term: var(--sage-accent);
     --type-files: #d6a85f;
@@ -233,26 +241,31 @@
     --scrollbar-thumb-active-color: rgba(37, 45, 41, 0.5);
 }
 
-// Dark content surfaces need local semantic colors even when the surrounding UI is light.
-.block[data-view="term"] .block-frame-default-header,
+// The terminal is the one dark surface in both themes -- on the light canvas it stays ink
+// rather than turning into another white pane. Declared on the inner frame, not on .block,
+// because blockframe.tsx sets --block-accent inline on .block and an inline custom property
+// would win over anything declared here.
+.block[data-view="term"] .block-frame-default-inner,
 .code-block {
-    --main-text-color: #e1e8df;
-    --secondary-text-color: #a0ada0;
-    --grey-text-color: #a0ada0;
-    --accent-color: #93b97e;
-    --block-accent: #93b97e;
-    --border-color: rgba(225, 232, 223, 0.2);
+    --block-bg-color: var(--ink-bg);
+    --block-bg-solid-color: var(--ink-bg);
+    --main-text-color: var(--ink-text);
+    --secondary-text-color: var(--ink-muted);
+    --grey-text-color: var(--ink-muted);
+    --accent-color: var(--ink-accent);
+    --block-accent: var(--ink-accent);
+    --border-color: var(--ink-line);
     --highlight-bg-color: rgba(225, 232, 223, 0.16);
     --hover-bg-color: rgba(225, 232, 223, 0.08);
     --error-color: #e08c85;
     --warning-color: #e0bd72;
     --success-color: #8fbf78;
-    --color-primary: #e1e8df;
-    --color-foreground: #e1e8df;
-    --color-white: #e1e8df;
-    --color-secondary: #a0ada0;
-    --color-muted: #a0ada0;
-    --color-accent: #93b97e;
+    --color-primary: var(--ink-text);
+    --color-foreground: var(--ink-text);
+    --color-white: var(--ink-text);
+    --color-secondary: var(--ink-muted);
+    --color-muted: var(--ink-muted);
+    --color-accent: var(--ink-accent);
     --color-warning: #e0bd72;
     --color-error: #e08c85;
     --color-success: #8fbf78;
@@ -263,5 +276,5 @@
 }
 
 .block[data-view="term"] .block-frame-default-header {
-    background-color: #202b24;
+    background-color: var(--ink-raise);
 }
