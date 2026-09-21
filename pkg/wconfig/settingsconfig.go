@@ -70,7 +70,7 @@ type SettingsType struct {
 	AppFocusFollowsCursor         string `json:"app:focusfollowscursor,omitempty" jsonschema:"enum=off,enum=on,enum=term"`
 	AppTabBar                     string `json:"app:tabbar,omitempty" jsonschema:"enum=top,enum=left"`
 	AppLanguage                   string `json:"app:language,omitempty" jsonschema:"enum=en,enum=zh-CN,description=UI language (en or zh-CN)"`
-	AppUITheme                    string `json:"app:uitheme,omitempty" jsonschema:"enum=dark,enum=light,enum=system,description=UI color theme (dark, light, or system)"`
+	AppUITheme                    string `json:"app:uitheme,omitempty" jsonschema:"enum=dark,enum=light,enum=system,description=UI color theme - dark light or system"`
 
 	FeatureWaveAppBuilder bool `json:"feature:waveappbuilder,omitempty"`
 

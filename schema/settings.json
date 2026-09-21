@@ -50,6 +50,23 @@
             "left"
           ]
         },
+        "app:language": {
+          "type": "string",
+          "enum": [
+            "en",
+            "zh-CN"
+          ],
+          "description": "UI language (en or zh-CN)"
+        },
+        "app:uitheme": {
+          "type": "string",
+          "enum": [
+            "dark",
+            "light",
+            "system"
+          ],
+          "description": "UI color theme - dark light or system"
+        },
         "feature:waveappbuilder": {
           "type": "boolean"
         },
