@@ -54,7 +54,12 @@ export function computeTheme(
         }
     }
     const bgcolor = themeCopy.background;
-    themeCopy.background = "#00000000";
+    // xterm cannot use subpixel antialiasing when it composites onto a transparent canvas, which
+    // reads as blurry glyphs -- obvious with dark text on a light background. Only hand it a
+    // transparent background when the terminal really is translucent and the block paints behind.
+    if (termTransparency != null && termTransparency > 0) {
+        themeCopy.background = "#00000000";
+    }
     return [themeCopy, bgcolor];
 }
 

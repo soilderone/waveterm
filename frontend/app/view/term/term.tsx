@@ -304,7 +304,7 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
                 drawBoldTextInBrightColors: false,
                 fontWeight: "normal",
                 fontWeightBold: "bold",
-                allowTransparency: true,
+                allowTransparency: termTransparency > 0,
                 scrollback: termScrollback,
                 allowProposedApi: true, // Required by @xterm/addon-search to enable search functionality and decorations
                 ignoreBracketedPasteMode: !termAllowBPM,
