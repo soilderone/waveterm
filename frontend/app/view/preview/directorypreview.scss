@@ -1,10 +1,11 @@
-// Copyright 2024, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 .dir-table-container {
     display: flex;
     flex-direction: column;
     height: 100%;
+    container-type: inline-size;
     --min-row-width: 35rem;
     .dir-table {
         height: 100%;
@@ -14,8 +15,7 @@
         flex-direction: column;
 
         &:not([data-scroll-height="0"]) .dir-table-head::after {
-            background: oklch(from var(--block-bg-color) calc(l + 0.5) c h);
-            backdrop-filter: blur(2px);
+            background: var(--sage-surface);
             content: "";
             z-index: -1;
             position: absolute;
@@ -32,12 +32,16 @@
             width: 100%;
             min-width: fit-content;
             border-bottom: 1px solid var(--border-color);
+            background: var(--sage-surface);
 
             .dir-table-head-row {
                 display: flex;
                 min-width: var(--min-row-width);
                 padding: 4px 6px;
-                font-size: 0.75rem;
+                font-size: 9px;
+                text-transform: uppercase;
+                letter-spacing: 0.09em;
+                color: var(--grey-text-color);
 
                 .dir-table-head-cell {
                     flex: 0 0 auto;
@@ -114,7 +118,7 @@
                     min-width: var(--min-row-width);
 
                     &.focused {
-                        background-color: rgb(from var(--accent-color) r g b / 0.5);
+                        background-color: var(--sage-accent-deep);
                         color: var(--main-text-color);
 
                         .dir-table-body-cell {
@@ -128,7 +132,7 @@
                     }
 
                     &:focus {
-                        background-color: rgb(from var(--accent-color) r g b / 0.5);
+                        background-color: var(--sage-accent-deep);
                         color: var(--main-text-color);
 
                         .dir-table-body-cell {
@@ -142,7 +146,7 @@
                     }
 
                     &:nth-child(odd):not(.focused):not(:focus) {
-                        background-color: var(--sage-overlay);
+                        background-color: transparent;
                     }
 
                     &:hover:not(:focus):not(.focused) {
@@ -195,7 +199,7 @@
     gap: 10px;
     border-radius: 4px;
     border: 1px solid var(--sage-line-strong);
-    background: #212121;
+    background: var(--sage-panel);
     box-shadow: 0px 8px 24px 0px rgba(0, 0, 0, 0.3);
 
     .entry-manager-buttons {
@@ -203,4 +207,19 @@
         flex-direction: row;
         gap: 10px;
     }
+}
+
+@container (max-width: 560px) {
+    .dir-table {
+        --min-row-width: 0;
+        .col-modestr, .col-mimetype { display: none !important; }
+        .dir-table-head-row .col-name, .dir-table-body-row .col-name {
+            flex: 1 1 0 !important;
+            min-width: 90px;
+            width: auto !important;
+        }
+    }
+}
+@container (max-width: 340px) {
+    .dir-table .col-modtime { display: none !important; }
 }

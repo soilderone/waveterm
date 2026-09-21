@@ -231,7 +231,7 @@ export class PreviewModel implements ViewModel {
             const blockData = get(this.blockAtom);
             return blockData?.meta?.edit ?? false;
         });
-        this.viewName = atom("Preview");
+        this.viewName = atom("Files");
         this.hideViewName = atom(true);
         this.viewText = atom((get) => {
             let headerPath = get(this.metaFilePath);

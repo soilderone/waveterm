@@ -5,6 +5,8 @@ import { Tooltip } from "@/app/element/tooltip";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
 import { WorkspaceLayoutModel } from "@/app/workspace/workspace-layout-model";
+import { ShellToolbar } from "@/app/workspace/workspace-shell";
+import logoUrl from "@/app/asset/logo.svg?url";
 import { deleteLayoutModelForTab } from "@/layout/index";
 import { useT } from "@/util/i18n-hooks";
 import { isMacOSTahoeOrLater } from "@/util/platformutil";
@@ -66,7 +68,7 @@ const WaveAIButton = memo(({ divRef }: { divRef?: React.RefObject<HTMLDivElement
             content={t("chrome.toggleAiPanel")}
             placement="bottom"
             hideOnClick
-            divClassName={`flex h-[22px] px-3.5 justify-end mb-1 items-center rounded-md mr-1 box-border cursor-pointer bg-hover hover:bg-hoverbg transition-colors text-[12px] ${aiPanelOpen ? "text-typeai" : "text-secondary"}`}
+            divClassName={`shell-ai-toggle ${aiPanelOpen ? "is-active" : ""}`}
             divStyle={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             divOnClick={onClick}
             divRef={divRef}
@@ -192,16 +194,13 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
         const addBtnWidth = getOuterWidth(addBtnRef.current);
         const appMenuButtonWidth = appMenuButtonRef.current?.getBoundingClientRect().width ?? 0;
         const workspaceSwitcherWidth = workspaceSwitcherRef.current?.getBoundingClientRect().width ?? 0;
-        const waveAIButtonWidth =
-            !hideAiButton && waveAIButtonRef.current != null ? getOuterWidth(waveAIButtonRef.current) : 0;
 
         const nonTabElementsWidth =
             windowDragLeftWidth +
             rightContainerWidth +
             addBtnWidth +
             appMenuButtonWidth +
-            workspaceSwitcherWidth +
-            waveAIButtonWidth;
+            workspaceSwitcherWidth;
         const spaceForTabs = tabbarWrapperWidth - nonTabElementsWidth;
 
         const numberOfTabs = tabIds.length;
@@ -295,6 +294,7 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
         appUpdateStatus,
         zoomFactor,
         showMenuBar,
+        workspace?.name,
     ]);
 
     const getDragDirection = (currentX: number) => {
@@ -616,14 +616,14 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
                     <i className="fa fa-ellipsis" />
                 </div>
             )}
-            <WaveAIButton divRef={waveAIButtonRef} />
             <Tooltip
                 content={t("chrome.workspaceSwitcher")}
                 placement="bottom"
                 hideOnClick
                 divRef={workspaceSwitcherRef}
-                divClassName="flex items-center"
+                divClassName="shell-brand-workspace"
             >
+                <span className="shell-brand"><img src={logoUrl} alt="" /><span>wave</span></span>
                 <WorkspaceSwitcher />
             </Tooltip>
             <div className="tab-bar" ref={tabBarRef} data-overlayscrollbars-initialize>
@@ -661,14 +661,16 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
             <button
                 ref={addBtnRef}
                 title={t("chrome.addTab")}
-                className={`flex h-[22px] px-2 mb-1 mx-1 items-center rounded-md box-border cursor-pointer hover:bg-hoverbg transition-colors text-[12px] text-secondary hover:text-primary${noTabs ? " invisible" : ""}`}
+                className={`shell-icon-button mx-1${noTabs ? " invisible" : ""}`}
                 style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={handleAddTab}
             >
                 <i className="fa fa-solid fa-plus" />
             </button>
             <div className="flex-1" />
-            <div ref={rightContainerRef} className="flex flex-row gap-1 items-end">
+            <div ref={rightContainerRef} className="shell-titlebar-actions">
+                <ShellToolbar />
+                <WaveAIButton divRef={waveAIButtonRef} />
                 <UpdateStatusBanner />
                 <div
                     className="h-full shrink-0 z-window-drag"
@@ -678,5 +680,7 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
         </div>
     );
 });
+
+TabBar.displayName = "TabBar";
 
 export { TabBar, WaveAIButton };

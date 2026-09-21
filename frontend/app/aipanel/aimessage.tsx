@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { WaveStreamdown } from "@/app/element/streamdown";
@@ -224,13 +224,14 @@ export const AIMessage = memo(({ message, isStreaming }: AIMessageProps) => {
     const groupedParts = groupMessageParts(displayParts);
 
     return (
-        <div className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
+        <div className={cn("ai-message flex", message.role === "user" ? "ai-message-user justify-end" : "ai-message-assistant justify-start")}>
+            {message.role === "assistant" && <span className="ai-message-avatar" aria-hidden="true"><i className="fa fa-sparkles" /></span>}
             <div
                 className={cn(
-                    "px-2 rounded-lg [&>*:first-child]:!mt-0",
+                    "ai-message-body px-2 rounded-lg [&>*:first-child]:!mt-0",
                     message.role === "user"
-                        ? "py-2 bg-raise/60 text-primary max-w-[calc(100%-50px)]"
-                        : "min-w-[min(100%,500px)]"
+                        ? "py-2 bg-accentbg text-primary max-w-[86%]"
+                        : "min-w-0 flex-1"
                 )}
             >
                 {displayParts.length === 0 && !isStreaming && !thinkingData ? (

@@ -186,7 +186,7 @@ function VTabWrapper({
     );
 }
 
-export function VTabBar({ workspace, className, onCollapse }: VTabBarProps) {
+export function VTabBar({ workspace, className, onCollapse, embedded = false }: VTabBarProps & { embedded?: boolean }) {
     const env = useWaveEnv<VTabBarEnv>();
     const t = useT();
     const activeTabId = useAtomValue(env.atoms.staticTabId);
@@ -330,10 +330,10 @@ export function VTabBar({ workspace, className, onCollapse }: VTabBarProps) {
     return (
         <div
             className={cn("flex h-full flex-col overflow-hidden", className)}
-            style={{ backdropFilter: "blur(20px)", background: "rgb(from var(--sage-surface) r g b / 0.55)" }}
+            style={embedded ? undefined : { background: "var(--sage-surface)" }}
             onContextMenu={handleTabBarContextMenu}
         >
-            {env.isMacOS() && <MacOSHeader />}
+            {!embedded && env.isMacOS() && <MacOSHeader />}
             <div
                 ref={scrollContainerRef}
                 className="relative flex min-h-0 flex-col overflow-y-auto"

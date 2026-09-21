@@ -6,16 +6,16 @@
 
     /* sage palette primitives — every semantic token below resolves to one of these,
        so a future light theme only has to redefine this block (see [data-uitheme="light"]) */
-    --sage-ink: #101613;
+    --sage-ink: #19221e;
     --sage-bg: #141b17;
-    --sage-surface: #1c2420;
-    --sage-panel: #242d27;
-    --sage-raise: #2d3730;
+    --sage-surface: #202823;
+    --sage-panel: #27302a;
+    --sage-raise: #2e382f;
     --sage-text: #e1e8df;
     --sage-text-2: #a0ada0;
     --sage-text-3: #7d8a7d;
-    --sage-line: rgba(225, 232, 223, 0.12);
-    --sage-line-strong: rgba(225, 232, 223, 0.2);
+    --sage-line: #39443b;
+    --sage-line-strong: #465046;
     --sage-overlay: rgba(225, 232, 223, 0.08);
     --sage-overlay-strong: rgba(225, 232, 223, 0.16);
     --sage-accent: #93b97e;
@@ -54,8 +54,8 @@
     --warning-color: var(--sage-warning);
     --success-color: var(--sage-success);
     --hover-bg-color: var(--sage-overlay);
-    --block-bg-color: rgba(16, 22, 19, 0.55);
-    --block-bg-solid-color: var(--sage-ink);
+    --block-bg-color: var(--sage-panel);
+    --block-bg-solid-color: var(--sage-panel);
     --block-border-radius: 10px;
 
     --keybinding-color: var(--sage-text);
@@ -71,7 +71,7 @@
     --header-font: 600 11.5px / normal "Inter", sans-serif;
     --header-icon-size: 14px;
     --header-icon-width: 16px;
-    --header-height: 30px;
+    --header-height: 42px;
 
     --tab-green: var(--sage-accent);
 
@@ -204,8 +204,8 @@
     --sage-text: #252d29;
     --sage-text-2: #59665c;
     --sage-text-3: #606b62;
-    --sage-line: rgba(37, 45, 41, 0.12);
-    --sage-line-strong: rgba(37, 45, 41, 0.2);
+    --sage-line: #e0e4dd;
+    --sage-line-strong: #ccd3c9;
     --sage-overlay: rgba(37, 45, 41, 0.06);
     --sage-overlay-strong: rgba(37, 45, 41, 0.12);
     --sage-accent: #305d42;

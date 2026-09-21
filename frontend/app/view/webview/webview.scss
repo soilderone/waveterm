@@ -1,4 +1,4 @@
-// Copyright 2024, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 .webview,
@@ -38,7 +38,10 @@
 }
 
 .block-frame-div-url {
-    background: var(--sage-overlay-strong);
+    background: var(--sage-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    min-height: 26px;
 
     input {
         opacity: 1;
@@ -48,4 +51,11 @@
         width: fit-content !important;
         margin-right: 5px;
     }
+}
+
+.workspace-shell .webview {
+    margin: 8px;
+    width: calc(100% - 16px);
+    height: calc(100% - 16px);
+    border-radius: 8px;
 }

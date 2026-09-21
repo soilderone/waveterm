@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import {
@@ -124,7 +124,7 @@ export class WaveAIModel {
 
         this.codeBlockMaxWidth = jotai.atom((get) => {
             const width = get(this.containerWidth);
-            return width > 0 ? width - 35 : 0;
+            return width > 0 ? Math.max(0, width - 70) : 0;
         });
 
         this.isWaveAIFocusedAtom = jotai.atom((get) => {

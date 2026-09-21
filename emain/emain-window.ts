@@ -199,6 +199,7 @@ export class WaveBrowserWindow extends BaseWindow {
             winOpts.titleBarOverlay = {
                 symbolColor: chromeSymbolColor,
                 color: "#00000000",
+                height: 48,
             };
             winOpts.icon = path.join(getElectronAppBasePath(), "public/logos/wave-logo-dark.png");
             winOpts.autoHideMenuBar = !settings?.["window:showmenubar"];
@@ -212,7 +213,7 @@ export class WaveBrowserWindow extends BaseWindow {
             winOpts.titleBarOverlay = {
                 color: chromeBgColor,
                 symbolColor: chromeSymbolColor,
-                height: 32,
+                height: 48,
             };
             if (isTransparent) {
                 winOpts.transparent = true;

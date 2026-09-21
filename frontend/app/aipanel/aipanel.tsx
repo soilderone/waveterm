@@ -23,6 +23,7 @@ import { formatFileSizeError, isAcceptableFile, validateFileSize } from "./ai-ut
 import { AIDroppedFiles } from "./aidroppedfiles";
 import { AIModeDropdown } from "./aimode";
 import { AIPanelHeader } from "./aipanelheader";
+import { AIContextStrip } from "./aicontextstrip";
 import { AIPanelInput } from "./aipanelinput";
 import { AIPanelMessages } from "./aipanelmessages";
 import { AIRateLimitStrip } from "./airatelimitstrip";
@@ -582,6 +583,7 @@ const AIPanelComponentInner = memo(({ roundTopLeft }: AIPanelComponentInnerProps
             {(isDragOver || isReactDndDragOver) && allowAccess && <AIDragOverlay />}
             {showBlockMask && <AIBlockMask />}
             <AIPanelHeader />
+            {!model.inBuilder && <AIContextStrip />}
             <AIRateLimitStrip />
 
             <div key="main-content" className="flex-1 flex flex-col min-h-0">

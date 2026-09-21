@@ -196,7 +196,7 @@ const TabV = forwardRef<HTMLDivElement, TabVProps>((props, ref) => {
             data-tab-id={tabId}
         >
             {showDivider && <div className="tab-divider" />}
-            <div className="tab-inner">
+            <div className="tab-inner" data-has-badge={!!badges?.length || !!flagColor}>
                 <div
                     ref={editableRef}
                     className={clsx("name", { focused: isEditable })}

@@ -64,7 +64,7 @@ interface DirectoryTableHeaderCellProps {
 function DirectoryTableHeaderCell({ header }: DirectoryTableHeaderCellProps) {
     return (
         <div
-            className="dir-table-head-cell"
+            className={cn("dir-table-head-cell", "col-" + header.column.id)}
             key={header.id}
             style={{ width: `calc(var(--header-${header.id}-size) * 1px)` }}
         >
@@ -1235,7 +1235,7 @@ const FileTreeEntry = React.memo(function FileTreeEntry({
                 data-tree-row=""
                 title={entry.path}
                 className={cn(
-                    "flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-hover focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2",
+                    "flex h-7 w-full min-w-0 cursor-pointer select-none items-center gap-2 rounded-md pl-1 pr-2 text-left text-xs transition-colors hover:bg-hover focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2",
                     selected && "bg-accentbg text-primary"
                 )}
                 onKeyDown={handleKeyDown}

@@ -123,6 +123,8 @@ const WorkspaceSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
                 }}
             >
                 <span className="workspace-icon">{workspaceIcon}</span>
+                <span className="workspace-switcher-name">{activeWorkspace?.name || t("shell.workspace")}</span>
+                <i className="fa fa-chevron-down text-[9px]" />
             </PopoverButton>
             <PopoverContent className="workspace-switcher-content">
                 <div className="title">
@@ -157,6 +159,34 @@ const WorkspaceSwitcher = forwardRef<HTMLDivElement>((_, ref) => {
         </Popover>
     );
 });
+
+export function WorkspaceNavigation() {
+    const env = useWaveEnv<WorkspaceSwitcherEnv>();
+    const t = useT();
+    const entries = useAtomValue(workspaceMapAtom);
+    const active = useAtomValue(env.atoms.workspace);
+    const workspaces = entries.map((entry) => entry.workspace).filter(Boolean);
+    if (active && !workspaces.some((workspace) => workspace.oid === active.oid)) {
+        workspaces.unshift(active);
+    }
+    return (
+        <section className="shell-nav-section">
+            <div className="shell-section-label">
+                <span>{t("shell.workspaces")}</span>
+                <button className="shell-icon-button" onClick={() => env.electron.createWorkspace()} title={t("chrome.createNewWorkspace")} aria-label={t("chrome.createNewWorkspace")}>
+                    <i className="fa fa-plus" />
+                </button>
+            </div>
+            {workspaces.map((workspace, index) => (
+                <button key={workspace.oid} className={clsx("shell-nav-item", workspace.oid === active?.oid && "is-active")} onClick={() => env.electron.switchWorkspace(workspace.oid)} aria-current={workspace.oid === active?.oid ? "page" : undefined}>
+                    <span className="shell-workspace-mark">{(workspace.name || "W").slice(0, 1).toUpperCase()}</span>
+                    <span className="shell-nav-label">{workspace.name || t("shell.workspace")}</span>
+                    <span className="shell-nav-index">{String(index + 1).padStart(2, "0")}</span>
+                </button>
+            ))}
+        </section>
+    );
+}
 
 const WorkspaceSwitcherItem = ({
     entryAtom,

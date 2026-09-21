@@ -7,12 +7,9 @@ import { CenteredDiv } from "@/app/element/quickelems";
 import { ModalsRenderer } from "@/app/modals/modalsrenderer";
 import { TabBar } from "@/app/tab/tabbar";
 import { TabContent } from "@/app/tab/tabcontent";
-import { VTabBar } from "@/app/tab/vtabbar";
-import { Widgets } from "@/app/workspace/widgets";
 import { WorkspaceLayoutModel } from "@/app/workspace/workspace-layout-model";
 import { atoms, getApi, getSettingsKeyAtom } from "@/store/global";
 import { useT } from "@/util/i18n-hooks";
-import { isMacOS } from "@/util/platformutil";
 import { useAtomValue } from "jotai";
 import { memo, useEffect, useRef } from "react";
 import {
@@ -23,22 +20,8 @@ import {
     PanelResizeHandle,
 } from "react-resizable-panels";
 
-const MacOSTabBarSpacer = memo(({ tall }: { tall?: boolean }) => {
-    return (
-        <div
-            className="w-full shrink-0"
-            style={
-                {
-                    height: tall ? "calc(28px * var(--zoomfactor-inv))" : "calc(8px * var(--zoomfactor-inv))",
-                    WebkitAppRegion: "drag",
-                    backdropFilter: "blur(20px)",
-                    background: "rgb(from var(--sage-surface) r g b / 0.55)",
-                } as React.CSSProperties
-            }
-        />
-    );
-});
-MacOSTabBarSpacer.displayName = "MacOSTabBarSpacer";
+import { WorkspaceCommandBar, WorkspaceHeading, WorkspaceSidebar, WorkspaceStatus } from "./workspace-shell";
+import "./workspace.scss";
 
 const WorkspaceElem = memo(() => {
     const workspaceLayoutModel = WorkspaceLayoutModel.getInstance();
@@ -48,12 +31,10 @@ const WorkspaceElem = memo(() => {
     const tabBarPosition = useAtomValue(getSettingsKeyAtom("app:tabbar")) ?? "top";
     const showLeftTabBar = tabBarPosition === "left";
     const aiPanelVisible = useAtomValue(workspaceLayoutModel.panelVisibleAtom);
-    const vtabCollapsed = useAtomValue(workspaceLayoutModel.vtabCollapsedAtom);
-    const widgetsSidebarVisible = useAtomValue(workspaceLayoutModel.widgetsSidebarVisibleAtom);
     const windowWidth = window.innerWidth;
-    const leftGroupInitialPct = workspaceLayoutModel.getLeftGroupInitialPercentage(windowWidth, showLeftTabBar);
-    const innerVTabInitialPct = workspaceLayoutModel.getInnerVTabInitialPercentage(windowWidth, showLeftTabBar);
-    const innerAIPanelInitialPct = workspaceLayoutModel.getInnerAIPanelInitialPercentage(windowWidth, showLeftTabBar);
+    const navigationInitialPct = workspaceLayoutModel.getNavigationInitialPercentage(windowWidth);
+    const contentInitialPct = workspaceLayoutModel.getContentInitialPercentage(windowWidth);
+    const aiInitialPct = workspaceLayoutModel.getAIInitialPercentage(windowWidth);
     const outerPanelGroupRef = useRef<ImperativePanelGroupHandle>(null);
     const innerPanelGroupRef = useRef<ImperativePanelGroupHandle>(null);
     const aiPanelRef = useRef<ImperativePanelHandle>(null);
@@ -62,7 +43,7 @@ const WorkspaceElem = memo(() => {
     const aiPanelWrapperRef = useRef<HTMLDivElement>(null);
     const vtabPanelWrapperRef = useRef<HTMLDivElement>(null);
 
-    // showLeftTabBar is passed as a seed value only; subsequent changes are handled by setShowLeftTabBar below.
+    // The navigation is always present; tab orientation only changes the section inside it.
     // Do NOT add showLeftTabBar as a dep here — re-registering refs on config changes would redundantly re-run commitLayouts.
     useEffect(() => {
         if (
@@ -78,9 +59,9 @@ const WorkspaceElem = memo(() => {
                 innerPanelGroupRef.current,
                 panelContainerRef.current,
                 aiPanelWrapperRef.current,
-                vtabPanelRef.current ?? undefined,
+                undefined,
                 vtabPanelWrapperRef.current ?? undefined,
-                showLeftTabBar
+                true
             );
         }
     }, []);
@@ -96,106 +77,49 @@ const WorkspaceElem = memo(() => {
     }, []);
 
     useEffect(() => {
-        workspaceLayoutModel.setShowLeftTabBar(showLeftTabBar);
-    }, [showLeftTabBar]);
-
-    useEffect(() => {
         const handleFocus = () => workspaceLayoutModel.syncVTabWidthFromMeta();
         window.addEventListener("focus", handleFocus);
         return () => window.removeEventListener("focus", handleFocus);
     }, []);
 
-    const innerHandleVisible = showLeftTabBar && !vtabCollapsed && aiPanelVisible;
-    const innerHandleClass = `bg-transparent hover:bg-hoverbg transition-colors ${innerHandleVisible ? "w-0.5" : "w-0 pointer-events-none"}`;
-    const outerHandleVisible = (showLeftTabBar && !vtabCollapsed) || aiPanelVisible;
-    const outerHandleClass = `bg-transparent hover:bg-hoverbg transition-colors ${outerHandleVisible ? "w-0.5" : "w-0 pointer-events-none"}`;
-
     return (
-        <div className="flex flex-col w-full flex-grow overflow-hidden">
-            {!(showLeftTabBar && isMacOS()) && <TabBar key={ws.oid} workspace={ws} noTabs={showLeftTabBar} />}
-            {showLeftTabBar && isMacOS() && <MacOSTabBarSpacer tall={vtabCollapsed} />}
-            <div ref={panelContainerRef} className="flex flex-row flex-grow overflow-hidden">
+        <div className="workspace-shell">
+            <TabBar key={ws.oid} workspace={ws} noTabs={showLeftTabBar} />
+            <div ref={panelContainerRef} className="shell-body">
                 <ErrorBoundary key={tabId}>
-                    <PanelGroup
-                        direction="horizontal"
-                        onLayout={workspaceLayoutModel.handleOuterPanelLayout}
-                        ref={outerPanelGroupRef}
-                    >
-                        <Panel order={0} defaultSize={leftGroupInitialPct} className="overflow-hidden">
-                            <PanelGroup
-                                direction="horizontal"
-                                onLayout={workspaceLayoutModel.handleInnerPanelLayout}
-                                ref={innerPanelGroupRef}
-                            >
-                                <Panel
-                                    ref={vtabPanelRef}
-                                    collapsible
-                                    defaultSize={innerVTabInitialPct}
-                                    order={0}
-                                    className="overflow-hidden"
-                                >
-                                    <div ref={vtabPanelWrapperRef} className="w-full h-full">
-                                        {showLeftTabBar && (
-                                            <VTabBar
-                                                workspace={ws}
-                                                onCollapse={() => workspaceLayoutModel.setVTabCollapsed(true)}
-                                            />
-                                        )}
-                                    </div>
+                    <PanelGroup direction="horizontal" onLayout={workspaceLayoutModel.handleOuterPanelLayout} ref={outerPanelGroupRef}>
+                        <Panel ref={vtabPanelRef} order={0} defaultSize={navigationInitialPct} className="shell-navigation-panel">
+                            <div ref={vtabPanelWrapperRef} className="h-full w-full">
+                                <WorkspaceSidebar workspace={ws} verticalTabs={showLeftTabBar} />
+                            </div>
+                        </Panel>
+                        <PanelResizeHandle className="shell-resize-handle" />
+                        <Panel order={1} defaultSize={100 - navigationInitialPct}>
+                            <PanelGroup direction="horizontal" onLayout={workspaceLayoutModel.handleInnerPanelLayout} ref={innerPanelGroupRef}>
+                                <Panel order={0} defaultSize={contentInitialPct}>
+                                    <main className="shell-main">
+                                        <WorkspaceHeading />
+                                        <div className="shell-canvas">
+                                            <div className="shell-tiles">
+                                            {tabId === "" ? <CenteredDiv>{t("chrome.noActiveTab")}</CenteredDiv> : <TabContent key={tabId} tabId={tabId} noTopPadding />}
+                                            </div>
+                                            <WorkspaceCommandBar />
+                                        </div>
+                                    </main>
                                 </Panel>
-                                <PanelResizeHandle className={innerHandleClass} />
-                                <Panel
-                                    ref={aiPanelRef}
-                                    collapsible
-                                    defaultSize={innerAIPanelInitialPct}
-                                    order={1}
-                                    className="overflow-hidden"
-                                >
-                                    <div
-                                        ref={aiPanelWrapperRef}
-                                        className={`w-full h-full pr-0.5 ${aiPanelVisible ? "" : "opacity-0"}`}
-                                    >
-                                        {tabId !== "" && <AIPanel roundTopLeft={showLeftTabBar} />}
-                                    </div>
+                                <PanelResizeHandle disabled={!aiPanelVisible} className={`shell-resize-handle ${aiPanelVisible ? "" : "is-hidden"}`} />
+                                <Panel ref={aiPanelRef} collapsible order={1} defaultSize={aiInitialPct}>
+                                    <aside ref={aiPanelWrapperRef} className={`shell-ai-panel ${aiPanelVisible ? "" : "is-hidden"}`} aria-label="Wave AI">
+                                        {tabId !== "" && <AIPanel roundTopLeft={false} />}
+                                    </aside>
                                 </Panel>
                             </PanelGroup>
-                        </Panel>
-                        <PanelResizeHandle className={outerHandleClass} />
-                        <Panel order={1} defaultSize={100 - leftGroupInitialPct}>
-                            <div className="flex flex-row h-full">
-                                {showLeftTabBar && vtabCollapsed && (
-                                    <div className="flex h-full w-6 shrink-0 flex-col items-center border-r border-border bg-panel">
-                                        <button
-                                            type="button"
-                                            className="mt-1 flex h-6 w-5 cursor-pointer items-center justify-center rounded text-secondary transition-colors hover:bg-hover hover:text-primary"
-                                            onClick={() => workspaceLayoutModel.setVTabCollapsed(false)}
-                                            aria-label={t("vtab.showTabBar")}
-                                            title={t("vtab.showTabBar")}
-                                        >
-                                            <i className="fa-solid fa-angles-right text-[10px]" />
-                                        </button>
-                                    </div>
-                                )}
-                                <div className="flex min-w-0 flex-1 flex-row h-full">
-                                    {tabId === "" ? (
-                                        <CenteredDiv>{t("chrome.noActiveTab")}</CenteredDiv>
-                                    ) : (
-                                        <>
-                                            <TabContent
-                                                key={tabId}
-                                                tabId={tabId}
-                                                noTopPadding={showLeftTabBar && isMacOS()}
-                                            />
-                                            {widgetsSidebarVisible && <Widgets />}
-                                        </>
-                                    )}
-                                </div>
-                            </div>
                         </Panel>
                     </PanelGroup>
                     <ModalsRenderer />
                 </ErrorBoundary>
             </div>
+            <WorkspaceStatus />
         </div>
     );
 });

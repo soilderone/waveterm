@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { useAtomValue } from "jotai";
@@ -83,7 +83,7 @@ export const AIPanelMessages = memo(({ messages, status, onContextMenu }: AIPane
     }, [status]);
 
     return (
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-2 space-y-4" onContextMenu={onContextMenu}>
+        <div ref={messagesContainerRef} className="ai-message-thread flex-1 overflow-y-auto p-4 space-y-4" onContextMenu={onContextMenu}>
             <div className="mb-2">
                 <AIModeDropdown compatibilityMode={true} />
             </div>

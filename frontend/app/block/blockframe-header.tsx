@@ -26,7 +26,7 @@ import { IconButton } from "@/element/iconbutton";
 import { NodeModel } from "@/layout/index";
 import { t } from "@/util/i18n";
 import * as util from "@/util/util";
-import { cn, makeIconClass } from "@/util/util";
+import { makeIconClass } from "@/util/util";
 import * as jotai from "jotai";
 import * as React from "react";
 import { BlockEnv } from "./blockenv";
@@ -249,11 +249,12 @@ const BlockFrame_Header = ({
 
     return (
         <div
-            className={cn("block-frame-default-header", useTermHeader && "!pl-[2px]")}
+            className="block-frame-default-header"
             data-role="block-header"
             ref={dragHandleRef}
             onContextMenu={(e) => handleHeaderContextMenu(e, nodeModel.blockId, viewModel, nodeModel, waveEnv)}
         >
+            {useTermHeader && <div className="block-frame-terminal-title"><span />{viewName || "Terminal"}</div>}
             {!useTermHeader && (
                 <>
                     {preIconButton && <IconButton decl={preIconButton} className="block-frame-preicon-button" />}

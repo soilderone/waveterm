@@ -61,22 +61,22 @@
     --radius: 8px;
 
     /* ANSI Colors (Default Dark Palette) */
-    --ansi-black: #757575;
-    --ansi-red: #cc685c;
-    --ansi-green: #76c266;
-    --ansi-yellow: #cbca9b;
-    --ansi-blue: #85aacb;
-    --ansi-magenta: #cc72ca;
-    --ansi-cyan: #74a7cb;
-    --ansi-white: #c1c1c1;
-    --ansi-brightblack: #727272;
-    --ansi-brightred: #cc9d97;
-    --ansi-brightgreen: #a3dd97;
-    --ansi-brightyellow: #cbcaaa;
-    --ansi-brightblue: #9ab6cb;
-    --ansi-brightmagenta: #cc8ecb;
-    --ansi-brightcyan: #b7b8cb;
-    --ansi-brightwhite: #f0f0f0;
+    --ansi-black: #5d6d60;
+    --ansi-red: #d9877e;
+    --ansi-green: #a3cf91;
+    --ansi-yellow: #d7b76b;
+    --ansi-blue: #86b0ce;
+    --ansi-magenta: #b29dcc;
+    --ansi-cyan: #7ebbb5;
+    --ansi-white: #b9c5bb;
+    --ansi-brightblack: #7e8f81;
+    --ansi-brightred: #ef9b93;
+    --ansi-brightgreen: #b8e6a5;
+    --ansi-brightyellow: #e5c47d;
+    --ansi-brightblue: #96c2e0;
+    --ansi-brightmagenta: #c3b2ef;
+    --ansi-brightcyan: #8fd4cf;
+    --ansi-brightwhite: #e6ece3;
 
     --container-w600: 600px;
     --container-w450: 450px;

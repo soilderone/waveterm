@@ -1,18 +1,18 @@
-// Copyright 2024, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 .tab-bar-wrapper {
-    padding-top: 3px;
+    padding: 0;
     position: relative;
+    z-index: 20;
     user-select: none;
     display: flex;
     flex-direction: row;
-    align-items: end;
+    align-items: center;
     width: 100vw;
     -webkit-app-region: drag;
-    height: max(33px, calc(33px * var(--zoomfactor-inv)));
-    backdrop-filter: blur(20px);
-    background: rgb(from var(--sage-surface) r g b / 0.55);
+    height: max(48px, calc(36px * var(--zoomfactor-inv)));
+    background: var(--sage-surface);
     border-bottom: 1px solid var(--border-color);
     flex-shrink: 0;
 
@@ -22,16 +22,18 @@
 
     .tabs-wrapper {
         transition: var(--tabs-wrapper-transition);
-        height: 26px;
+        height: 32px;
     }
 
     .tab-bar {
         position: relative; // Needed for absolute positioning of child tabs
         display: flex;
         flex-direction: row;
-        height: 27px;
+        height: 32px;
+        min-width: 0;
+        overflow: hidden;
         -webkit-app-region: no-drag;
-        margin-bottom: 1px;
+        margin-bottom: 0;
     }
 
     .pinned-tab-spacer {

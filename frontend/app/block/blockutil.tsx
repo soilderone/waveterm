@@ -75,7 +75,7 @@ export function blockViewToName(view: string): string {
         return "Terminal";
     }
     if (view == "preview") {
-        return "Preview";
+        return "Files";
     }
     if (view == "web") {
         return "Web";

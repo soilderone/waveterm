@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { Tooltip } from "@/app/element/tooltip";
+import { blockViewToAccentVar } from "@/app/block/blockutil";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { useWaveEnv, WaveEnv, WaveEnvSubset } from "@/app/waveenv/waveenv";
 import { shouldIncludeWidgetForWorkspace } from "@/app/workspace/widgetfilter";
@@ -19,7 +20,7 @@ import {
 } from "@floating-ui/react";
 import clsx from "clsx";
 import { useAtomValue } from "jotai";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 export type WidgetsEnv = WaveEnvSubset<{
     isDev: WaveEnv["isDev"];
@@ -131,9 +132,10 @@ type FloatingWindowPropsType = {
     onClose: () => void;
     referenceElement: HTMLElement;
     hasConfigErrors?: boolean;
+    placement?: "left-start" | "right-start";
 };
 
-const AppsFloatingWindow = memo(({ isOpen, onClose, referenceElement }: FloatingWindowPropsType) => {
+const AppsFloatingWindow = memo(({ isOpen, onClose, referenceElement, placement = "left-start" }: FloatingWindowPropsType) => {
     const [apps, setApps] = useState<AppInfo[]>([]);
     const [loading, setLoading] = useState(true);
     const env = useWaveEnv<WidgetsEnv>();
@@ -142,7 +144,7 @@ const AppsFloatingWindow = memo(({ isOpen, onClose, referenceElement }: Floating
     const { refs, floatingStyles, context } = useFloating({
         open: isOpen,
         onOpenChange: onClose,
-        placement: "left-start",
+        placement,
         middleware: [offset(-2), shift({ padding: 12 })],
         whileElementsMounted: autoUpdate,
         elements: {
@@ -258,7 +260,7 @@ const AppsFloatingWindow = memo(({ isOpen, onClose, referenceElement }: Floating
 });
 
 const SettingsFloatingWindow = memo(
-    ({ isOpen, onClose, referenceElement, hasConfigErrors }: FloatingWindowPropsType) => {
+    ({ isOpen, onClose, referenceElement, hasConfigErrors, placement = "left-start" }: FloatingWindowPropsType) => {
         const env = useWaveEnv<WidgetsEnv>();
         const t = useT();
         const fullConfig = useAtomValue(env.atoms.fullConfigAtom);
@@ -266,7 +268,7 @@ const SettingsFloatingWindow = memo(
         const { refs, floatingStyles, context } = useFloating({
             open: isOpen,
             onOpenChange: onClose,
-            placement: "left-start",
+            placement,
             middleware: [offset(-2), shift({ padding: 12 })],
             whileElementsMounted: autoUpdate,
             elements: {
@@ -639,3 +641,36 @@ const Widgets = memo(() => {
 });
 
 export { Widgets };
+
+export const WidgetNavigation = memo(({ showWidgets }: { showWidgets: boolean }) => {
+    const env = useWaveEnv<WidgetsEnv>();
+    const t = useT();
+    const config = useAtomValue(env.atoms.fullConfigAtom);
+    const workspaceId = useAtomValue(env.atoms.workspaceId);
+    const hasConfigErrors = useAtomValue(env.atoms.hasConfigErrors);
+    const [settingsOpen, setSettingsOpen] = useState(false);
+    const [appsOpen, setAppsOpen] = useState(false);
+    const settingsRef = useRef<HTMLButtonElement>(null);
+    const appsRef = useRef<HTMLButtonElement>(null);
+    const widgets = useMemo(() => sortByDisplayOrder(config?.widgets).filter((widget) => !widget["display:hidden"] && shouldIncludeWidgetForWorkspace(widget, workspaceId)), [config?.widgets, workspaceId]);
+    const showApps = env.isDev() || config?.settings?.["feature:waveappbuilder"];
+    return (
+        <div className="shell-nav-tools">
+            {showWidgets && <details className="shell-nav-section shell-tool-disclosure"><summary className="shell-section-label">{t("shell.tools")}<i className="fa fa-chevron-down" /></summary>
+                {widgets.map((widget, index) => <button key={index} className="shell-nav-item" onClick={() => fireAndForget(() => handleWidgetSelect(widget, env))} title={widget.description || widget.label}>
+                    <i className={makeIconClass(widget.icon, true, { defaultIcon: "browser" })} style={{ color: widget.color || blockViewToAccentVar(widget.blockdef?.meta?.view) }} />
+                    <span className="shell-nav-label">{widget.label}</span><i className="fa fa-plus shell-nav-add" />
+                </button>)}
+            </details>}
+            <div className="shell-nav-footer">
+                <div className="shell-sidebar-card"><p>{t("shell.toolsTogether")}</p><span>{t("shell.workspaceDescription")}</span></div>
+                <button className="shell-nav-item" onClick={() => fireAndForget(() => env.createBlock({ meta: { view: "tips" } }, false, true))}><i className="fa fa-keyboard" /><span>{t("shell.keyboardGuide")}</span></button>
+                {showApps && <button ref={appsRef} className="shell-nav-item" onClick={() => setAppsOpen(!appsOpen)}><i className="fa fa-cube" /><span>{t("chrome.localWaveApps")}</span></button>}
+                <button ref={settingsRef} className="shell-nav-item" onClick={() => setSettingsOpen(!settingsOpen)}><i className="fa fa-gear" /><span>{t("chrome.settings")}</span>{hasConfigErrors && <i className="fa fa-circle-exclamation text-error" />}</button>
+            </div>
+            {appsRef.current && <AppsFloatingWindow isOpen={appsOpen} onClose={() => setAppsOpen(false)} referenceElement={appsRef.current} placement="right-start" />}
+            {settingsRef.current && <SettingsFloatingWindow isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} referenceElement={settingsRef.current} hasConfigErrors={hasConfigErrors} placement="right-start" />}
+        </div>
+    );
+});
+WidgetNavigation.displayName = "WidgetNavigation";

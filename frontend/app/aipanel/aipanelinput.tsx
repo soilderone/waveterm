@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { formatFileSizeError, isAcceptableFile, validateFileSize } from "@/app/aipanel/ai-utils";
@@ -135,7 +135,7 @@ export const AIPanelInput = memo(({ onSubmit, status, model }: AIPanelInputProps
     };
 
     return (
-        <div className={cn("border-t", isFocused ? "border-accent/50" : "border-border")}>
+        <div className={cn("ai-composer border-t", isFocused ? "border-accent/50" : "border-border")}>
             <input
                 ref={fileInputRef}
                 type="file"

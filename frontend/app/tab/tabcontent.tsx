@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { Block } from "@/app/block/block";
@@ -45,7 +45,7 @@ const TabContent = React.memo(({ tabId, noTopPadding }: { tabId: string; noTopPa
             renderPreview,
             tabId,
             onNodeDelete,
-            gapSizePx: tileGapSize,
+            gapSizePx: tileGapSize ?? 12,
         } as TileLayoutContents;
     }, [tabId, tileGapSize]);
 

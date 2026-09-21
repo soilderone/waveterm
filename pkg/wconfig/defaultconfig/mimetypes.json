@@ -15,8 +15,8 @@
         "icon": "file-lines"
     },
     "directory": {
-        "icon": "folder",
-        "color": "var(--term-bright-blue)"
+        "icon": "regular@folder",
+        "color": "var(--type-files)"
     },
     "font": {
         "icon": "book-font"
