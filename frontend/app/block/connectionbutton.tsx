@@ -38,7 +38,6 @@ export const ConnectionButton = React.memo(
             let titleText = null;
             let shouldSpin = false;
             let connDisplayName: string = null;
-            let extraDisplayNameClassName = "";
             if (isLocal) {
                 color = "var(--color-secondary)";
                 if (connection === "local:gitbash") {
@@ -49,10 +48,8 @@ export const ConnectionButton = React.memo(
                     if (localName) {
                         titleText += ` (${localName})`;
                     }
-                    if (isTerminalBlock) {
-                        connDisplayName = localName;
-                        extraDisplayNameClassName = "text-muted group-hover:text-secondary";
-                    }
+                    // the hostname is noise on a local terminal -- the icon still opens the
+                    // connection switcher, and the header shows the working directory instead
                 }
                 connIconElem = (
                     <i
@@ -132,14 +129,7 @@ export const ConnectionButton = React.memo(
                             />
                         </span>
                         {connDisplayName ? (
-                            <div
-                                className={util.cn(
-                                    "flex-[1_2_auto] overflow-hidden pr-1 ellipsis",
-                                    extraDisplayNameClassName
-                                )}
-                            >
-                                {connDisplayName}
-                            </div>
+                            <div className="flex-[1_2_auto] overflow-hidden pr-1 ellipsis">{connDisplayName}</div>
                         ) : isLocal ? null : (
                             <div className="flex-[1_2_auto] overflow-hidden pr-1 ellipsis">{connection}</div>
                         )}

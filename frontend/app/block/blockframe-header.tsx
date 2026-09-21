@@ -208,6 +208,24 @@ const HeaderEndIcons = React.memo(({ viewModel, nodeModel, blockId }: HeaderEndI
 });
 HeaderEndIcons.displayName = "HeaderEndIcons";
 
+// the header has room for a hint, not a path: fold $HOME to ~ and keep the trailing segments
+function shortenCwd(cwd: string, homeDir: string): string {
+    let rest = cwd.replace(/[\\/]+$/, "");
+    let inHome = false;
+    if (homeDir && (rest === homeDir || rest.startsWith(homeDir + "/") || rest.startsWith(homeDir + "\\"))) {
+        rest = rest.slice(homeDir.length);
+        inHome = true;
+    }
+    const parts = rest.split(/[\\/]/).filter(Boolean);
+    if (parts.length === 0) {
+        return inHome ? "~" : "/";
+    }
+    if (parts.length > 2) {
+        return (inHome ? "~/…/" : "…/") + parts[parts.length - 1];
+    }
+    return (inHome ? "~/" : "/") + parts.join("/");
+}
+
 const BlockFrame_Header = ({
     nodeModel,
     viewModel,
@@ -232,6 +250,8 @@ const BlockFrame_Header = ({
     const prevMagifiedState = React.useRef(magnified);
     const manageConnection = util.useAtomValueSafe(viewModel?.manageConnection);
     const iconColor = jotai.useAtomValue(waveEnv.getBlockMetaKeyAtom(nodeModel.blockId, "icon:color"));
+    const cmdCwd = jotai.useAtomValue(waveEnv.getBlockMetaKeyAtom(nodeModel.blockId, "cmd:cwd"));
+    const homeDir = React.useMemo(() => waveEnv.electron.getEnv("HOME") || waveEnv.electron.getEnv("USERPROFILE"), []);
     const dragHandleRef = preview ? null : nodeModel.dragHandleRef;
     const isTerminalBlock = metaView === "term";
     viewName = metaFrameTitle ?? viewName;
@@ -254,7 +274,13 @@ const BlockFrame_Header = ({
             ref={dragHandleRef}
             onContextMenu={(e) => handleHeaderContextMenu(e, nodeModel.blockId, viewModel, nodeModel, waveEnv)}
         >
-            {useTermHeader && <div className="block-frame-terminal-title"><span />{viewName || "Terminal"}</div>}
+            {useTermHeader && (
+                <div className="block-frame-terminal-title">
+                    <span />
+                    {viewName || "Terminal"}
+                </div>
+            )}
+            {useTermHeader && cmdCwd && <div className="block-frame-term-meta">{shortenCwd(cmdCwd, homeDir)}</div>}
             {!useTermHeader && (
                 <>
                     {preIconButton && <IconButton decl={preIconButton} className="block-frame-preicon-button" />}
@@ -283,7 +309,10 @@ const BlockFrame_Header = ({
                 />
             )}
             {useTermHeader && badge && (
-                <div className="pointer-events-none flex items-center px-1" style={{ color: badge.color || "var(--warning-color)" }}>
+                <div
+                    className="pointer-events-none flex items-center px-1"
+                    style={{ color: badge.color || "var(--warning-color)" }}
+                >
                     <i className={makeIconClass(badge.icon, true, { defaultIcon: "circle-small" })} />
                 </div>
             )}
