@@ -1,8 +1,9 @@
 // Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { globalStore } from "@/app/store/jotaiStore";
 import { getSettingsKeyAtom } from "@/store/global";
-import { useAtomValue } from "jotai";
+import { atom, PrimitiveAtom, useAtomValue } from "jotai";
 import { useLayoutEffect } from "react";
 
 export function resolveUITheme(setting: string, prefersLight: boolean): string {
@@ -11,6 +12,14 @@ export function resolveUITheme(setting: string, prefersLight: boolean): string {
     }
     return setting === "light" ? "light" : "dark";
 }
+
+const prefersLightAtom = atom(false) as PrimitiveAtom<boolean>;
+
+// The resolved theme, for the parts of the app that pick assets rather than CSS variables --
+// the terminal palette and the Monaco theme cannot read a var() off the document root.
+export const resolvedUIThemeAtom = atom((get) =>
+    resolveUITheme(get(getSettingsKeyAtom("app:uitheme")), get(prefersLightAtom))
+);
 
 export function applyUITheme(setting: string) {
     const theme = resolveUITheme(setting, window.matchMedia("(prefers-color-scheme: light)").matches);
@@ -25,12 +34,10 @@ export function UIThemeUpdater() {
     useLayoutEffect(() => {
         const mql = window.matchMedia("(prefers-color-scheme: light)");
         const apply = () => {
+            globalStore.set(prefersLightAtom, mql.matches);
             applyUITheme(uiTheme);
         };
         apply();
-        if (uiTheme !== "system") {
-            return;
-        }
         mql.addEventListener("change", apply);
         return () => mql.removeEventListener("change", apply);
     }, [uiTheme]);

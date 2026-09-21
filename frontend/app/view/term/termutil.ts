@@ -2,6 +2,11 @@
 // SPDX-License-Identifier: Apache-2.0
 
 export const DefaultTermTheme = "default-dark";
+export const DefaultLightTermTheme = "default-light";
+
+export function defaultTermThemeForUI(uiTheme: string): string {
+    return uiTheme === "light" ? DefaultLightTermTheme : DefaultTermTheme;
+}
 import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import * as TermTypes from "@xterm/xterm";

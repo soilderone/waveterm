@@ -1,18 +1,18 @@
-// Copyright 2024, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 .workspace-switcher-button {
     display: flex;
-    height: 22px;
-    padding: 0px 12px;
+    height: 30px;
+    padding: 0px 8px;
     justify-content: flex-end;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     border-radius: 6px;
     margin-right: 6px;
-    margin-bottom: 4px;
+    margin-bottom: 0;
     box-sizing: border-box;
-    background-color: rgb(from var(--main-text-color) r g b / 0.1) !important;
+    background-color: transparent !important;
 
     &:hover {
         background-color: rgb(from var(--main-text-color) r g b / 0.14) !important;
@@ -25,6 +25,15 @@
         align-items: center;
         justify-content: center;
     }
+}
+
+.workspace-switcher-name {
+    max-width: 132px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font-size: 12px;
+    color: var(--secondary-text-color);
 }
 
 .workspace-switcher-content {

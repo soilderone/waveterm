@@ -28,6 +28,16 @@
         height: 100%;
         white-space: nowrap;
         border-radius: 6px;
+        &[data-has-badge="false"]::before {
+            content: "";
+            position: absolute;
+            top: calc(50% - 3px);
+            left: 12px;
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--grey-text-color);
+        }
     }
 
     &.animate {
@@ -42,6 +52,7 @@
             border-radius: 6px;
             background: rgb(from var(--sage-panel) r g b / 0.8);
             box-shadow: inset 0 0 0 1px var(--border-color);
+            &::before { background: var(--accent-color); }
         }
 
         .name {
@@ -53,17 +64,17 @@
     .name {
         position: absolute;
         top: 50%;
-        left: 50%;
-        transform: translate3d(-50%, -50%, 0);
+        left: 27px;
+        transform: translate3d(0, -50%, 0);
         user-select: none;
         z-index: var(--zindex-tab-name);
-        font-size: 11px;
+        font-size: 12px;
         font-weight: 500;
         text-shadow: 0px 0px 4px rgb(from var(--main-bg-color) r g b / 0.25);
         overflow: hidden;
-        width: calc(100% - 10px);
+        width: calc(100% - 50px);
         text-overflow: ellipsis;
-        text-align: center;
+        text-align: left;
 
         &.focused {
             outline: none;
@@ -152,4 +163,3 @@ body:not(.nohover) .tab.flag.dragging .tab-inner {
 .tab.new-tab {
     animation: expandWidthAndFadeIn 0.1s forwards;
 }
-
