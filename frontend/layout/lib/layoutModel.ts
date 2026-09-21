@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { FocusManager } from "@/app/store/focusManager";
@@ -12,6 +12,7 @@ import { createRef, CSSProperties } from "react";
 import { debounce } from "throttle-debounce";
 import { getLayoutStateAtomFromTab } from "./layoutAtom";
 import { balanceNode, findNode, newLayoutNode, walkNodes } from "./layoutNode";
+import { makeWorkspaceLayoutPreset, WorkspaceLayoutPreset } from "./layoutpresets";
 import {
     clearTree,
     computeMoveNode,
@@ -140,6 +141,7 @@ export class LayoutModel {
      * Atom representing the number of leaf nodes in a layout.
      */
     numLeafs: Atom<number>;
+    workspacePresetAtom: Atom<WorkspaceLayoutPreset>;
     /**
      * A map of node models for currently-active leafs.
      */
@@ -283,6 +285,15 @@ export class LayoutModel {
         this.leafs = atom([]);
         this.leafOrder = atom([]);
         this.numLeafs = atom((get) => get(this.leafOrder).length);
+        this.workspacePresetAtom = atom<WorkspaceLayoutPreset>((get) => {
+            const root = get(this.localTreeStateAtom).rootNode;
+            if (root?.flexDirection !== FlexDirection.Row || !root.children?.length) return null;
+            if (root.children.length === 2 && root.children[0].data && root.children[1].children?.length) return "grid";
+            if (root.children.every((node) => node.data)) {
+                return root.children[0].size > root.children[1]?.size ? "grid" : "columns";
+            }
+            return null;
+        });
 
         this.nodeModels = new Map();
         this.additionalProps = atom({});
@@ -571,6 +582,18 @@ export class LayoutModel {
                 console.warn("unsupported layout action", action);
                 break;
         }
+    }
+
+    applyWorkspacePreset(preset: WorkspaceLayoutPreset, primaryBlockId?: string) {
+        const root = makeWorkspaceLayoutPreset(this.treeState.rootNode, preset, primaryBlockId);
+        if (root === this.treeState.rootNode) return;
+        this.treeState.rootNode = root;
+        this.lastMagnifiedNodeId = this.magnifiedNodeId;
+        this.treeState.magnifiedNodeId = undefined;
+        this.magnifiedNodeId = undefined;
+        this.updateTree();
+        this.setter(this.localTreeStateAtom, { ...this.treeState });
+        this.persistToBackend();
     }
 
     private persistToBackend() {
