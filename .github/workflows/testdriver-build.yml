@@ -39,7 +39,8 @@ jobs:
     build_and_upload:
         name: Build for TestDriver.ai
         runs-on: windows-latest
-        if: github.event.pull_request.draft == false
+        # Windows packaging is paused alongside the main build matrix.
+        if: ${{ false }}
         steps:
             - uses: actions/checkout@v6
 

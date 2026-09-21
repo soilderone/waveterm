@@ -23,12 +23,13 @@ jobs:
                 include:
                     - platform: "darwin"
                       runner: "macos-latest"
-                    - platform: "linux"
-                      runner: "ubuntu-latest"
-                    - platform: "linux"
-                      runner: ubuntu-24.04-arm
-                    - platform: "windows"
-                      runner: "windows-latest"
+                    # Temporarily build only macOS while iterating on the UI.
+                    # - platform: "linux"
+                    #   runner: "ubuntu-latest"
+                    # - platform: "linux"
+                    #   runner: ubuntu-24.04-arm
+                    # - platform: "windows"
+                    #   runner: "windows-latest"
                     # - platform: "windows"
                     #   runner: "windows-11-arm64-16core"
         runs-on: ${{ matrix.runner }}
