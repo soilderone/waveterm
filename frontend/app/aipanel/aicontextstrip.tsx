@@ -12,7 +12,12 @@ const AIContextChip = memo(({ blockId, enabled }: { blockId: string; enabled: bo
     const view = useAtomValue(getBlockMetaKeyAtom(blockId, "view"));
     const title = useAtomValue(getBlockMetaKeyAtom(blockId, "frame:title"));
     return (
-        <button className="ai-context-chip" disabled={!enabled} onClick={() => refocusNode(blockId)} title={title || blockViewToName(view)}>
+        <button
+            className="ai-context-chip"
+            disabled={!enabled}
+            onClick={() => refocusNode(blockId)}
+            title={title || blockViewToName(view)}
+        >
             <i style={{ backgroundColor: enabled ? blockViewToAccentVar(view) : "transparent" }} />
             <span>{title || blockViewToName(view)}</span>
         </button>
@@ -29,7 +34,9 @@ export const AIContextStrip = memo(() => {
         <div className="ai-context-strip">
             <span>{t(enabled ? "shell.contextPanels" : "shell.contextOff")}</span>
             <div className="ai-context-chips">
-                {tab?.blockids?.map((blockId) => <AIContextChip key={blockId} blockId={blockId} enabled={enabled} />)}
+                {tab?.blockids?.map((blockId) => (
+                    <AIContextChip key={blockId} blockId={blockId} enabled={enabled} />
+                ))}
             </div>
         </div>
     );

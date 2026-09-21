@@ -1,6 +1,7 @@
 // Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
+import { globalStore } from "@/app/store/jotaiStore";
 import { useWaveEnv, WaveEnv, WaveEnvSubset } from "@/app/waveenv/waveenv";
 import {
     ExpandableMenu,
@@ -20,7 +21,6 @@ import { OverlayScrollbarsComponent } from "overlayscrollbars-react";
 import { CSSProperties, forwardRef, useCallback, useEffect } from "react";
 import WorkspaceSVG from "../asset/workspace.svg";
 import { IconButton } from "../element/iconbutton";
-import { globalStore } from "@/app/store/jotaiStore";
 import { makeORef } from "../store/wos";
 import { waveEventSubscribeSingle } from "../store/wps";
 import { WorkspaceEditor } from "./workspaceeditor";
@@ -173,12 +173,22 @@ export function WorkspaceNavigation() {
         <section className="shell-nav-section">
             <div className="shell-section-label">
                 <span>{t("shell.workspaces")}</span>
-                <button className="shell-icon-button" onClick={() => env.electron.createWorkspace()} title={t("chrome.createNewWorkspace")} aria-label={t("chrome.createNewWorkspace")}>
+                <button
+                    className="shell-icon-button"
+                    onClick={() => env.electron.createWorkspace()}
+                    title={t("chrome.createNewWorkspace")}
+                    aria-label={t("chrome.createNewWorkspace")}
+                >
                     <i className="fa fa-plus" />
                 </button>
             </div>
             {workspaces.map((workspace, index) => (
-                <button key={workspace.oid} className={clsx("shell-nav-item", workspace.oid === active?.oid && "is-active")} onClick={() => env.electron.switchWorkspace(workspace.oid)} aria-current={workspace.oid === active?.oid ? "page" : undefined}>
+                <button
+                    key={workspace.oid}
+                    className={clsx("shell-nav-item", workspace.oid === active?.oid && "is-active")}
+                    onClick={() => env.electron.switchWorkspace(workspace.oid)}
+                    aria-current={workspace.oid === active?.oid ? "page" : undefined}
+                >
                     <span className="shell-workspace-mark">{(workspace.name || "W").slice(0, 1).toUpperCase()}</span>
                     <span className="shell-nav-label">{workspace.name || t("shell.workspace")}</span>
                     <span className="shell-nav-index">{String(index + 1).padStart(2, "0")}</span>
