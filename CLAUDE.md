@@ -21,14 +21,25 @@ This project uses a set of "skill" guides — focused how-to documents for commo
 
 ## Local Workflow
 
-This working copy is used **only for reading, refining, and optimizing code**. Do not stand up a build environment in it.
+Local debugging is **allowed for UI work**, on the condition that everything it installs or
+generates is tracked and removed afterwards. The machine is disk-constrained — leaving build
+output or toolchains behind is not acceptable.
 
-- **Never install dependencies.** No `npm install` / `npm ci` / `yarn`, no `go mod download`, and never create `node_modules`. `npx <tool>` installs too — avoid it as well.
-- **Never run builds, dev servers, or the app.** No `task package`, `electron-vite dev`, `npm run build:*`, `go build`, `go run`.
-- **Verification happens on GitHub CI**, not locally. Push the branch and let the workflow handle typecheck, lint, test, and packaging.
-- **Local checking is static only** — reading files, `grep`/`rg`, `git` inspection, and throwaway scripts that parse the source. Useful substitutes when no toolchain is present:
-    - cross-check i18n keys used in code against `frontend/locales/en*.ts` and `zh-cn*.ts`, and check the two dictionaries for symmetry;
-    - after a refactor, grep for identifiers that were renamed or deleted to catch dangling references;
-    - bracket-balance the edited files.
-- When a change genuinely cannot be validated without running something, **say so explicitly in the summary** instead of installing a toolchain to find out.
-- If a tool was installed or a cache was populated by accident, clean it up in the same session and report what was removed.
+- **Allowed:** `task dev` / `task electron:quickdev` (Electron + Vite HMR), `task preview`
+  (standalone component preview server), `task generate`, and the `npm install` / toolchain
+  installs those require.
+- **Not allowed without asking:** `task package` and other full release builds, installing
+  anything not needed by the two commands above.
+- **Every install and every generated artifact goes in `LOCAL-DEV-TEARDOWN.md`** (repo root,
+  untracked, listed in `.git/info/exclude`). That file holds the pre-install baseline, a running
+  ledger of what was added, and the teardown procedure. Append to it as things are installed,
+  not from memory afterwards.
+- **Teardown when the UI work is done:** run the procedure in that ledger, then its verification
+  block, and report what was removed. Paths marked pre-existing there (`docs/node_modules`,
+  `tsunami/frontend/node_modules`, `~/.npm`, the installed app's data dirs) must survive intact.
+- **CI still owns release verification.** Push the branch for typecheck / lint / packaging;
+  local dev is for seeing the UI, not for proving the build is releasable.
+- Static checks remain the cheap first pass — grep for dangling identifiers after a refactor,
+  cross-check i18n keys between `frontend/locales/en*.ts` and `zh-cn*.ts`, bracket-balance
+  edited files — do them before reaching for a dev server.
+- When a change genuinely cannot be validated even locally, **say so explicitly in the summary**.
