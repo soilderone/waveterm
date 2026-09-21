@@ -791,12 +791,12 @@ const BookmarkTypeahead = memo(
                     <div className="text-center">
                         <p className="text-lg font-bold text-primary">{t("web.noBookmarksConfigured")}</p>
                         <p className="text-sm text-secondary mt-1">
-                            {t("web.editBookmarksPrefix")}{" "}
-                            <code className="font-mono">bookmarks.json</code> {t("web.editBookmarksSuffix")}
+                            {t("web.editBookmarksPrefix")} <code className="font-mono">bookmarks.json</code>{" "}
+                            {t("web.editBookmarksSuffix")}
                         </p>
                         <button
                             onClick={openBookmarksJson}
-                            className="mt-3 px-4 py-2 text-sm font-medium text-black bg-accent hover:bg-accenthover rounded-lg cursor-pointer"
+                            className="mt-3 px-4 py-2 text-sm font-medium text-onaccent bg-accent hover:bg-accenthover rounded-lg cursor-pointer"
                         >
                             {t("web.openBookmarksJson")}
                         </button>
@@ -808,7 +808,7 @@ const BookmarkTypeahead = memo(
                         <p className="text-sm text-secondary">{t("web.noMatchingBookmarks")}</p>
                         <button
                             onClick={openBookmarksJson}
-                            className="mt-3 px-4 py-2 text-sm font-medium text-black bg-accent hover:bg-accenthover rounded-lg cursor-pointer"
+                            className="mt-3 px-4 py-2 text-sm font-medium text-onaccent bg-accent hover:bg-accenthover rounded-lg cursor-pointer"
                         >
                             {t("web.editBookmarksJson")}
                         </button>

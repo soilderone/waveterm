@@ -1,8 +1,8 @@
 // Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { Tooltip } from "@/element/tooltip";
 import { WaveEnv, WaveEnvSubset, useWaveEnv } from "@/app/waveenv/waveenv";
+import { Tooltip } from "@/element/tooltip";
 import { t } from "@/util/i18n";
 import { useT } from "@/util/i18n-hooks";
 import { useAtomValue } from "jotai";
@@ -52,7 +52,7 @@ const UpdateStatusBannerComponent = () => {
             content={tooltipContent}
             placement="bottom"
             divOnClick={isReady ? onClick : undefined}
-            divClassName={`flex items-center gap-1 px-2 mb-1 h-[22px] text-xs font-medium text-black bg-accent rounded-sm transition-all ${isReady ? "cursor-pointer hover:bg-accenthover" : ""}`}
+            divClassName={`flex items-center gap-1 px-2 mb-1 h-[22px] text-xs font-medium text-onaccent bg-accent rounded-sm transition-all ${isReady ? "cursor-pointer hover:bg-accenthover" : ""}`}
             divStyle={{ WebkitAppRegion: "no-drag" } as any}
         >
             <i className="fa fa-download" />

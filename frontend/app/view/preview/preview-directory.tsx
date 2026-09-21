@@ -5,12 +5,12 @@ import { ContextMenuModel } from "@/app/store/contextmenu";
 import { globalStore } from "@/app/store/jotaiStore";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
+import { useT } from "@/util/i18n-hooks";
 import { checkKeyPressed, isCharacterKeyEvent } from "@/util/keyutil";
 import { PLATFORM, PlatformMacOS } from "@/util/platformutil";
 import { addOpenMenuItems } from "@/util/previewutil";
 import { cn, fireAndForget, isBlank } from "@/util/util";
 import { formatRemoteUri } from "@/util/waveutil";
-import { useT } from "@/util/i18n-hooks";
 import { offset, useDismiss, useFloating, useInteractions } from "@floating-ui/react";
 import {
     Header,
@@ -438,7 +438,7 @@ function TableBody({
     return (
         <div className="dir-table-body" ref={bodyRef}>
             {(searchActive || search !== "") && (
-                <div className="flex rounded-[3px] py-1 px-2 bg-warning text-black" ref={warningBoxRef}>
+                <div className="flex rounded-[3px] py-1 px-2 bg-warning text-onaccent" ref={warningBoxRef}>
                     <span>{search === "" ? "Type to search (Esc to cancel)" : `Searching for "${search}"`}</span>
                     <div
                         className="ml-auto bg-transparent flex justify-center items-center flex-col p-0.5 rounded-md hover:bg-hoverbg focus:bg-hoverbg focus-within:bg-hoverbg cursor-pointer"
@@ -968,11 +968,7 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
         setRenderLimit(TreeRenderChunkSize);
         fireAndForget(async () => {
             try {
-                stream = env.rpc.FileListStreamCommand(
-                    TabRpcClient,
-                    { path: formatRemoteUri(path, connection) },
-                    null
-                );
+                stream = env.rpc.FileListStreamCommand(TabRpcClient, { path: formatRemoteUri(path, connection) }, null);
                 const nextEntries = new Map<string, FileInfo>();
                 while (active) {
                     const chunk = await stream.next();
@@ -1040,10 +1036,7 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
                         className="flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-hover focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2"
                         onClick={onNavigateUp}
                     >
-                        <i
-                            aria-hidden="true"
-                            className="fa-solid w-3 shrink-0 text-[10px] opacity-70 invisible"
-                        />
+                        <i aria-hidden="true" className="fa-solid w-3 shrink-0 text-[10px] opacity-70 invisible" />
                         <i
                             aria-hidden="true"
                             className={cn(getMimeTypeIcon(fullConfig, "directory"), "shrink-0 text-xs")}
@@ -1075,7 +1068,9 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
             )}
             {!loading && !error && visibleEntries.length == 0 && (
                 <li role="none" className="px-2 py-1 text-xs text-secondary">
-                    <span role="status">{entries.length ? t("preview.noVisibleFiles") : t("preview.emptyDirectory")}</span>
+                    <span role="status">
+                        {entries.length ? t("preview.noVisibleFiles") : t("preview.emptyDirectory")}
+                    </span>
                 </li>
             )}
             {shownEntries.map((entry) => (
@@ -1352,9 +1347,7 @@ export const FileTree = React.memo(function FileTree({
                                 }
                             } catch (e) {
                                 setErrorMsg({
-                                    status: isFolder
-                                        ? t("preview.createFolderFailed")
-                                        : t("preview.createFileFailed"),
+                                    status: isFolder ? t("preview.createFolderFailed") : t("preview.createFileFailed"),
                                     text: String(e),
                                 });
                             }
@@ -1418,7 +1411,18 @@ export const FileTree = React.memo(function FileTree({
         if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
             return;
         }
-        const consumedKeys = ["ArrowDown", "ArrowUp", "ArrowLeft", "ArrowRight", "Home", "End", "Enter", " ", "PageUp", "PageDown"];
+        const consumedKeys = [
+            "ArrowDown",
+            "ArrowUp",
+            "ArrowLeft",
+            "ArrowRight",
+            "Home",
+            "End",
+            "Enter",
+            " ",
+            "PageUp",
+            "PageDown",
+        ];
         if (!consumedKeys.includes(event.key)) {
             return;
         }

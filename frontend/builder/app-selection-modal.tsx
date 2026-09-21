@@ -7,8 +7,8 @@ import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { atoms, getApi } from "@/store/global";
 import * as WOS from "@/store/wos";
-import { formatRelativeTime } from "@/util/util";
 import { useT } from "@/util/i18n-hooks";
+import { formatRelativeTime } from "@/util/util";
 import { useEffect, useState } from "react";
 
 const MaxAppNameLength = 50;
@@ -83,7 +83,7 @@ function CreateNewWaveApp({ onCreateApp }: { onCreateApp: (appName: string) => P
                         className={`px-4 py-2 rounded-r transition-colors font-medium whitespace-nowrap ${
                             !newAppName.trim() || inputError || isCreating
                                 ? "bg-panel border border-l-0 border-border text-muted cursor-not-allowed"
-                                : "bg-accent text-black hover:bg-accent-hover cursor-pointer"
+                                : "bg-accent text-onaccent hover:bg-accent-hover cursor-pointer"
                         }`}
                     >
                         {t("builder.create")}
@@ -199,7 +199,9 @@ export function AppSelectionModal() {
 
                 {apps.length > 0 && (
                     <div className="mb-2">
-                        <h3 className="text-base font-medium mb-1 text-muted-foreground">{t("builder.existingApps")}</h3>
+                        <h3 className="text-base font-medium mb-1 text-muted-foreground">
+                            {t("builder.existingApps")}
+                        </h3>
                         <div className="space-y-2 max-h-[220px] overflow-y-auto">
                             {apps.map((appInfo) => (
                                 <button
@@ -212,7 +214,9 @@ export function AppSelectionModal() {
                                         <div className="flex flex-col">
                                             <span>{getAppDisplayName(appInfo.appid)}</span>
                                             <span className="text-[11px] text-muted mt-0.5">
-                                                {t("builder.lastUpdated", { time: formatRelativeTime(appInfo.modtime) })}
+                                                {t("builder.lastUpdated", {
+                                                    time: formatRelativeTime(appInfo.modtime),
+                                                })}
                                             </span>
                                         </div>
                                     </div>
