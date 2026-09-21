@@ -20,7 +20,7 @@ import {
     PanelResizeHandle,
 } from "react-resizable-panels";
 
-import { WorkspaceCommandBar, WorkspaceHeading, WorkspaceSidebar, WorkspaceStatus } from "./workspace-shell";
+import { WorkspaceSidebar } from "./workspace-shell";
 import "./workspace.scss";
 
 const WorkspaceElem = memo(() => {
@@ -38,7 +38,6 @@ const WorkspaceElem = memo(() => {
     const outerPanelGroupRef = useRef<ImperativePanelGroupHandle>(null);
     const innerPanelGroupRef = useRef<ImperativePanelGroupHandle>(null);
     const aiPanelRef = useRef<ImperativePanelHandle>(null);
-    const vtabPanelRef = useRef<ImperativePanelHandle>(null);
     const panelContainerRef = useRef<HTMLDivElement>(null);
     const aiPanelWrapperRef = useRef<HTMLDivElement>(null);
     const vtabPanelWrapperRef = useRef<HTMLDivElement>(null);
@@ -59,9 +58,7 @@ const WorkspaceElem = memo(() => {
                 innerPanelGroupRef.current,
                 panelContainerRef.current,
                 aiPanelWrapperRef.current,
-                undefined,
-                vtabPanelWrapperRef.current ?? undefined,
-                true
+                vtabPanelWrapperRef.current ?? undefined
             );
         }
     }, []);
@@ -87,29 +84,46 @@ const WorkspaceElem = memo(() => {
             <TabBar key={ws.oid} workspace={ws} noTabs={showLeftTabBar} />
             <div ref={panelContainerRef} className="shell-body">
                 <ErrorBoundary key={tabId}>
-                    <PanelGroup direction="horizontal" onLayout={workspaceLayoutModel.handleOuterPanelLayout} ref={outerPanelGroupRef}>
-                        <Panel ref={vtabPanelRef} order={0} defaultSize={navigationInitialPct} className="shell-navigation-panel">
+                    <PanelGroup
+                        direction="horizontal"
+                        onLayout={workspaceLayoutModel.handleOuterPanelLayout}
+                        ref={outerPanelGroupRef}
+                    >
+                        <Panel order={0} defaultSize={navigationInitialPct} className="shell-navigation-panel">
                             <div ref={vtabPanelWrapperRef} className="h-full w-full">
                                 <WorkspaceSidebar workspace={ws} verticalTabs={showLeftTabBar} />
                             </div>
                         </Panel>
                         <PanelResizeHandle className="shell-resize-handle" />
                         <Panel order={1} defaultSize={100 - navigationInitialPct}>
-                            <PanelGroup direction="horizontal" onLayout={workspaceLayoutModel.handleInnerPanelLayout} ref={innerPanelGroupRef}>
+                            <PanelGroup
+                                direction="horizontal"
+                                onLayout={workspaceLayoutModel.handleInnerPanelLayout}
+                                ref={innerPanelGroupRef}
+                            >
                                 <Panel order={0} defaultSize={contentInitialPct}>
                                     <main className="shell-main">
-                                        <WorkspaceHeading />
                                         <div className="shell-canvas">
                                             <div className="shell-tiles">
-                                            {tabId === "" ? <CenteredDiv>{t("chrome.noActiveTab")}</CenteredDiv> : <TabContent key={tabId} tabId={tabId} noTopPadding />}
+                                                {tabId === "" ? (
+                                                    <CenteredDiv>{t("chrome.noActiveTab")}</CenteredDiv>
+                                                ) : (
+                                                    <TabContent key={tabId} tabId={tabId} noTopPadding />
+                                                )}
                                             </div>
-                                            <WorkspaceCommandBar />
                                         </div>
                                     </main>
                                 </Panel>
-                                <PanelResizeHandle disabled={!aiPanelVisible} className={`shell-resize-handle ${aiPanelVisible ? "" : "is-hidden"}`} />
+                                <PanelResizeHandle
+                                    disabled={!aiPanelVisible}
+                                    className={`shell-resize-handle ${aiPanelVisible ? "" : "is-hidden"}`}
+                                />
                                 <Panel ref={aiPanelRef} collapsible order={1} defaultSize={aiInitialPct}>
-                                    <aside ref={aiPanelWrapperRef} className={`shell-ai-panel ${aiPanelVisible ? "" : "is-hidden"}`} aria-label="Wave AI">
+                                    <aside
+                                        ref={aiPanelWrapperRef}
+                                        className={`shell-ai-panel ${aiPanelVisible ? "" : "is-hidden"}`}
+                                        aria-label="Wave AI"
+                                    >
                                         {tabId !== "" && <AIPanel roundTopLeft={false} />}
                                     </aside>
                                 </Panel>
@@ -119,7 +133,6 @@ const WorkspaceElem = memo(() => {
                     <ModalsRenderer />
                 </ErrorBoundary>
             </div>
-            <WorkspaceStatus />
         </div>
     );
 });

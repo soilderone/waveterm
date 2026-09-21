@@ -41,21 +41,18 @@ class WorkspaceLayoutModel {
     private static instance: WorkspaceLayoutModel | null = null;
 
     aiPanelRef: ImperativePanelHandle | null;
-    vtabPanelRef: ImperativePanelHandle | null;
     outerPanelGroupRef: ImperativePanelGroupHandle | null;
     innerPanelGroupRef: ImperativePanelGroupHandle | null;
     panelContainerRef: HTMLDivElement | null;
     aiPanelWrapperRef: HTMLDivElement | null;
     vtabPanelWrapperRef: HTMLDivElement | null;
     panelVisibleAtom: jotai.PrimitiveAtom<boolean>;
-    vtabCollapsedAtom: jotai.PrimitiveAtom<boolean>;
 
     private inResize: boolean;
     private aiPanelVisible: boolean;
     private aiPanelWidth: number | null;
     private vtabWidth: number;
     private vtabVisible: boolean;
-    private vtabCollapsed: boolean;
     private lastCommitKey: string = null;
     private transitionTimeoutRef: NodeJS.Timeout | null = null;
     private focusTimeoutRef: NodeJS.Timeout | null = null;
@@ -65,7 +62,6 @@ class WorkspaceLayoutModel {
 
     private constructor() {
         this.aiPanelRef = null;
-        this.vtabPanelRef = null;
         this.outerPanelGroupRef = null;
         this.innerPanelGroupRef = null;
         this.panelContainerRef = null;
@@ -76,9 +72,7 @@ class WorkspaceLayoutModel {
         this.aiPanelWidth = null;
         this.vtabWidth = VTabBar_DefaultWidth;
         this.vtabVisible = false;
-        this.vtabCollapsed = false;
         this.panelVisibleAtom = jotai.atom(false);
-        this.vtabCollapsedAtom = jotai.atom(false);
         this.widgetsSidebarVisibleAtom = jotai.atom(
             (get) =>
                 get(getOrefMetaKeyAtom(WOS.makeORef("workspace", this.getWorkspaceId()), "layout:widgetsvisible")) ??
@@ -148,10 +142,6 @@ class WorkspaceLayoutModel {
         return getOrefMetaKeyAtom(WOS.makeORef("workspace", this.getWorkspaceId()), "layout:vtabbarwidth");
     }
 
-    private getVTabBarCollapsedAtom(): jotai.Atom<boolean> {
-        return getOrefMetaKeyAtom(WOS.makeORef("workspace", this.getWorkspaceId()), "layout:vtabbarcollapsed");
-    }
-
     private isVTabActive(): boolean {
         return this.vtabVisible;
     }
@@ -161,7 +151,6 @@ class WorkspaceLayoutModel {
             const savedVisible = globalStore.get(this.getPanelOpenAtom());
             const savedAIWidth = globalStore.get(this.getPanelWidthAtom());
             const savedVTabWidth = globalStore.get(this.getVTabBarWidthAtom());
-            const savedVTabCollapsed = globalStore.get(this.getVTabBarCollapsedAtom());
             if (savedVisible != null) {
                 this.aiPanelVisible = savedVisible;
                 globalStore.set(this.panelVisibleAtom, savedVisible);
@@ -171,10 +160,6 @@ class WorkspaceLayoutModel {
             }
             if (savedVTabWidth != null && savedVTabWidth > 0) {
                 this.vtabWidth = savedVTabWidth;
-            }
-            if (savedVTabCollapsed != null) {
-                this.vtabCollapsed = savedVTabCollapsed;
-                globalStore.set(this.vtabCollapsedAtom, savedVTabCollapsed);
             }
             const showLeftTabBar = !isBuilderWindow();
             this.vtabVisible = showLeftTabBar;
@@ -272,18 +257,14 @@ class WorkspaceLayoutModel {
         innerPanelGroupRef: ImperativePanelGroupHandle,
         panelContainerRef: HTMLDivElement,
         aiPanelWrapperRef: HTMLDivElement,
-        vtabPanelRef?: ImperativePanelHandle,
-        vtabPanelWrapperRef?: HTMLDivElement,
-        showLeftTabBar?: boolean
+        vtabPanelWrapperRef?: HTMLDivElement
     ): void {
         this.aiPanelRef = aiPanelRef;
-        this.vtabPanelRef = vtabPanelRef ?? null;
         this.outerPanelGroupRef = outerPanelGroupRef;
         this.innerPanelGroupRef = innerPanelGroupRef;
         this.panelContainerRef = panelContainerRef;
         this.aiPanelWrapperRef = aiPanelWrapperRef;
         this.vtabPanelWrapperRef = vtabPanelWrapperRef ?? null;
-        this.vtabVisible = showLeftTabBar ?? false;
         // Fresh panel groups start from their defaultSize props, so the commit cache must not
         // suppress the first commit against them.
         this.lastCommitKey = null;
@@ -297,13 +278,6 @@ class WorkspaceLayoutModel {
                 this.aiPanelRef.expand();
             } else {
                 this.aiPanelRef.collapse();
-            }
-        }
-        if (this.vtabPanelRef) {
-            if (this.isVTabActive()) {
-                this.vtabPanelRef.expand();
-            } else {
-                this.vtabPanelRef.collapse();
             }
         }
     }
@@ -401,35 +375,6 @@ class WorkspaceLayoutModel {
                 refocusNode(blockId);
             }
         }
-    }
-
-    setVTabCollapsed(collapsed: boolean): void {
-        if (this.vtabCollapsed === collapsed) return;
-        this.vtabCollapsed = collapsed;
-        globalStore.set(this.vtabCollapsedAtom, collapsed);
-        RpcApi.SetMetaCommand(TabRpcClient, {
-            oref: WOS.makeORef("workspace", this.getWorkspaceId()),
-            meta: { "layout:vtabbarcollapsed": collapsed },
-        });
-        this.enableTransitions(0);
-        this.syncPanelCollapse();
-        this.commitLayouts(window.innerWidth);
-    }
-
-    setShowLeftTabBar(showLeftTabBar: boolean): void {
-        if (this.vtabVisible === showLeftTabBar) return;
-        this.vtabVisible = showLeftTabBar;
-        if (showLeftTabBar && this.vtabCollapsed) {
-            this.vtabCollapsed = false;
-            globalStore.set(this.vtabCollapsedAtom, false);
-            RpcApi.SetMetaCommand(TabRpcClient, {
-                oref: WOS.makeORef("workspace", this.getWorkspaceId()),
-                meta: { "layout:vtabbarcollapsed": false },
-            });
-        }
-        this.enableTransitions(0);
-        this.syncPanelCollapse();
-        this.commitLayouts(window.innerWidth);
     }
 }
 
