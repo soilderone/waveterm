@@ -3,15 +3,17 @@
 
 import { CopyButton } from "@/app/element/copybutton";
 import { IconButton } from "@/app/element/iconbutton";
+import { resolvedUIThemeAtom } from "@/app/uitheme";
 import { useT } from "@/util/i18n-hooks";
 import { cn, useAtomValueSafe } from "@/util/util";
-import type { Atom } from "jotai";
+import { type Atom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { bundledLanguages, codeToHtml } from "shiki/bundle/web";
 import { Streamdown } from "streamdown";
 import { throttle } from "throttle-debounce";
 
-const ShikiTheme = "github-dark-high-contrast";
+const DarkShikiTheme = "github-dark-high-contrast";
+const LightShikiTheme = "github-light-high-contrast";
 
 function extractText(node: React.ReactNode): string {
     if (node == null || typeof node === "boolean") return "";
@@ -35,15 +37,17 @@ function CodePlain({ className = "", isCodeBlock, text }: { className?: string; 
 }
 
 function CodeHighlight({ className = "", lang, text }: { className?: string; lang: string; text: string }) {
+    const uiTheme = useAtomValue(resolvedUIThemeAtom);
     const [html, setHtml] = useState<string>("");
     const [hasError, setHasError] = useState(false);
     const codeRef = useRef<HTMLElement>(null);
     const seqRef = useRef(0);
+    const shikiTheme = uiTheme === "light" ? LightShikiTheme : DarkShikiTheme;
 
     const highlightCode = useCallback(
         async (textToHighlight: string, language: string, disposedRef: { current: boolean }, seq: number) => {
             try {
-                const full = await codeToHtml(textToHighlight, { lang: language, theme: ShikiTheme });
+                const full = await codeToHtml(textToHighlight, { lang: language, theme: shikiTheme });
                 const start = full.indexOf("<code");
                 const open = full.indexOf(">", start);
                 const end = full.lastIndexOf("</code>");
@@ -59,7 +63,7 @@ function CodeHighlight({ className = "", lang, text }: { className?: string; lan
                 console.warn(`Shiki highlight failed for ${language}`, e);
             }
         },
-        []
+        [shikiTheme]
     );
 
     const throttledHighlight = useMemo(() => throttle(300, highlightCode, { noLeading: false }), [highlightCode]);
@@ -153,7 +157,7 @@ const CodeBlock = ({ children, onClickExecute, codeBlockMaxWidthAtom }: CodeBloc
 
     return (
         <div
-            className={cn("code-block rounded-lg overflow-hidden bg-ink my-4", codeBlockMaxWidth && "max-w-full")}
+            className={cn("code-block rounded-lg overflow-hidden bg-raise my-4", codeBlockMaxWidth && "max-w-full")}
             style={
                 codeBlockMaxWidth
                     ? { maxWidth: codeBlockMaxWidth, minWidth: Math.min(400, codeBlockMaxWidth) }
@@ -215,6 +219,8 @@ export const WaveStreamdown = ({
     codeBlockMaxWidthAtom,
 }: WaveStreamdownProps) => {
     const t = useT();
+    const uiTheme = useAtomValue(resolvedUIThemeAtom);
+    const shikiTheme = uiTheme === "light" ? LightShikiTheme : DarkShikiTheme;
     const components = useMemo(
         () => ({
             code: Code,
@@ -311,7 +317,7 @@ export const WaveStreamdown = ({
                 "wave-streamdown text-secondary [&>*:first-child]:mt-0 [&>*:first-child>*:first-child]:mt-0 space-y-2",
                 className
             )}
-            shikiTheme={[ShikiTheme, ShikiTheme]}
+            shikiTheme={[shikiTheme, shikiTheme]}
             controls={{
                 code: false,
                 table: false,
@@ -319,8 +325,8 @@ export const WaveStreamdown = ({
             }}
             mermaid={{
                 config: {
-                    theme: "dark",
-                    darkMode: true,
+                    theme: uiTheme === "light" ? "default" : "dark",
+                    darkMode: uiTheme !== "light",
                 },
             }}
             components={components}

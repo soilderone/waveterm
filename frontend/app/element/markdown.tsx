@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { CopyButton } from "@/app/element/copybutton";
@@ -10,8 +10,9 @@ import {
     transformBlocks,
 } from "@/app/element/markdown-util";
 import remarkMermaidToTag from "@/app/element/remark-mermaid-to-tag";
+import { resolvedUIThemeAtom } from "@/app/uitheme";
 import { useT } from "@/util/i18n-hooks";
-import { boundNumber, useAtomValueSafe, cn } from "@/util/util";
+import { boundNumber, cn, useAtomValueSafe } from "@/util/util";
 import clsx from "clsx";
 import { Atom } from "jotai";
 import { OverlayScrollbarsComponent, OverlayScrollbarsComponentRef } from "overlayscrollbars-react";
@@ -27,15 +28,21 @@ import { openLink } from "../store/global";
 import { IconButton } from "./iconbutton";
 import "./markdown.scss";
 
-let mermaidInitialized = false;
 let mermaidInstance: any = null;
+let mermaidTheme: string = null;
 
-const initializeMermaid = async () => {
-    if (!mermaidInitialized) {
+const initializeMermaid = async (uiTheme: string) => {
+    if (!mermaidInstance) {
         const mermaid = await import("mermaid");
         mermaidInstance = mermaid.default;
-        mermaidInstance.initialize({ startOnLoad: false, theme: "dark", securityLevel: "strict" });
-        mermaidInitialized = true;
+    }
+    if (mermaidTheme !== uiTheme) {
+        mermaidInstance.initialize({
+            startOnLoad: false,
+            theme: uiTheme === "light" ? "default" : "dark",
+            securityLevel: "strict",
+        });
+        mermaidTheme = uiTheme;
     }
 };
 
@@ -71,6 +78,7 @@ const Heading = ({ props, hnum }: { props: React.HTMLAttributes<HTMLHeadingEleme
 
 const Mermaid = ({ chart }: { chart: string }) => {
     const t = useT();
+    const uiTheme = useAtomValueSafe(resolvedUIThemeAtom) ?? "dark";
     const ref = useRef<HTMLDivElement>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -81,7 +89,7 @@ const Mermaid = ({ chart }: { chart: string }) => {
                 setIsLoading(true);
                 setError(null);
 
-                await initializeMermaid();
+                await initializeMermaid(uiTheme);
                 if (!ref.current || !mermaidInstance) {
                     return;
                 }
@@ -105,7 +113,7 @@ const Mermaid = ({ chart }: { chart: string }) => {
         };
 
         renderMermaid();
-    }, [chart]);
+    }, [chart, uiTheme]);
 
     useEffect(() => {
         if (!ref.current) return;
