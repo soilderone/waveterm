@@ -12,6 +12,7 @@ import { useTabModel } from "@/app/store/tab-model";
 import { waveEventSubscribeSingle } from "@/app/store/wps";
 import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
+import { resolvedUIThemeAtom } from "@/app/uitheme";
 import type { TermViewModel } from "@/app/view/term/term-model";
 import { atoms, getOverrideConfigAtom, getSettingsPrefixAtom, WOS } from "@/store/global";
 import { fireAndForget, useAtomValueSafe } from "@/util/util";
@@ -212,14 +213,25 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
     const wholeWord = useAtomValueSafe<boolean>(searchProps.wholeWord);
     const regex = useAtomValueSafe<boolean>(searchProps.regex);
     const searchVal = jotai.useAtomValue<string>(searchProps.searchValue);
+    const uiTheme = jotai.useAtomValue(resolvedUIThemeAtom);
+    // xterm paints these straight onto the canvas, so they cannot be var() -- the highlight
+    // has to be re-picked whenever the terminal palette flips between the dark and light theme
     const searchDecorations = React.useMemo(
-        () => ({
-            matchOverviewRuler: "#000000",
-            activeMatchColorOverviewRuler: "#000000",
-            activeMatchBorder: "#FF9632",
-            matchBorder: "#FFFF00",
-        }),
-        []
+        () =>
+            uiTheme === "light"
+                ? {
+                      matchOverviewRuler: "#8a6a12",
+                      activeMatchColorOverviewRuler: "#b4453c",
+                      activeMatchBorder: "#b4453c",
+                      matchBorder: "#8a6a12",
+                  }
+                : {
+                      matchOverviewRuler: "#c4a000",
+                      activeMatchColorOverviewRuler: "#e0bd72",
+                      activeMatchBorder: "#e0bd72",
+                      matchBorder: "#c4a000",
+                  },
+        [uiTheme]
     );
     const searchOpts = React.useMemo<ISearchOptions>(
         () => ({

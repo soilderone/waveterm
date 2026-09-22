@@ -269,7 +269,7 @@ export class TermWrap {
                 const bellIndicatorEnabled =
                     globalStore.get(getOverrideConfigAtom(this.blockId, "term:bellindicator")) ?? false;
                 if (bellIndicatorEnabled) {
-                    setBadge(this.blockId, { icon: "bell", color: "#fbbf24", priority: 1 });
+                    setBadge(this.blockId, { icon: "bell", color: "var(--warning-color)", priority: 1 });
                 }
                 return true;
             })
