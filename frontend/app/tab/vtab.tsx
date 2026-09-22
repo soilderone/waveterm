@@ -70,6 +70,7 @@ export function VTab({
             flagColor = null;
         }
     }
+    const hasBadge = (badges?.length ?? 0) > 0 || flagColor != null;
 
     useEffect(() => {
         setOriginalName(tab.name);
@@ -176,8 +177,14 @@ export function VTab({
                     style={{ background: `color-mix(in srgb, ${flagColor} ${active ? 38 : 22}%, transparent)` }}
                 />
             )}
-            {active && (
-                <div className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-sm bg-foreground/10" />
+            {active && flagColor == null && (
+                <div
+                    className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-sm"
+                    style={{
+                        background: "rgb(from var(--sage-panel) r g b / 0.8)",
+                        boxShadow: "inset 0 0 0 1px var(--border-color)",
+                    }}
+                />
             )}
             {!active && !isReordering && (
                 <div className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-sm bg-transparent transition-colors group-hover:bg-foreground/10" />
@@ -188,6 +195,14 @@ export function VTab({
                     !showDivider && "opacity-0"
                 )}
             />
+            {!hasBadge && (
+                <div
+                    className={cn(
+                        "pointer-events-none z-[1] mr-2 h-[6px] w-[6px] shrink-0 rounded-full transition-colors",
+                        active ? "bg-accent" : "bg-muted"
+                    )}
+                />
+            )}
             <TabBadges
                 badges={badges}
                 flagColor={flagColor}
@@ -196,7 +211,8 @@ export function VTab({
             <div
                 ref={editableRef}
                 className={cn(
-                    "min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap transition-[padding-right] pr-3",
+                    "relative z-[1] min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap transition-[padding-right] pr-3",
+                    active && "font-semibold",
                     onClose && !isReordering && "group-hover:pr-6",
                     isEditable && "rounded-[2px] bg-hoverbg outline-none"
                 )}
