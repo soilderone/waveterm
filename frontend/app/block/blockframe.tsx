@@ -60,7 +60,7 @@ const BlockMask = React.memo(({ nodeModel }: { nodeModel: NodeModel }) => {
     }
 
     if (blockHighlight && !style.borderColor) {
-        style.borderColor = "rgb(59, 130, 246)";
+        style.borderColor = "var(--type-ai)";
     }
 
     let innerElem = null;
@@ -83,7 +83,7 @@ const BlockMask = React.memo(({ nodeModel }: { nodeModel: NodeModel }) => {
 
     return (
         <div
-            className={clsx("block-mask", { "show-block-mask": showBlockMask, "bg-blue-500/10": blockHighlight })}
+            className={clsx("block-mask", { "show-block-mask": showBlockMask, "bg-typeai/10": blockHighlight })}
             style={style}
         >
             {innerElem}

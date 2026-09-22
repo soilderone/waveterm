@@ -16,7 +16,7 @@
     },
     "directory": {
         "icon": "folder",
-        "color": "var(--term-bright-blue)"
+        "color": "var(--type-files)"
     },
     "font": {
         "icon": "book-font"
