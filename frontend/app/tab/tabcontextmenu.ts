@@ -8,14 +8,15 @@ import { fireAndForget } from "@/util/util";
 import { makeORef } from "../store/wos";
 import type { TabEnv } from "./tab";
 
+// Kept in step with WorkspaceColors in pkg/wcore/workspace.go.
 const FlagColors: { key: string; value: string }[] = [
-    { key: "tabMenu.colorGreen", value: "#58C142" },
-    { key: "tabMenu.colorTeal", value: "#00FFDB" },
-    { key: "tabMenu.colorBlue", value: "#429DFF" },
-    { key: "tabMenu.colorPurple", value: "#BF55EC" },
-    { key: "tabMenu.colorRed", value: "#FF453A" },
-    { key: "tabMenu.colorOrange", value: "#FF9500" },
-    { key: "tabMenu.colorYellow", value: "#FFE900" },
+    { key: "tabMenu.colorGreen", value: "#6f9e57" },
+    { key: "tabMenu.colorTeal", value: "#4fa89b" },
+    { key: "tabMenu.colorBlue", value: "#5b8fbd" },
+    { key: "tabMenu.colorPurple", value: "#8c7ac0" },
+    { key: "tabMenu.colorRed", value: "#c8615a" },
+    { key: "tabMenu.colorOrange", value: "#cf9350" },
+    { key: "tabMenu.colorYellow", value: "#b79a3c" },
 ];
 
 function makeColorDotIcon(color: string | null, size = 16): string {
@@ -33,7 +34,11 @@ function makeColorDotIcon(color: string | null, size = 16): string {
         ctx.fill();
     }
     ctx.lineWidth = 1;
-    ctx.strokeStyle = color == null ? "rgba(255, 255, 255, 0.45)" : "rgba(255, 255, 255, 0.35)";
+    // a canvas cannot read var(), so the ring has to be picked from the resolved theme or it
+    // disappears into the light menu background
+    const light = document.documentElement.dataset.uitheme === "light";
+    const ring = light ? "rgba(37, 45, 41, " : "rgba(255, 255, 255, ";
+    ctx.strokeStyle = ring + (color == null ? "0.45)" : "0.35)");
     ctx.stroke();
     return canvas.toDataURL("image/png");
 }

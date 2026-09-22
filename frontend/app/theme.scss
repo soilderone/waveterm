@@ -151,15 +151,17 @@
     --form-element-secondary-color: var(--sage-overlay-strong);
     --form-element-error-color: var(--error-color);
 
-    --conn-icon-color: #53b4ea;
-    --conn-icon-color-1: #53b4ea;
-    --conn-icon-color-2: #aa67ff;
-    --conn-icon-color-3: #fda7fd;
-    --conn-icon-color-4: #ef476f;
-    --conn-icon-color-5: #497bf8;
-    --conn-icon-color-6: #ffa24e;
-    --conn-icon-color-7: #dbde52;
-    --conn-icon-color-8: #58c142;
+    /* one hue per active connection -- the sage-muted ramp, so a wall of remote
+       connections does not out-shout the type accents next to them */
+    --conn-icon-color: var(--conn-icon-color-1);
+    --conn-icon-color-1: #7fb0d6;
+    --conn-icon-color-2: #b3a0e6;
+    --conn-icon-color-3: #d7a2c4;
+    --conn-icon-color-4: #e08c85;
+    --conn-icon-color-5: #8fa8dd;
+    --conn-icon-color-6: #d6a85f;
+    --conn-icon-color-7: #c3c470;
+    --conn-icon-color-8: #93b97e;
     --conn-status-overlay-bg-color: rgba(230, 186, 30, 0.2);
 
     --info-color: #7fb0d6;
@@ -253,6 +255,15 @@
     --type-ai: #6f5fa6;
     --type-sys: #2f7d74;
     --info-color: #3f6f93;
+
+    --conn-icon-color-1: #3f6f93;
+    --conn-icon-color-2: #6f5fa6;
+    --conn-icon-color-3: #935079;
+    --conn-icon-color-4: #b4453c;
+    --conn-icon-color-5: #4a5f9c;
+    --conn-icon-color-6: #9c6b2f;
+    --conn-icon-color-7: #6d7326;
+    --conn-icon-color-8: #3f7a4d;
 
     --panel-bg-color: rgba(246, 247, 243, 0.72);
     --toggle-thumb-color: var(--sage-panel);

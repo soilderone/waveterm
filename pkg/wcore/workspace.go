@@ -23,14 +23,16 @@ import (
 	"github.com/wavetermdev/waveterm/pkg/wstore"
 )
 
+// Muted enough to sit beside the sage UI palette and still read on the light theme;
+// the saturated originals blew out the top bar and vanished on a light background.
 var WorkspaceColors = [...]string{
-	"#58C142", // Green (accent)
-	"#00FFDB", // Teal
-	"#429DFF", // Blue
-	"#BF55EC", // Purple
-	"#FF453A", // Red
-	"#FF9500", // Orange
-	"#FFE900", // Yellow
+	"#6f9e57", // Green (accent)
+	"#4fa89b", // Teal
+	"#5b8fbd", // Blue
+	"#8c7ac0", // Purple
+	"#c8615a", // Red
+	"#cf9350", // Orange
+	"#b79a3c", // Yellow
 }
 
 var WorkspaceIcons = [...]string{
