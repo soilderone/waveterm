@@ -1,4 +1,4 @@
-// Copyright 2024, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 .menu {
@@ -15,7 +15,7 @@
     border-radius: 4px;
     border: 1px solid var(--sage-line-strong);
     background: var(--modal-bg-color);
-    box-shadow: 0px 8px 24px 0px rgba(0, 0, 0, 0.3);
+    box-shadow: var(--modal-box-shadow);
 }
 
 .menu-item {

@@ -1,4 +1,4 @@
-// Copyright 2024, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 .dir-table-container {
@@ -196,7 +196,7 @@
     border-radius: 4px;
     border: 1px solid var(--sage-line-strong);
     background: var(--modal-bg-color);
-    box-shadow: 0px 8px 24px 0px var(--modal-shadow-color);
+    box-shadow: var(--modal-box-shadow);
 
     .entry-manager-buttons {
         display: flex;

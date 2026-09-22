@@ -122,8 +122,8 @@
     --modal-border-color: var(--sage-line); /* toggle colors */
     --modal-border-radius: 6px;
     --toggle-bg-color: var(--border-color);
-    --modal-shadow-color: rgba(0, 0, 0, 0.8);
-    --modal-box-shadow: box-shadow: 0px 8px 24px 0px var(--modal-shadow-color);
+    --modal-shadow-color: rgba(0, 0, 0, 0.45);
+    --modal-box-shadow: 0 8px 24px 0 var(--modal-shadow-color);
 
     --toggle-thumb-color: var(--main-text-color);
     --toggle-checked-bg-color: var(--accent-color);
@@ -231,7 +231,7 @@
 
     --panel-bg-color: rgba(246, 247, 243, 0.72);
     --toggle-thumb-color: var(--sage-panel);
-    --modal-shadow-color: rgba(36, 51, 38, 0.18);
+    --modal-shadow-color: rgba(36, 51, 38, 0.14);
     --conn-status-overlay-bg-color: rgba(168, 120, 29, 0.16);
     --bulb-color: #c9a227;
     --block-bg-color: rgba(255, 255, 255, 0.82);
