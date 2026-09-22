@@ -1,4 +1,4 @@
-/* Copyright 2025, Command Line Inc. */
+/* Copyright 2026, Command Line Inc. */
 /* SPDX-License-Identifier: Apache-2.0 */
 
 @import "tailwindcss";
@@ -33,11 +33,14 @@
     --color-hoverbg: rgba(225, 232, 223, 0.16);
     --color-accent: #93b97e;
     --color-accenthover: #abd095;
+    --color-onaccent: #172414;
+    --color-onerror: #2b1715;
 
     --font-sans: "Inter", sans-serif;
     --font-mono: "Hack", monospace;
-    --font-markdown: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif,
-        "Apple Color Emoji", "Segoe UI Emoji";
+    --font-markdown:
+        -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji",
+        "Segoe UI Emoji";
 
     --text-xxs: 10px;
     --text-title: 18px;
@@ -65,7 +68,9 @@
 }
 
 /* Disable overscroll behavior */
-html, body, #root {
+html,
+body,
+#root {
     height: 100%;
     color-scheme: dark;
     background: var(--color-background);
@@ -113,4 +118,76 @@ html, body, #root {
 * {
     scrollbar-width: thin;
     scrollbar-color: rgba(225, 232, 223, 0.15) rgba(0, 0, 0, 0.1);
+}
+
+@media (prefers-color-scheme: light) {
+    :root {
+        --color-background: #e8eae5;
+        --color-foreground: #252d29;
+        --color-white: #252d29;
+        --color-secondary: #59665c;
+        --color-muted: #606b62;
+        --color-accent-50: #f2f6ef;
+        --color-accent-100: #e3ebdf;
+        --color-accent-200: #c8d9bf;
+        --color-accent-300: #a2bf94;
+        --color-accent-400: #719966;
+        --color-accent-500: #4f7956;
+        --color-accent-600: #305d42;
+        --color-accent-700: #294e39;
+        --color-accent-800: #223f30;
+        --color-accent-900: #193025;
+        --color-error: #b4453c;
+        --color-warning: #a8781d;
+        --color-success: #3f7a4d;
+        --color-panel: rgba(246, 247, 243, 0.72);
+        --color-hover: rgba(37, 45, 41, 0.06);
+        --color-border: #e0e4dd;
+        --color-modalbg: #ffffff;
+        --color-accentbg: #e3ebdf;
+        --color-hoverbg: rgba(37, 45, 41, 0.12);
+        --color-accent: #305d42;
+        --color-accenthover: #3f7655;
+        --color-onaccent: #f2f7ef;
+        --color-onerror: #fff7f5;
+        --ansi-black: #3c463f;
+        --ansi-red: #b4453c;
+        --ansi-green: #3f7a4d;
+        --ansi-yellow: #8a6a12;
+        --ansi-blue: #3f6f93;
+        --ansi-magenta: #7c4f95;
+        --ansi-cyan: #2f7d74;
+        --ansi-white: #5d6a60;
+        --ansi-brightblack: #788078;
+        --ansi-brightred: #9c362e;
+        --ansi-brightgreen: #2f6b3e;
+        --ansi-brightyellow: #725509;
+        --ansi-brightblue: #2f5d80;
+        --ansi-brightmagenta: #6a3f82;
+        --ansi-brightcyan: #256b63;
+        --ansi-brightwhite: #252d29;
+    }
+
+    html,
+    body,
+    #root {
+        color-scheme: light;
+    }
+
+    ::-webkit-scrollbar-track,
+    ::-webkit-scrollbar-corner {
+        background: rgba(37, 45, 41, 0.06);
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: rgba(37, 45, 41, 0.2);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: rgba(37, 45, 41, 0.35);
+    }
+
+    * {
+        scrollbar-color: rgba(37, 45, 41, 0.2) rgba(37, 45, 41, 0.06);
+    }
 }
