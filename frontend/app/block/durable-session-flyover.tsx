@@ -63,7 +63,7 @@ function StandardSessionContent({ viewModel, onClose }: StandardSessionContentPr
                 className="bg-raise text-foreground rounded px-3 py-1.5 text-xs font-medium hover:bg-hoverbg transition-colors cursor-pointer flex items-center justify-center gap-2 mt-1"
                 onClick={handleRestartAsDurable}
             >
-                <i className="fa-solid fa-shield text-sky-500" />
+                <i className="fa-solid fa-shield text-info" />
                 {t("durable.restartAsDurable")}
             </button>
             <LearnMoreButton />
@@ -80,7 +80,7 @@ function DurableAttachedContent({ onClose }: DurableAttachedContentProps) {
     return (
         <div className="flex flex-col gap-2 max-w-[280px]">
             <div className="font-semibold text-sm flex items-center gap-2 text-secondary">
-                <i className="fa-sharp fa-solid fa-shield text-sky-500" />
+                <i className="fa-sharp fa-solid fa-shield text-info" />
                 {t("durable.attachedTitle")}
             </div>
             <div className="text-xs text-secondary leading-relaxed">{t("durable.attachedDesc")}</div>
@@ -98,7 +98,7 @@ function DurableDetachedContent({ onClose }: DurableDetachedContentProps) {
     return (
         <div className="flex flex-col gap-2 max-w-[280px]">
             <div className="font-semibold text-sm flex items-center gap-2 text-secondary">
-                <i className="fa-sharp fa-solid fa-shield text-sky-300" />
+                <i className="fa-sharp fa-solid fa-shield text-info/60" />
                 {t("durable.detachedTitle")}
             </div>
             <div className="text-xs text-secondary leading-relaxed">{t("durable.detachedDesc")}</div>
@@ -144,7 +144,7 @@ function DurableAwaitingStart({ connected, viewModel, onClose }: DurableAwaiting
                 className="bg-raise text-foreground rounded px-3 py-1.5 text-xs font-medium hover:bg-hoverbg transition-colors cursor-pointer flex items-center justify-center gap-2 mt-1"
                 onClick={handleStartSession}
             >
-                <i className="fa-solid fa-shield text-sky-500" />
+                <i className="fa-solid fa-shield text-info" />
                 {t("durable.startSession")}
             </button>
             <LearnMoreButton />
@@ -161,7 +161,7 @@ function DurableStartingContent({ onClose }: DurableStartingContentProps) {
     return (
         <div className="flex flex-col gap-2 max-w-[280px]">
             <div className="font-semibold text-sm flex items-center gap-2 text-secondary">
-                <i className="fa-sharp fa-solid fa-shield text-sky-300" />
+                <i className="fa-sharp fa-solid fa-shield text-info/60" />
                 {t("durable.startingTitle")}
             </div>
             <div className="text-xs text-secondary leading-relaxed">{t("durable.startingDesc")}</div>
@@ -218,7 +218,7 @@ function DurableEndedContent({ doneReason, startupError, viewModel, onClose }: D
                     className="bg-raise text-foreground rounded px-3 py-1.5 text-xs font-medium hover:bg-hoverbg transition-colors cursor-pointer flex items-center justify-center gap-2 mt-1"
                     onClick={handleRestartSession}
                 >
-                    <i className="fa-solid fa-shield text-sky-500" />
+                    <i className="fa-solid fa-shield text-info" />
                     {t("durable.restartSession")}
                 </button>
                 <button
@@ -245,7 +245,7 @@ function DurableEndedContent({ doneReason, startupError, viewModel, onClose }: D
                     className="bg-raise text-foreground rounded px-3 py-1.5 text-xs font-medium hover:bg-hoverbg transition-colors cursor-pointer flex items-center justify-center gap-2 mt-1"
                     onClick={handleRestartSession}
                 >
-                    <i className="fa-solid fa-shield text-sky-500" />
+                    <i className="fa-solid fa-shield text-info" />
                     {t("durable.restartSession")}
                 </button>
             )}
@@ -302,11 +302,11 @@ function getIconProps(jobStatus: BlockJobStatusData, connStatus: ConnStatus, isC
 
     const status = jobStatus?.status;
     if (status === "connected") {
-        color = "text-sky-500";
+        color = "text-info";
     } else if (status === "disconnected") {
-        color = "text-sky-300";
+        color = "text-info/60";
     } else if (status === "init") {
-        color = "text-sky-300";
+        color = "text-info/60";
     } else if (status === "done") {
         color = "text-muted";
     } else if (status == null) {

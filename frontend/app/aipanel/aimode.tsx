@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { Tooltip } from "@/app/element/tooltip";
@@ -23,38 +23,40 @@ interface AIModeMenuItemProps {
     isLast?: boolean;
 }
 
-const AIModeMenuItem = memo(({ config, isSelected, isDisabled, isPremiumDisabled, onClick, isFirst, isLast }: AIModeMenuItemProps) => {
-    const t = useT();
-    return (
-        <button
-            key={config.mode}
-            onClick={onClick}
-            disabled={isDisabled}
-            className={cn(
-                "w-full flex flex-col gap-0.5 px-3 transition-colors text-left",
-                isFirst ? "pt-1 pb-0.5" : isLast ? "pt-0.5 pb-1" : "pt-0.5 pb-0.5",
-                isDisabled ? "text-muted" : "text-secondary hover:bg-raise cursor-pointer"
-            )}
-        >
-            <div className="flex items-center gap-2 w-full">
-                <i className={makeIconClass(config["display:icon"] || "sparkles", false)}></i>
-                <span className={cn("text-sm", isSelected && "font-bold")}>
-                    {getModeDisplayName(config)}
-                    {isPremiumDisabled && t("ai.premiumSuffix")}
-                </span>
-                {isSelected && <i className="fa fa-check ml-auto"></i>}
-            </div>
-            {config["display:description"] && (
-                <div
-                    className={cn("text-xs pl-5", isDisabled ? "text-muted" : "text-muted")}
-                    style={{ whiteSpace: "pre-line" }}
-                >
-                    {getModeDisplayDescription(config)}
+const AIModeMenuItem = memo(
+    ({ config, isSelected, isDisabled, isPremiumDisabled, onClick, isFirst, isLast }: AIModeMenuItemProps) => {
+        const t = useT();
+        return (
+            <button
+                key={config.mode}
+                onClick={onClick}
+                disabled={isDisabled}
+                className={cn(
+                    "w-full flex flex-col gap-0.5 px-3 transition-colors text-left",
+                    isFirst ? "pt-1 pb-0.5" : isLast ? "pt-0.5 pb-1" : "pt-0.5 pb-0.5",
+                    isDisabled ? "text-muted" : "text-secondary hover:bg-raise cursor-pointer"
+                )}
+            >
+                <div className="flex items-center gap-2 w-full">
+                    <i className={makeIconClass(config["display:icon"] || "sparkles", false)}></i>
+                    <span className={cn("text-sm", isSelected && "font-bold")}>
+                        {getModeDisplayName(config)}
+                        {isPremiumDisabled && t("ai.premiumSuffix")}
+                    </span>
+                    {isSelected && <i className="fa fa-check ml-auto"></i>}
                 </div>
-            )}
-        </button>
-    );
-});
+                {config["display:description"] && (
+                    <div
+                        className={cn("text-xs pl-5", isDisabled ? "text-muted" : "text-muted")}
+                        style={{ whiteSpace: "pre-line" }}
+                    >
+                        {getModeDisplayDescription(config)}
+                    </div>
+                )}
+            </button>
+        );
+    }
+);
 
 AIModeMenuItem.displayName = "AIModeMenuItem";
 
@@ -230,15 +232,8 @@ export const AIModeDropdown = memo(({ compatibilityMode = false }: AIModeDropdow
             </button>
 
             {showNoToolsWarning && (
-                <Tooltip
-                    content={
-                        <div className="max-w-xs">
-                            {t("ai.noToolsWarning")}
-                        </div>
-                    }
-                    placement="bottom"
-                >
-                    <div className="flex items-center gap-1 text-[10px] text-yellow-600 mt-1 ml-1 cursor-default">
+                <Tooltip content={<div className="max-w-xs">{t("ai.noToolsWarning")}</div>} placement="bottom">
+                    <div className="flex items-center gap-1 text-[10px] text-warning mt-1 ml-1 cursor-default">
                         <i className="fa fa-triangle-exclamation"></i>
                         <span>{t("ai.noToolsSupport")}</span>
                     </div>
@@ -267,14 +262,14 @@ export const AIModeDropdown = memo(({ compatibilityMode = false }: AIModeDropdow
                                                 {section.sectionName}
                                             </div>
                                             {section.isIncompatible && (
-                                                <div className="text-center text-[11px] text-red-300 pb-1">
+                                                <div className="text-center text-[11px] text-error pb-1">
                                                     {t("ai.startNewChatToSwitch")}
                                                 </div>
                                             )}
                                             {section.noTelemetry && (
                                                 <button
                                                     onClick={handleEnableTelemetry}
-                                                    className="text-center text-[11px] text-green-300 hover:text-green-200 pb-1 cursor-pointer transition-colors w-full"
+                                                    className="text-center text-[11px] text-success hover:text-success/80 pb-1 cursor-pointer transition-colors w-full"
                                                 >
                                                     {t("ai.enableTelemetryUnlock")}
                                                 </button>

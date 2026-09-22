@@ -1,8 +1,7 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { BlockModel } from "@/app/block/block-model";
-import { Modal } from "@/app/modals/modal";
 import { recordTEvent } from "@/app/store/global";
 import { useT } from "@/util/i18n-hooks";
 import { cn, fireAndForget } from "@/util/util";
@@ -37,7 +36,7 @@ const ToolDescLine = memo(({ text }: ToolDescLineProps) => {
 
         const sign = match[1];
         const number = match[2];
-        const colorClass = sign === "+" ? "text-green-600" : "text-red-600";
+        const colorClass = sign === "+" ? "text-success" : "text-error";
         parts.push(
             <span key={match.index} className={colorClass}>
                 {sign}
@@ -127,14 +126,15 @@ const AIToolUseBatchItem = memo(({ part, effectiveApproval }: AIToolUseBatchItem
             : part.data.status === "error"
               ? "text-error"
               : "text-secondary";
-    const effectiveErrorMessage = part.data.errormessage || (effectiveApproval === "timeout" ? t("ai.notApproved") : null);
+    const effectiveErrorMessage =
+        part.data.errormessage || (effectiveApproval === "timeout" ? t("ai.notApproved") : null);
 
     return (
         <div className="text-sm pl-2 flex items-start gap-1.5">
             <span className={cn("font-bold flex-shrink-0", statusColor)}>{statusIcon}</span>
             <div className="flex-1">
                 <span className="text-secondary">{part.data.tooldesc}</span>
-                {effectiveErrorMessage && <div className="text-red-300 mt-0.5">{effectiveErrorMessage}</div>}
+                {effectiveErrorMessage && <div className="text-error mt-0.5">{effectiveErrorMessage}</div>}
             </div>
         </div>
     );
@@ -205,7 +205,11 @@ const AIToolUse = memo(({ part, isStreaming }: AIToolUseProps) => {
 
     const statusIcon = toolData.status === "completed" ? "✓" : toolData.status === "error" ? "✗" : "•";
     const statusColor =
-        toolData.status === "completed" ? "text-success" : toolData.status === "error" ? "text-error" : "text-secondary";
+        toolData.status === "completed"
+            ? "text-success"
+            : toolData.status === "error"
+              ? "text-error"
+              : "text-secondary";
 
     const baseApproval = userApprovalOverride || toolData.approval;
     const effectiveApproval = getEffectiveApprovalStatus(baseApproval, isStreaming);
@@ -310,7 +314,7 @@ const AIToolUse = memo(({ part, isStreaming }: AIToolUseProps) => {
             </div>
             {toolData.tooldesc && <ToolDesc text={toolData.tooldesc} className="text-sm text-secondary pl-6" />}
             {(toolData.errormessage || effectiveApproval === "timeout") && (
-                <div className="text-sm text-red-300 pl-6">{toolData.errormessage || t("ai.notApproved")}</div>
+                <div className="text-sm text-error pl-6">{toolData.errormessage || t("ai.notApproved")}</div>
             )}
             {effectiveApproval === "needs-approval" && (
                 <div className="pl-6">

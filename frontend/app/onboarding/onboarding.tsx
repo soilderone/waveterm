@@ -107,7 +107,9 @@ const InitPage = ({
                             </a>
                         </div>
                         <div className="flex flex-col items-start gap-1 flex-1">
-                            <div className="text-foreground text-base leading-[18px]">{t("onboarding.supportGithub")}</div>
+                            <div className="text-foreground text-base leading-[18px]">
+                                {t("onboarding.supportGithub")}
+                            </div>
                             <div className="text-secondary leading-5">
                                 {t("onboarding.openSourcePre")}
                                 <i>{t("onboarding.openSourceLabel")}</i>
@@ -139,7 +141,9 @@ const InitPage = ({
                             </a>
                         </div>
                         <div className="flex flex-col items-start gap-1 flex-1">
-                            <div className="text-foreground text-base leading-[18px]">{t("onboarding.joinCommunity")}</div>
+                            <div className="text-foreground text-base leading-[18px]">
+                                {t("onboarding.joinCommunity")}
+                            </div>
                             <div className="text-secondary leading-5">
                                 {t("onboarding.communityDesc")}
                                 <br />
@@ -176,7 +180,7 @@ const InitPage = ({
                                     type="checkbox"
                                     checked={telemetryEnabled}
                                     onChange={(e) => setTelemetry(e.target.checked)}
-                                    className="cursor-pointer accent-gray-500"
+                                    className="cursor-pointer accent-accent"
                                 />
                                 <span>{label}</span>
                             </label>
@@ -240,7 +244,9 @@ const NoTelemetryStarPage = ({ isCompact }: { isCompact: boolean }) => {
                 <div className={`flex justify-center`}>
                     <Logo />
                 </div>
-                <div className="text-center text-[25px] font-normal text-foreground">{t("onboarding.telemetryDisabledTitle")}</div>
+                <div className="text-center text-[25px] font-normal text-foreground">
+                    {t("onboarding.telemetryDisabledTitle")}
+                </div>
             </header>
             <OverlayScrollbarsComponent
                 className="flex-1 overflow-y-auto min-h-0"
@@ -328,7 +334,12 @@ const NewInstallOnboardingModal = () => {
     let pageComp: React.JSX.Element = null;
     switch (pageName) {
         case "init":
-            pageComp = <InitPage isCompact={isCompact} telemetryUpdateFn={(value) => services.ClientService.TelemetryUpdate(value)} />;
+            pageComp = (
+                <InitPage
+                    isCompact={isCompact}
+                    telemetryUpdateFn={(value) => services.ClientService.TelemetryUpdate(value)}
+                />
+            );
             break;
         case "notelemetrystar":
             pageComp = <NoTelemetryStarPage isCompact={isCompact} />;

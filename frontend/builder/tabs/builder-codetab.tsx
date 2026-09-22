@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { CodeEditor } from "@/app/view/codeeditor/codeeditor";
@@ -73,7 +73,7 @@ const BuilderCodeTab = memo(() => {
     if (error) {
         return (
             <div className="w-full h-full flex items-center justify-center">
-                <div className="text-red-500">{error}</div>
+                <div className="text-error">{error}</div>
             </div>
         );
     }

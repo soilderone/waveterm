@@ -60,9 +60,9 @@ const AIDragOverlay = memo(() => {
     return (
         <div
             key="drag-overlay"
-            className="absolute inset-0 bg-accent/20 border-2 border-dashed border-accent rounded-lg flex items-center justify-center z-10 p-4"
+            className="absolute inset-0 bg-typeai/20 border-2 border-dashed border-typeai rounded-lg flex items-center justify-center z-10 p-4"
         >
-            <div className="text-accent text-center">
+            <div className="text-typeai text-center">
                 <i className="fa fa-upload text-3xl mb-2"></i>
                 <div className="text-lg font-semibold">{t("ai.dropFilesHere")}</div>
                 <div className="text-sm">{t("ai.dropFilesSupported")}</div>
@@ -101,12 +101,12 @@ const AIWelcomeMessage = memo(() => {
             </div>
             <div className="mt-4 text-left max-w-md mx-auto">
                 <p className="text-sm mb-6">{t("ai.welcomeDesc")}</p>
-                <div className="bg-accent/10 border border-accent/30 rounded-lg p-4">
-                    <div className="text-sm font-semibold mb-3 text-accent">{t("ai.gettingStarted")}</div>
+                <div className="bg-typeai/10 border border-typeai/30 rounded-lg p-4">
+                    <div className="text-sm font-semibold mb-3 text-typeai">{t("ai.gettingStarted")}</div>
                     <div className="space-y-3 text-sm">
                         <div className="flex items-start gap-3">
                             <div className="w-4 text-center flex-shrink-0">
-                                <i className="fa-solid fa-plug text-accent"></i>
+                                <i className="fa-solid fa-plug text-typeai"></i>
                             </div>
                             <div>
                                 <span className="font-bold">{t("ai.widgetContext")}</span>
@@ -116,13 +116,13 @@ const AIWelcomeMessage = memo(() => {
                         </div>
                         <div className="flex items-start gap-3">
                             <div className="w-4 text-center flex-shrink-0">
-                                <i className="fa-solid fa-file-import text-accent"></i>
+                                <i className="fa-solid fa-file-import text-typeai"></i>
                             </div>
                             <div>{t("ai.dragDropHint")}</div>
                         </div>
                         <div className="flex items-start gap-3">
                             <div className="w-4 text-center flex-shrink-0">
-                                <i className="fa-solid fa-keyboard text-accent"></i>
+                                <i className="fa-solid fa-keyboard text-typeai"></i>
                             </div>
                             <div className="space-y-1">
                                 <div>
@@ -156,7 +156,7 @@ const AIWelcomeMessage = memo(() => {
                         </div>
                         <div className="flex items-start gap-3">
                             <div className="w-4 text-center flex-shrink-0">
-                                <i className="fa-brands fa-discord text-accent"></i>
+                                <i className="fa-brands fa-discord text-typeai"></i>
                             </div>
                             <div>
                                 {t("ai.questionsFeedback")}{" "}
@@ -164,7 +164,7 @@ const AIWelcomeMessage = memo(() => {
                                     target="_blank"
                                     href="https://discord.gg/XfvZ334gwU"
                                     rel="noopener"
-                                    className="text-accent hover:underline cursor-pointer"
+                                    className="text-typeai hover:underline cursor-pointer"
                                 >
                                     {t("ai.joinDiscord")}
                                 </a>
@@ -208,10 +208,10 @@ const AIErrorMessage = memo(() => {
     }
 
     return (
-        <div className="px-4 py-2 text-red-400 bg-red-900/20 border-l-4 border-red-500 mx-2 mb-2 relative">
+        <div className="px-4 py-2 text-error bg-error/10 border-l-4 border-error/70 mx-2 mb-2 relative">
             <button
                 onClick={() => model.clearError()}
-                className="absolute top-2 right-2 text-red-400 hover:text-red-300 cursor-pointer z-10"
+                className="absolute top-2 right-2 text-error hover:text-error/80 cursor-pointer z-10"
                 aria-label={t("ai.closeError")}
             >
                 <i className="fa fa-times text-sm"></i>
@@ -220,7 +220,7 @@ const AIErrorMessage = memo(() => {
                 {errorMessage}
                 <button
                     onClick={() => model.clearChat()}
-                    className="ml-2 text-xs text-red-300 hover:text-red-200 cursor-pointer underline"
+                    className="ml-2 text-xs text-error hover:text-error/80 cursor-pointer underline"
                 >
                     {t("ai.newChat")}
                 </button>
@@ -557,7 +557,7 @@ const AIPanelComponentInner = memo(({ roundTopLeft }: AIPanelComponentInnerProps
             className={cn(
                 "@container bg-surface/70 flex flex-col relative",
                 model.inBuilder ? "mt-0 h-full" : "mt-1 h-[calc(100%-4px)]",
-                (isDragOver || isReactDndDragOver) && "bg-raise border-accent",
+                (isDragOver || isReactDndDragOver) && "bg-raise border-typeai",
                 isFocused && !borderColor ? "border-2 border-typeai" : "border-2 border-transparent"
             )}
             style={{

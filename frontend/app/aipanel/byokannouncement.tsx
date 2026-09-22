@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { RpcApi } from "@/app/store/wshclientapi";
@@ -38,16 +38,16 @@ const BYOKAnnouncement = () => {
     };
 
     return (
-        <div className="bg-blue-900/20 border border-blue-800 rounded-lg p-4 mt-4">
+        <div className="bg-typeai/10 border border-typeai/30 rounded-lg p-4 mt-4">
             <div className="flex items-start gap-3">
-                <i className="fa fa-key text-blue-400 text-lg mt-0.5"></i>
+                <i className="fa fa-key text-typeai text-lg mt-0.5"></i>
                 <div className="text-left flex-1">
-                    <div className="text-blue-400 font-medium mb-1">{t("ai.byokTitle")}</div>
+                    <div className="text-typeai font-medium mb-1">{t("ai.byokTitle")}</div>
                     <div className="text-secondary text-sm mb-3">{t("ai.byokDesc")}</div>
                     <div className="flex items-center gap-3">
                         <button
                             onClick={handleOpenConfig}
-                            className="border border-blue-400 text-blue-400 hover:bg-blue-500/10 hover:text-blue-300 px-3 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-colors"
+                            className="border border-typeai/60 text-typeai hover:bg-typeai/10 px-3 py-1.5 rounded-md text-sm font-medium cursor-pointer transition-colors"
                         >
                             {t("ai.configureAIModes")}
                         </button>
@@ -56,7 +56,7 @@ const BYOKAnnouncement = () => {
                             target="_blank"
                             rel="noopener noreferrer"
                             onClick={handleViewDocs}
-                            className="text-blue-400! hover:text-blue-300! hover:underline text-sm cursor-pointer transition-colors flex items-center gap-1"
+                            className="text-typeai! hover:text-typeai/80! hover:underline text-sm cursor-pointer transition-colors flex items-center gap-1"
                         >
                             {t("ai.viewDocs")} <i className="fa fa-external-link text-xs"></i>
                         </a>

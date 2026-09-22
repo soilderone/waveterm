@@ -48,7 +48,7 @@ const UpgradeMinorWelcomePage = ({ onStarClick, onAlreadyStarred, onMaybeLater }
                                 <span className="font-bold ml-2 font-mono">Wave AI</span>
                             </div>
                             <div className="flex h-[52px] px-3 items-center rounded-lg bg-hover text-[18px]">
-                                <i className="fa-sharp fa-solid fa-shield text-sky-500" />
+                                <i className="fa-sharp fa-solid fa-shield text-info" />
                                 <span className="font-bold ml-2 text-accent">{t("onboarding.durableTitle")}</span>
                             </div>
                         </div>

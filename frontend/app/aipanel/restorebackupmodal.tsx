@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { Modal } from "@/app/modals/modal";
@@ -49,7 +49,7 @@ export const RestoreBackupModal = memo(({ part }: RestoreBackupModalProps) => {
                 okLabel={t("ai.close")}
             >
                 <div className="flex flex-col gap-4 pt-4 pb-4 max-w-xl">
-                    <div className="font-semibold text-lg text-green-500">{t("ai.backupRestored")}</div>
+                    <div className="font-semibold text-lg text-success">{t("ai.backupRestored")}</div>
                     <div className="text-sm text-secondary leading-relaxed">
                         {t("ai.backupRestoredPrefix")}
                         <span className="font-mono text-primary break-all">{toolData.inputfilename}</span>
@@ -69,9 +69,9 @@ export const RestoreBackupModal = memo(({ part }: RestoreBackupModalProps) => {
                 okLabel={t("ai.close")}
             >
                 <div className="flex flex-col gap-4 pt-4 pb-4 max-w-xl">
-                    <div className="font-semibold text-lg text-red-500">{t("ai.backupRestoreFailed")}</div>
+                    <div className="font-semibold text-lg text-error">{t("ai.backupRestoreFailed")}</div>
                     <div className="text-sm text-secondary leading-relaxed">{t("ai.backupRestoreErrorDesc")}</div>
-                    <div className="text-sm text-red-400 font-mono bg-raise p-3 rounded break-all">{error}</div>
+                    <div className="text-sm text-error font-mono bg-raise p-3 rounded break-all">{error}</div>
                 </div>
             </Modal>
         );

@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { cn } from "@/util/util";
@@ -25,7 +25,7 @@ export const AIDroppedFiles = memo(({ model }: AIDroppedFilesProps) => {
                     <div key={file.id} className="relative bg-raise rounded-lg p-2 min-w-20 flex-shrink-0 group">
                         <button
                             onClick={() => model.removeFile(file.id)}
-                            className="absolute top-1 right-1 w-4 h-4 bg-red-500 hover:bg-red-600 rounded-full flex items-center justify-center text-primary text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+                            className="absolute top-1 right-1 w-4 h-4 bg-error hover:bg-error/80 rounded-full flex items-center justify-center text-onerror text-xs opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                         >
                             <i className="fa fa-times text-xs"></i>
                         </button>

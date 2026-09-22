@@ -342,8 +342,6 @@ class SysinfoViewModel implements ViewModel {
     }
 }
 
-const _plotColors = ["#58C142", "#FFC107", "#FF5722", "#2196F3", "#9C27B0", "#00BCD4", "#FFEB3B", "#795548"];
-
 type SysinfoViewProps = {
     blockId: string;
     model: SysinfoViewModel;

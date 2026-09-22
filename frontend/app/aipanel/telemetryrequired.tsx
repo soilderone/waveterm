@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { RpcApi } from "@/app/store/wshclientapi";
@@ -40,11 +40,11 @@ const TelemetryRequiredMessage = ({ className }: TelemetryRequiredMessageProps) 
                         <p className="text-secondary leading-relaxed">{t("ai.telemetryDesc")}</p>
                     </div>
 
-                    <div className="bg-blue-900/20 border border-blue-500 rounded-lg p-4">
+                    <div className="bg-typeai/10 border border-typeai/30 rounded-lg p-4">
                         <div className="flex items-start gap-3">
-                            <i className="fa fa-info-circle text-blue-400 text-lg mt-0.5"></i>
+                            <i className="fa fa-info-circle text-typeai text-lg mt-0.5"></i>
                             <div className="text-left">
-                                <div className="text-blue-400 font-medium mb-1">{t("ai.telemetryKeepsFree")}</div>
+                                <div className="text-typeai font-medium mb-1">{t("ai.telemetryKeepsFree")}</div>
                                 <div className="text-secondary text-sm mb-3">
                                     <p className="mb-2">
                                         {t("ai.telemetryAnonymousPrefix")}

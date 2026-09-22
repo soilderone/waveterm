@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { WaveStreamdown } from "@/app/element/streamdown";
@@ -156,7 +156,7 @@ const FakeAIPanelHeader = memo(() => {
     return (
         <div className="py-2 pl-3 pr-1 border-b border-border flex items-center justify-between min-w-0 bg-surface">
             <h2 className="text-primary text-sm font-semibold flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
-                <i className="fa fa-sparkles text-accent"></i>
+                <i className="fa fa-sparkles text-typeai"></i>
                 Wave AI
             </h2>
 
@@ -164,11 +164,11 @@ const FakeAIPanelHeader = memo(() => {
                 <div className="flex items-center text-sm whitespace-nowrap">
                     <span className="text-secondary mr-1 text-[12px]">{t("onboarding.fakechat.context")}</span>
                     <button
-                        className="relative inline-flex h-6 w-14 items-center rounded-full transition-colors bg-accent-600"
+                        className="relative inline-flex h-6 w-14 items-center rounded-full transition-colors bg-accent/80 text-onaccent"
                         title={t("onboarding.fakechat.widgetAccessOn")}
                     >
-                        <span className="absolute inline-block h-4 w-4 transform rounded-full bg-primary transition-transform translate-x-8" />
-                        <span className="relative z-10 text-xs text-primary transition-all ml-2.5 mr-6 text-left font-bold">
+                        <span className="absolute inline-block h-4 w-4 transform rounded-full bg-onaccent transition-transform translate-x-8" />
+                        <span className="relative z-10 text-xs text-onaccent transition-all ml-2.5 mr-6 text-left font-bold">
                             {t("onboarding.fakechat.on")}
                         </span>
                     </button>

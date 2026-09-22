@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { atoms } from "@/app/store/global";
@@ -57,7 +57,7 @@ function highlightPositions(target: string, positions: number[]): ReactNode[] {
     while (targetIndex < target.length) {
         if (posIndex < positions.length && targetIndex === positions[posIndex]) {
             result.push(
-                <span key={`h-${targetIndex}`} className="text-blue-500 font-bold">
+                <span key={`h-${targetIndex}`} className="text-accent font-bold">
                     {target[targetIndex]}
                 </span>
             );
@@ -118,7 +118,9 @@ function SuggestionContent({ suggestion }: { suggestion: SuggestionType }) {
         return (
             <div className="flex flex-col">
                 {/* Title on the first line, with highlighting */}
-                <div className="truncate text-primary">{highlightPositions(suggestion.display, suggestion.matchpos)}</div>
+                <div className="truncate text-primary">
+                    {highlightPositions(suggestion.display, suggestion.matchpos)}
+                </div>
                 {/* Subtext on the second line in a smaller, grey style */}
                 <div className="truncate text-sm text-secondary">
                     {highlightPositions(suggestion.subtext, suggestion.submatchpos)}
@@ -317,7 +319,7 @@ function SuggestionControlInner({
             </div>
             {fetched &&
                 (suggestions.length > 0 ? (
-                    <div ref={dropdownRef} className="max-h-96 overflow-y-auto divide-y divide-gray-700">
+                    <div ref={dropdownRef} className="max-h-96 overflow-y-auto divide-y divide-border">
                         {suggestions.map((suggestion, index) => (
                             <div
                                 key={suggestion.suggestionid}

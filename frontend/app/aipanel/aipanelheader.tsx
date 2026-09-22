@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { handleWaveAIContextMenu } from "@/app/aipanel/aipanel-contextmenu";
@@ -35,7 +35,9 @@ export const AIPanelHeader = memo(() => {
                 {!inBuilder && (
                     <div className="flex items-center text-sm whitespace-nowrap">
                         <span className="text-secondary @xs:hidden mr-1 text-[12px]">{t("ai.contextShort")}</span>
-                        <span className="text-secondary hidden @xs:inline mr-2 text-[12px]">{t("ai.widgetContext")}</span>
+                        <span className="text-secondary hidden @xs:inline mr-2 text-[12px]">
+                            {t("ai.widgetContext")}
+                        </span>
                         <button
                             onClick={() => {
                                 model.setWidgetAccess(!widgetAccess);
@@ -44,18 +46,20 @@ export const AIPanelHeader = memo(() => {
                                 }, 0);
                             }}
                             className={`relative inline-flex h-6 w-14 items-center rounded-full transition-colors cursor-pointer ${
-                                widgetAccess ? "bg-accent-600" : "bg-hoverbg"
+                                widgetAccess ? "bg-accent/80" : "bg-hoverbg"
                             }`}
                             title={t("ai.widgetAccessTitle", { state: widgetAccess ? t("ai.on") : t("ai.off") })}
                         >
                             <span
-                                className={`absolute inline-block h-4 w-4 transform rounded-full bg-primary transition-transform ${
-                                    widgetAccess ? "translate-x-8" : "translate-x-1"
+                                className={`absolute inline-block h-4 w-4 transform rounded-full transition-all ${
+                                    widgetAccess ? "translate-x-8 bg-onaccent" : "translate-x-1 bg-primary"
                                 }`}
                             />
                             <span
-                                className={`relative z-10 text-xs text-primary transition-all ${
-                                    widgetAccess ? "ml-2.5 mr-6 text-left" : "ml-6 mr-1 text-right"
+                                className={`relative z-10 text-xs transition-all ${
+                                    widgetAccess
+                                        ? "ml-2.5 mr-6 text-left text-onaccent"
+                                        : "ml-6 mr-1 text-right text-primary"
                                 }`}
                             >
                                 {widgetAccess ? t("ai.on") : t("ai.off")}

@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { MagnifyIcon } from "@/app/element/magnify";
@@ -18,7 +18,7 @@ const IconBox = ({ children, variant = "accent" }: { children: React.ReactNode; 
     const colorClasses =
         variant === "secondary"
             ? "text-secondary bg-hover border-border [&_svg]:fill-secondary [&_svg_#arrow1]:fill-primary [&_svg_#arrow2]:fill-primary"
-            : "text-accent-400 bg-accent-400/10 border-accent-400/20 [&_svg]:fill-accent-400 [&_svg_#arrow1]:fill-accent-400 [&_svg_#arrow2]:fill-accent-400";
+            : "text-accent bg-accent/10 border-accent/20 [&_svg]:fill-accent [&_svg_#arrow1]:fill-accent [&_svg_#arrow2]:fill-accent";
 
     return (
         <div
@@ -98,9 +98,9 @@ const QuickTips = () => {
     const t = useT();
     return (
         <div className="flex flex-col w-full gap-6 @container">
-            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-border hover:border-accent-400/20 transition-all duration-300">
+            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent/5 rounded-lg border border-border hover:border-accent/20 transition-all duration-300">
                 <div className="flex items-center gap-2 text-xl font-bold">
-                    <div className="w-1 h-6 bg-accent-400 rounded-full"></div>
+                    <div className="w-1 h-6 bg-accent rounded-full"></div>
                     <span className="text-foreground">{t("chrome.headerIcons")}</span>
                 </div>
                 <div className="grid grid-cols-1 @lg:grid-cols-2 gap-3">
@@ -140,15 +140,15 @@ const QuickTips = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-border hover:border-accent-400/20 transition-all duration-300">
+            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent/5 rounded-lg border border-border hover:border-accent/20 transition-all duration-300">
                 <div className="flex items-center gap-2 text-xl font-bold">
-                    <div className="w-1 h-6 bg-accent-400 rounded-full"></div>
+                    <div className="w-1 h-6 bg-accent rounded-full"></div>
                     <span className="text-foreground">{t("chrome.importantKeybindings")}</span>
                 </div>
 
                 <div className="grid grid-cols-1 @lg:grid-cols-2 gap-x-5 gap-y-6">
                     <div className="flex flex-col gap-1.5">
-                        <div className="text-sm text-accent-400 font-semibold uppercase tracking-wide mb-1">
+                        <div className="text-sm text-accent font-semibold uppercase tracking-wide mb-1">
                             {t("chrome.mainKeybindings")}
                         </div>
                         <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
@@ -166,7 +166,7 @@ const QuickTips = () => {
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                        <div className="text-sm text-accent-400 font-semibold uppercase tracking-wide mb-1">
+                        <div className="text-sm text-accent font-semibold uppercase tracking-wide mb-1">
                             {t("chrome.tabSwitching", { key: PLATFORM === PlatformMacOS ? "Cmd" : "Alt" })}
                         </div>
                         <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
@@ -184,7 +184,7 @@ const QuickTips = () => {
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                        <div className="text-sm text-accent-400 font-semibold uppercase tracking-wide mb-1">
+                        <div className="text-sm text-accent font-semibold uppercase tracking-wide mb-1">
                             {t("chrome.blockNavigation")}
                         </div>
                         <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
@@ -202,7 +202,7 @@ const QuickTips = () => {
                     </div>
 
                     <div className="flex flex-col gap-1.5">
-                        <div className="text-sm text-accent-400 font-semibold uppercase tracking-wide mb-1">
+                        <div className="text-sm text-accent font-semibold uppercase tracking-wide mb-1">
                             {t("chrome.splitBlocks")}
                         </div>
                         <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
@@ -221,24 +221,24 @@ const QuickTips = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-border hover:border-accent-400/20 transition-all duration-300">
+            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent/5 rounded-lg border border-border hover:border-accent/20 transition-all duration-300">
                 <div className="flex items-center gap-2 text-xl font-bold">
-                    <div className="w-1 h-6 bg-accent-400 rounded-full"></div>
+                    <div className="w-1 h-6 bg-accent rounded-full"></div>
                     <span className="text-foreground">{t("chrome.wshCommands")}</span>
                 </div>
                 <div className="grid grid-cols-1 @md:grid-cols-2 gap-4">
-                    <div className="flex flex-col gap-2 p-4 bg-ink/20 rounded-lg border border-accent-400/30 hover:border-accent-400/50 transition-colors">
+                    <div className="flex flex-col gap-2 p-4 bg-ink/20 rounded-lg border border-accent/30 hover:border-accent/50 transition-colors">
                         <code className="font-mono text-sm">
                             <span className="text-secondary">&gt; </span>
-                            <span className="text-accent-400 font-semibold">wsh view</span>
+                            <span className="text-accent font-semibold">wsh view</span>
                             <span className="text-muted"> [filename|url]</span>
                         </code>
                         <div className="text-secondary text-sm mt-1">{t("chrome.wshViewDesc")}</div>
                     </div>
-                    <div className="flex flex-col gap-2 p-4 bg-ink/20 rounded-lg border border-accent-400/30 hover:border-accent-400/50 transition-colors">
+                    <div className="flex flex-col gap-2 p-4 bg-ink/20 rounded-lg border border-accent/30 hover:border-accent/50 transition-colors">
                         <code className="font-mono text-sm">
                             <span className="text-secondary">&gt; </span>
-                            <span className="text-accent-400 font-semibold">wsh edit</span>
+                            <span className="text-accent font-semibold">wsh edit</span>
                             <span className="text-muted"> [filename]</span>
                         </code>
                         <div className="text-secondary text-sm mt-1">{t("chrome.wshEditDesc")}</div>
@@ -246,9 +246,9 @@ const QuickTips = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-border hover:border-accent-400/20 transition-all duration-300">
+            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent/5 rounded-lg border border-border hover:border-accent/20 transition-all duration-300">
                 <div className="flex items-center gap-2 text-xl font-bold">
-                    <div className="w-1 h-6 bg-accent-400 rounded-full"></div>
+                    <div className="w-1 h-6 bg-accent rounded-full"></div>
                     <span className="text-foreground">{t("chrome.moreTips")}</span>
                 </div>
                 <div className="flex flex-col gap-2">
@@ -282,9 +282,9 @@ const QuickTips = () => {
                 </div>
             </div>
 
-            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent-400/5 rounded-lg border border-border hover:border-accent-400/20 transition-all duration-300">
+            <div className="flex flex-col gap-4 p-5 bg-gradient-to-br from-highlightbg/30 to-transparent hover:from-accent/5 rounded-lg border border-border hover:border-accent/20 transition-all duration-300">
                 <div className="flex items-center gap-2 text-xl font-bold">
-                    <div className="w-1 h-6 bg-accent-400 rounded-full"></div>
+                    <div className="w-1 h-6 bg-accent rounded-full"></div>
                     <span className="text-foreground">{t("chrome.needMoreHelp")}</span>
                 </div>
                 <div className="grid grid-cols-1 @sm:grid-cols-2 gap-2">
@@ -296,7 +296,7 @@ const QuickTips = () => {
                             target="_blank"
                             href="https://discord.gg/XfvZ334gwU"
                             rel="noopener"
-                            className="hover:text-accent-400 hover:underline transition-colors font-medium"
+                            className="hover:text-accent hover:underline transition-colors font-medium"
                         >
                             {t("chrome.joinDiscord")}
                         </a>
@@ -309,7 +309,7 @@ const QuickTips = () => {
                             target="_blank"
                             href="https://docs.waveterm.dev/config"
                             rel="noopener"
-                            className="hover:text-accent-400 hover:underline transition-colors font-medium"
+                            className="hover:text-accent hover:underline transition-colors font-medium"
                         >
                             {t("chrome.configOptions")}
                         </a>
@@ -322,7 +322,7 @@ const QuickTips = () => {
                             target="_blank"
                             href="https://docs.waveterm.dev/keybindings"
                             rel="noopener"
-                            className="hover:text-accent-400 hover:underline transition-colors font-medium"
+                            className="hover:text-accent hover:underline transition-colors font-medium"
                         >
                             {t("chrome.allKeybindings")}
                         </a>
@@ -335,7 +335,7 @@ const QuickTips = () => {
                             target="_blank"
                             href="https://docs.waveterm.dev"
                             rel="noopener"
-                            className="hover:text-accent-400 hover:underline transition-colors font-medium"
+                            className="hover:text-accent hover:underline transition-colors font-medium"
                         >
                             {t("chrome.fullDocs")}
                         </a>

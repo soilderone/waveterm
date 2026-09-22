@@ -15,7 +15,7 @@ const UpgradeOnboardingModal_v0_14_0_Content = () => {
 
             <div className="flex w-full items-start gap-4 mb-4">
                 <div className="flex-shrink-0">
-                    <i className="text-[24px] text-sky-500 fa-sharp fa-solid fa-shield"></i>
+                    <i className="text-[24px] text-info fa-sharp fa-solid fa-shield"></i>
                 </div>
                 <div className="flex flex-col items-start gap-2 flex-1">
                     <div className="text-foreground text-base font-semibold leading-[18px]">

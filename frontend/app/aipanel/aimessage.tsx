@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { WaveStreamdown } from "@/app/element/streamdown";
@@ -43,7 +43,7 @@ const AIThinking = memo(
             <div className="flex flex-col gap-1">
                 <div className="flex items-center gap-2">
                     {isWaitingApproval ? (
-                        <i className="fa fa-clock text-base text-yellow-500"></i>
+                        <i className="fa fa-clock text-base text-warning"></i>
                     ) : (
                         <div className="animate-pulse flex items-center">
                             <i className="fa fa-circle text-[10px]"></i>

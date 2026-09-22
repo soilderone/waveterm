@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { formatFileSize } from "@/app/aipanel/ai-utils";
@@ -7,9 +7,9 @@ import { ContextMenuModel } from "@/app/store/contextmenu";
 import { modalsModel } from "@/app/store/modalmodel";
 import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
-import { arrayToBase64 } from "@/util/util";
-import { useT } from "@/util/i18n-hooks";
 import { atoms } from "@/store/global";
+import { useT } from "@/util/i18n-hooks";
+import { arrayToBase64 } from "@/util/util";
 import { useAtomValue } from "jotai";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 
@@ -81,7 +81,8 @@ const RenameFileModal = memo(
                     <h2 className="text-xl font-semibold">{t("builder.renameFile")}</h2>
                     <div className="flex flex-col gap-2">
                         <div className="text-sm text-secondary mb-1">
-                            {t("builder.currentName")}<span className="font-medium text-primary">{displayName}</span>
+                            {t("builder.currentName")}
+                            <span className="font-medium text-primary">{displayName}</span>
                         </div>
                         <input
                             type="text"
@@ -166,7 +167,8 @@ const DeleteFileModal = memo(
                 <div className="flex flex-col gap-4 mb-4">
                     <h2 className="text-xl font-semibold">{t("builder.deleteFile")}</h2>
                     <p>
-                        {t("builder.deleteConfirmPre")}<strong>{fileName.replace("static/", "")}</strong>?
+                        {t("builder.deleteConfirmPre")}
+                        <strong>{fileName.replace("static/", "")}</strong>?
                     </p>
                     <p className="text-sm text-secondary">{t("builder.deleteNoUndo")}</p>
                     {error && <div className="text-sm text-error">{error}</div>}
@@ -346,8 +348,9 @@ const BuilderFilesTab = memo(() => {
                 </div>
             )}
 
-            <div className="mb-3 p-2 bg-blue-500/10 border border-blue-500/30 rounded text-sm text-secondary">
-                {t("builder.dropHintPre")}{formatFileSize(MaxFileSize)}
+            <div className="mb-3 p-2 bg-typeweb/10 border border-typeweb/30 rounded text-sm text-secondary">
+                {t("builder.dropHintPre")}
+                {formatFileSize(MaxFileSize)}
             </div>
 
             <div className="flex-1 overflow-auto">

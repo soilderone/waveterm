@@ -129,7 +129,7 @@ function AiFileDiffView({ blockId, model }: ViewComponentProps<AiFileDiffViewMod
     if (error) {
         return (
             <div className="flex items-center justify-center w-full h-full">
-                <div className="text-red-500">{error}</div>
+                <div className="text-error">{error}</div>
             </div>
         );
     }

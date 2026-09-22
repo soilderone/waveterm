@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { SecretNameRegex, type WaveConfigViewModel } from "@/app/view/waveconfig/waveconfig-model";
@@ -16,9 +16,7 @@ const ErrorDisplay = memo(({ message, variant = "error" }: ErrorDisplayProps) =>
     const icon = variant === "error" ? "fa-circle-exclamation" : "fa-triangle-exclamation";
     const baseClasses = "flex items-center gap-2 p-4 border rounded-lg";
     const variantClasses =
-        variant === "error"
-            ? "bg-red-500/10 border-red-500/20 text-red-400"
-            : "bg-yellow-500/10 border-yellow-500/20 text-yellow-400";
+        variant === "error" ? "bg-error/10 border-error/30 text-error" : "bg-warning/10 border-warning/30 text-warning";
 
     return (
         <div className={`${baseClasses} ${variantClasses}`}>
@@ -47,7 +45,7 @@ const EmptyState = memo(({ onAddSecret }: { onAddSecret: () => void }) => {
             <h3 className="text-lg font-semibold text-secondary">{t("config.noSecrets")}</h3>
             <p className="text-muted">{t("config.addSecretHint")}</p>
             <button
-                className="flex items-center gap-2 px-4 py-2 bg-accent-600 hover:bg-accent-500 rounded cursor-pointer transition-colors"
+                className="flex items-center gap-2 px-4 py-2 bg-accent/80 text-onaccent hover:bg-accent rounded cursor-pointer transition-colors"
                 onClick={onAddSecret}
             >
                 <i className="fa-sharp fa-solid fa-plus" />
@@ -66,7 +64,7 @@ const CLIInfoBubble = memo(() => {
                 <i className="fa-sharp fa-solid fa-terminal text-secondary" />
                 <div className="text-sm font-medium text-secondary">{t("config.cliAccess")}</div>
             </div>
-            <div className="font-mono text-xs bg-ink/20 px-3 py-2 rounded leading-relaxed text-secondary">
+            <div className="font-mono text-xs bg-hoverbg px-3 py-2 rounded leading-relaxed text-secondary">
                 wsh secret list
                 <br />
                 wsh secret get [name]
@@ -88,16 +86,14 @@ const SecretListView = memo(({ secretNames, onSelectSecret, onAddSecret }: Secre
     const t = useT();
     return (
         <div className="flex flex-col h-full w-full rounded-lg">
-            <div className="flex flex-col divide-y divide-zinc-700">
+            <div className="flex flex-col divide-y divide-border">
                 {secretNames.map((name) => (
                     <div
                         key={name}
-                        className={cn(
-                            "flex items-center gap-3 p-4 hover:bg-raise/50 cursor-pointer transition-colors"
-                        )}
+                        className={cn("flex items-center gap-3 p-4 hover:bg-raise/50 cursor-pointer transition-colors")}
                         onClick={() => onSelectSecret(name)}
                     >
-                        <i className="fa-sharp fa-solid fa-key text-accent-500" />
+                        <i className="fa-sharp fa-solid fa-key text-accent" />
                         <span className="flex-1 font-mono">{name}</span>
                         <i className="fa-sharp fa-solid fa-chevron-right text-muted text-sm" />
                     </div>
@@ -108,8 +104,8 @@ const SecretListView = memo(({ secretNames, onSelectSecret, onAddSecret }: Secre
                     )}
                     onClick={onAddSecret}
                 >
-                    <i className="fa-sharp fa-solid fa-plus text-accent-500" />
-                    <span className="font-medium text-accent-500">{t("config.addNewSecret")}</span>
+                    <i className="fa-sharp fa-solid fa-plus text-accent" />
+                    <span className="font-medium text-accent">{t("config.addNewSecret")}</span>
                 </div>
             </div>
             <CLIInfoBubble />
@@ -150,9 +146,7 @@ const AddSecretForm = memo(
                         type="text"
                         className={cn(
                             "px-3 py-2 bg-raise border rounded focus:outline-none",
-                            isNameInvalid
-                                ? "border-red-500 focus:border-red-500"
-                                : "border-border focus:border-accent-500"
+                            isNameInvalid ? "border-error focus:border-error" : "border-border focus:border-accent"
                         )}
                         value={newSecretName}
                         onChange={(e) => onNameChange(e.target.value)}
@@ -164,7 +158,7 @@ const AddSecretForm = memo(
                 <div className="flex flex-col gap-2">
                     <label className="text-sm font-medium">{t("config.secretValue")}</label>
                     <textarea
-                        className="px-3 py-2 bg-raise border border-border rounded focus:outline-none focus:border-accent-500 font-mono text-sm"
+                        className="px-3 py-2 bg-raise border border-border rounded focus:outline-none focus:border-accent font-mono text-sm"
                         value={newSecretValue}
                         onChange={(e) => onValueChange(e.target.value)}
                         placeholder={t("config.enterSecretValue")}
@@ -181,7 +175,7 @@ const AddSecretForm = memo(
                         {t("common.cancel")}
                     </button>
                     <button
-                        className="px-4 py-2 bg-accent-600 hover:bg-accent-500 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-4 py-2 bg-accent/80 text-onaccent hover:bg-accent rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         onClick={onSubmit}
                         disabled={isLoading || isNameInvalid || newSecretName.trim() === ""}
                     >
@@ -220,7 +214,7 @@ const SecretDetailView = memo(({ model }: SecretDetailViewProps) => {
     return (
         <div className="flex flex-col gap-4 min-h-full p-6 bg-raise/50 rounded-lg">
             <div className="flex items-center gap-2">
-                <i className="fa-sharp fa-solid fa-key text-accent-500" />
+                <i className="fa-sharp fa-solid fa-key text-accent" />
                 <h3 className="text-lg font-semibold">{secretName}</h3>
             </div>
             <div className="flex flex-col gap-2">
@@ -232,7 +226,7 @@ const SecretDetailView = memo(({ model }: SecretDetailViewProps) => {
                             ref.focus();
                         }
                     }}
-                    className="px-3 py-2 bg-raise border border-border rounded focus:outline-none focus:border-accent-500 font-mono text-sm"
+                    className="px-3 py-2 bg-raise border border-border rounded focus:outline-none focus:border-accent font-mono text-sm"
                     value={secretValue}
                     onChange={(e) => setSecretValue(e.target.value)}
                     onKeyDown={(e) => {
@@ -253,7 +247,7 @@ const SecretDetailView = memo(({ model }: SecretDetailViewProps) => {
                             </span>
                         ) : (
                             <button
-                                className="text-accent-500 underline hover:text-accent-400 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="text-accent underline hover:text-accenthover cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                                 onClick={() => model.showSecret()}
                                 disabled={isLoading}
                             >
@@ -265,7 +259,7 @@ const SecretDetailView = memo(({ model }: SecretDetailViewProps) => {
             </div>
             <div className="flex gap-2 justify-between">
                 <button
-                    className="px-4 py-2 bg-red-600 hover:bg-red-500 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                    className="px-4 py-2 bg-error text-onerror hover:bg-error/80 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                     onClick={() => model.deleteSecret()}
                     disabled={isLoading}
                     title={t("config.deleteSecretTooltip")}
@@ -291,7 +285,7 @@ const SecretDetailView = memo(({ model }: SecretDetailViewProps) => {
                         {t("common.cancel")}
                     </button>
                     <button
-                        className="px-4 py-2 bg-accent-600 hover:bg-accent-500 rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                        className="px-4 py-2 bg-accent/80 text-onaccent hover:bg-accent rounded cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                         onClick={() => model.saveSecret()}
                         disabled={isLoading}
                     >

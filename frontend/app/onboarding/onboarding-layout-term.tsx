@@ -28,7 +28,7 @@ export const FakeTermBlock = ({
 }: FakeTermBlockProps) => {
     const color = "var(--conn-icon-color-1)";
 
-    const durableIconColor = durableStatus === "connected" ? "text-sky-500" : "text-sky-300";
+    const durableIconColor = durableStatus === "connected" ? "text-info" : "text-info/60";
 
     return (
         <div
@@ -100,7 +100,7 @@ const ConnectionOverlay = ({ state }: { state: OverlayState }) => {
                 <i
                     className={cn(
                         "fa-sharp fa-solid",
-                        isConnected ? "fa-wifi text-green-400" : "fa-wifi-slash text-red-400",
+                        isConnected ? "fa-wifi text-success" : "fa-wifi-slash text-error",
                         "text-6xl"
                     )}
                 />

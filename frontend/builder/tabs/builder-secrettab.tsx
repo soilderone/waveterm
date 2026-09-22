@@ -1,18 +1,18 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { BuilderAppPanelModel } from "@/builder/store/builder-apppanel-model";
-import { RpcApi } from "@/app/store/wshclientapi";
-import { TabRpcClient } from "@/app/store/wshrpcutil";
-import { atoms } from "@/store/global";
-import { globalStore } from "@/app/store/jotaiStore";
-import { useAtomValue } from "jotai";
-import { memo, useState, useEffect } from "react";
-import { Check, AlertTriangle } from "lucide-react";
 import { Tooltip } from "@/app/element/tooltip";
 import { Modal } from "@/app/modals/modal";
+import { globalStore } from "@/app/store/jotaiStore";
 import { modalsModel } from "@/app/store/modalmodel";
+import { RpcApi } from "@/app/store/wshclientapi";
+import { TabRpcClient } from "@/app/store/wshrpcutil";
+import { BuilderAppPanelModel } from "@/builder/store/builder-apppanel-model";
+import { atoms } from "@/store/global";
 import { useT } from "@/util/i18n-hooks";
+import { useAtomValue } from "jotai";
+import { AlertTriangle, Check } from "lucide-react";
+import { memo, useEffect, useState } from "react";
 
 type SecretRowProps = {
     secretName: string;
@@ -23,53 +23,74 @@ type SecretRowProps = {
     onSetAndMapDefault: (secretName: string) => void;
 };
 
-const SecretRow = memo(({ secretName, secretMeta, currentBinding, availableSecrets, onMapDefault, onSetAndMapDefault }: SecretRowProps) => {
-    const t = useT();
-    const isMapped = currentBinding.trim().length > 0;
-    const isValid = isMapped && availableSecrets.includes(currentBinding);
-    const isInvalid = isMapped && !isValid;
-    const hasMatchingSecret = availableSecrets.includes(secretName);
+const SecretRow = memo(
+    ({
+        secretName,
+        secretMeta,
+        currentBinding,
+        availableSecrets,
+        onMapDefault,
+        onSetAndMapDefault,
+    }: SecretRowProps) => {
+        const t = useT();
+        const isMapped = currentBinding.trim().length > 0;
+        const isValid = isMapped && availableSecrets.includes(currentBinding);
+        const isInvalid = isMapped && !isValid;
+        const hasMatchingSecret = availableSecrets.includes(secretName);
 
-    return (
-        <div className="flex items-center gap-4 py-2 border-b border-border">
-            <Tooltip content={!isMapped ? t("builder.secretNotMapped") : isValid ? t("builder.secretValid") : t("builder.secretInvalid")}>
-                <div className="flex items-center">
-                    {!isMapped && <AlertTriangle className="w-5 h-5 text-yellow-500" />}
-                    {isInvalid && <AlertTriangle className="w-5 h-5 text-red-500" />}
-                    {isValid && <Check className="w-5 h-5 text-green-500" />}
+        return (
+            <div className="flex items-center gap-4 py-2 border-b border-border">
+                <Tooltip
+                    content={
+                        !isMapped
+                            ? t("builder.secretNotMapped")
+                            : isValid
+                              ? t("builder.secretValid")
+                              : t("builder.secretInvalid")
+                    }
+                >
+                    <div className="flex items-center">
+                        {!isMapped && <AlertTriangle className="w-5 h-5 text-warning" />}
+                        {isInvalid && <AlertTriangle className="w-5 h-5 text-error" />}
+                        {isValid && <Check className="w-5 h-5 text-success" />}
+                    </div>
+                </Tooltip>
+                <div className="flex-1 flex items-center gap-2">
+                    <span className="font-medium text-primary">{secretName}</span>
+                    {!secretMeta.optional && (
+                        <span className="px-2 py-0.5 text-xs bg-error/10 text-error rounded">
+                            {t("builder.required")}
+                        </span>
+                    )}
+                    {secretMeta.optional && (
+                        <span className="px-2 py-0.5 text-xs bg-typeweb/10 text-typeweb rounded">
+                            {t("builder.optional")}
+                        </span>
+                    )}
+                    {secretMeta.desc && <span className="text-sm text-secondary">— {secretMeta.desc}</span>}
                 </div>
-            </Tooltip>
-            <div className="flex-1 flex items-center gap-2">
-                <span className="font-medium text-primary">{secretName}</span>
-                {!secretMeta.optional && (
-                    <span className="px-2 py-0.5 text-xs bg-red-500/20 text-red-500 rounded">{t("builder.required")}</span>
-                )}
-                {secretMeta.optional && (
-                    <span className="px-2 py-0.5 text-xs bg-blue-500/20 text-blue-500 rounded">{t("builder.optional")}</span>
-                )}
-                {secretMeta.desc && <span className="text-sm text-secondary">— {secretMeta.desc}</span>}
+                <div className="flex items-center gap-2">
+                    {!isMapped && hasMatchingSecret && (
+                        <button
+                            onClick={() => onMapDefault(secretName)}
+                            className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-onaccent hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
+                        >
+                            {t("builder.mapDefault")}
+                        </button>
+                    )}
+                    {!isMapped && !hasMatchingSecret && (
+                        <button
+                            onClick={() => onSetAndMapDefault(secretName)}
+                            className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-onaccent hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
+                        >
+                            {t("builder.setAndMapDefault")}
+                        </button>
+                    )}
+                </div>
             </div>
-            <div className="flex items-center gap-2">
-                {!isMapped && hasMatchingSecret && (
-                    <button
-                        onClick={() => onMapDefault(secretName)}
-                        className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-onaccent hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
-                    >
-                        {t("builder.mapDefault")}
-                    </button>
-                )}
-                {!isMapped && !hasMatchingSecret && (
-                    <button
-                        onClick={() => onSetAndMapDefault(secretName)}
-                        className="px-3 py-1 text-sm font-medium rounded bg-accent/80 text-onaccent hover:bg-accent transition-colors cursor-pointer whitespace-nowrap"
-                    >
-                        {t("builder.setAndMapDefault")}
-                    </button>
-                )}
-            </div>
-        </div>
-    );
-});
+        );
+    }
+);
 
 SecretRow.displayName = "SecretRow";
 
@@ -140,7 +161,8 @@ const SetSecretDialog = memo(({ secretName, onSetAndMap }: SetSecretDialogProps)
                 <h2 className="text-xl font-semibold">{t("builder.setAndMapSecret")}</h2>
                 <div className="flex flex-col gap-2">
                     <div className="text-sm font-medium mb-1">
-                        {t("builder.secretName")}<span className="text-accent">{secretName}</span>
+                        {t("builder.secretName")}
+                        <span className="text-accent">{secretName}</span>
                     </div>
                     <textarea
                         value={secretValue}
@@ -151,9 +173,7 @@ const SetSecretDialog = memo(({ secretName, onSetAndMap }: SetSecretDialogProps)
                         autoFocus
                         disabled={isSubmitting}
                     />
-                    <div className="text-xs text-secondary">
-                        {t("builder.secretStoreNote")}
-                    </div>
+                    <div className="text-xs text-secondary">{t("builder.secretStoreNote")}</div>
                 </div>
             </div>
         </Modal>
@@ -189,9 +209,7 @@ const BuilderSecretTab = memo(() => {
     if (!builderStatus || !manifest) {
         return (
             <div className="w-full h-full flex items-center justify-center">
-                <div className="text-secondary text-center">
-                    {t("builder.manifestUnavailable")}
-                </div>
+                <div className="text-secondary text-center">{t("builder.manifestUnavailable")}</div>
             </div>
         );
     }
@@ -204,7 +222,7 @@ const BuilderSecretTab = memo(() => {
 
     const handleMapDefault = async (secretName: string) => {
         const newBindings = { ...secretBindings, [secretName]: secretName };
-        
+
         try {
             const appId = globalStore.get(atoms.builderAppId);
             await RpcApi.WriteAppSecretBindingsCommand(TabRpcClient, {
@@ -216,7 +234,10 @@ const BuilderSecretTab = memo(() => {
             model.restartBuilder();
         } catch (err) {
             console.error("Failed to save secret bindings:", err);
-            globalStore.set(model.errorAtom, t("builder.failedSaveBindings", { error: err.message || t("builder.unknownError") }));
+            globalStore.set(
+                model.errorAtom,
+                t("builder.failedSaveBindings", { error: err.message || t("builder.unknownError") })
+            );
         }
     };
 
@@ -227,9 +248,9 @@ const BuilderSecretTab = memo(() => {
     const handleSetAndMap = async (secretName: string, secretValue: string) => {
         await RpcApi.SetSecretsCommand(TabRpcClient, { [secretName]: secretValue });
         setAvailableSecrets((prev) => [...prev, secretName]);
-        
+
         const newBindings = { ...secretBindings, [secretName]: secretName };
-        
+
         try {
             const appId = globalStore.get(atoms.builderAppId);
             await RpcApi.WriteAppSecretBindingsCommand(TabRpcClient, {
@@ -241,7 +262,10 @@ const BuilderSecretTab = memo(() => {
             model.restartBuilder();
         } catch (err) {
             console.error("Failed to save secret bindings:", err);
-            globalStore.set(model.errorAtom, t("builder.failedSaveBindings", { error: err.message || t("builder.unknownError") }));
+            globalStore.set(
+                model.errorAtom,
+                t("builder.failedSaveBindings", { error: err.message || t("builder.unknownError") })
+            );
         }
     };
 
@@ -253,23 +277,21 @@ const BuilderSecretTab = memo(() => {
         <div className="w-full h-full flex flex-col p-4">
             <h2 className="text-lg font-semibold mb-2">{t("builder.secretBindings")}</h2>
 
-            <div className="mb-4 p-2 bg-blue-500/10 border border-blue-500/30 rounded text-sm text-secondary">
+            <div className="mb-4 p-2 bg-typeweb/10 border border-typeweb/30 rounded text-sm text-secondary">
                 {t("builder.secretBindingsDesc")}
             </div>
 
             {!allRequiredBound && (
-                <div className="mb-4 p-2 bg-yellow-500/10 border border-yellow-500/30 rounded text-sm text-yellow-600">
+                <div className="mb-4 p-2 bg-warning/10 border border-warning/30 rounded text-sm text-warning">
                     {t("builder.requiredUnbound")}
                 </div>
             )}
 
-            {error && <div className="mb-4 p-2 bg-red-500/20 text-red-500 rounded text-sm">{error}</div>}
+            {error && <div className="mb-4 p-2 bg-error/10 text-error rounded text-sm">{error}</div>}
 
             <div className="flex-1 overflow-auto">
                 {sortedSecretEntries.length === 0 ? (
-                    <div className="text-secondary text-center py-8">
-                        {t("builder.noSecretsManifest")}
-                    </div>
+                    <div className="text-secondary text-center py-8">{t("builder.noSecretsManifest")}</div>
                 ) : (
                     <div className="space-y-1">
                         {sortedSecretEntries.map(([secretName, secretMeta]) => (

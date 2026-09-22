@@ -48,7 +48,7 @@ export const DurableSessionPage = ({
                 <div className="flex-1 flex flex-col items-center justify-center gap-8 pr-3 unselectable">
                     <div className="flex flex-col items-start gap-3 max-w-md">
                         <div className="flex h-[52px] ml-[-4px] pl-3 pr-3 items-center rounded-lg bg-hover text-[15px]">
-                            <i className="fa-sharp fa-solid fa-shield text-sky-500" />
+                            <i className="fa-sharp fa-solid fa-shield text-info" />
                             <span className="font-bold ml-2 text-primary">{t("onboarding.durableBadge")}</span>
                         </div>
 
