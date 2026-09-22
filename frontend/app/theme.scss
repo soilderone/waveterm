@@ -37,7 +37,7 @@
     --sage-warning: #e0bd72;
     --sage-success: #8fbf78;
 
-    /* ink surface -- the terminal keeps these in both themes, see .block[data-view="term"] below */
+    /* Dark terminal surface used by the dark UI theme. */
     --ink-bg: #19221e;
     --ink-raise: #202b24;
     --ink-line: #344038;
@@ -213,7 +213,7 @@
 
 /* Light skin of the same sage palette. data-uitheme is set on <html> from the app:uitheme
    setting (see app/uitheme.tsx); only the primitives are redefined here, every semantic token
-   above resolves through them. The terminal stays ink in both themes — that is deliberate. */
+   above resolves through them. */
 :root[data-uitheme="light"] {
     color-scheme: light;
 
