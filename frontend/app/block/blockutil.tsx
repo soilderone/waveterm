@@ -253,7 +253,7 @@ export const HeaderTextElem = React.memo(({ elem, preview }: { elem: HeaderElem;
     } else if (elem.elemtype == "text") {
         return (
             <div className={clsx("block-frame-text ellipsis", elem.className, { "flex-nogrow": elem.noGrow })}>
-                <span ref={preview ? null : elem.ref} onClick={(e) => elem?.onClick(e)}>
+                <span ref={preview ? null : elem.ref} onClick={(e) => elem.onClick?.(e)}>
                     &lrm;{elem.text}
                 </span>
             </div>

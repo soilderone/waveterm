@@ -15,6 +15,7 @@ export const zhCNChrome: Record<string, string> = {
     "chrome.toggleAiPanel": "切换 Wave AI 面板",
     "chrome.workspaceSwitcher": "工作区切换器",
     "chrome.addTab": "新建标签页",
+    "chrome.localConnection": "本机",
     "chrome.tabLoading": "标签页加载中",
     "chrome.tabNotFound": "未找到标签页",
 

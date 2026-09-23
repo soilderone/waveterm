@@ -38,12 +38,35 @@ import * as services from "@/store/services";
 import { t } from "@/util/i18n";
 import * as keyutil from "@/util/keyutil";
 import { isMacOS, isWindows } from "@/util/platformutil";
-import { boundNumber, fireAndForget, stringToBase64 } from "@/util/util";
+import { boundNumber, fireAndForget, isBlank, isLocalConnName, stringToBase64 } from "@/util/util";
 import * as jotai from "jotai";
 import * as React from "react";
 import { getBlockingCommand } from "./shellblocking";
 import { computeTheme, defaultTermThemeForUI, isLikelyOnSameHost, trimTerminalSelection } from "./termutil";
 import { TermWrap, WebGLSupported } from "./termwrap";
+
+let cachedHomeDir: string = null;
+
+// Only local paths are shortened: a remote cwd arrives as an absolute path and this side has no
+// reliable way to know that host's home directory.
+function formatCwdForHeader(cwd: string, connection: string): string {
+    if (!isLocalConnName(connection)) {
+        return cwd;
+    }
+    if (cachedHomeDir == null) {
+        cachedHomeDir = getApi().getHomeDir() ?? "";
+    }
+    if (isBlank(cachedHomeDir)) {
+        return cwd;
+    }
+    if (cwd == cachedHomeDir) {
+        return "~";
+    }
+    if (cwd.startsWith(cachedHomeDir + "/") || cwd.startsWith(cachedHomeDir + "\\")) {
+        return "~" + cwd.slice(cachedHomeDir.length);
+    }
+    return cwd;
+}
 
 export class TermViewModel implements ViewModel {
     viewType: string;
@@ -197,6 +220,17 @@ export class TermViewModel implements ViewModel {
                             });
                         }
                     }
+                }
+            }
+            if (!isCmd) {
+                const blockMeta = get(this.blockAtom)?.meta;
+                const cwd = blockMeta?.["cmd:cwd"];
+                if (!isBlank(cwd)) {
+                    rtn.push({
+                        elemtype: "text",
+                        text: formatCwdForHeader(cwd, blockMeta?.connection),
+                        className: "term-cwd",
+                    });
                 }
             }
             const isMI = get(this.tabModel.isTermMultiInput);

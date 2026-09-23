@@ -20,7 +20,7 @@ import { setWebviewFocused } from "@/util/focusutil";
 import { t } from "@/util/i18n";
 import { useT } from "@/util/i18n-hooks";
 import { adaptFromReactOrNativeKeyEvent, checkKeyPressed } from "@/util/keyutil";
-import { fireAndForget, useAtomValueSafe } from "@/util/util";
+import { fireAndForget, isBlank, useAtomValueSafe } from "@/util/util";
 import clsx from "clsx";
 import type { WebviewTag } from "electron";
 import { Atom, PrimitiveAtom, atom, useAtomValue, useSetAtom } from "jotai";
@@ -45,6 +45,25 @@ function getWebviewPreloadUrl(env: WebViewEnv) {
         return null;
     }
     return "file://" + webviewPreloadUrl;
+}
+
+// Only http(s) URLs get the host/path split; anything else (about:, file:, a half-typed value)
+// is shown as the raw input text.
+function splitUrlForDisplay(url: string): { secure: boolean; host: string; rest: string } {
+    if (isBlank(url)) {
+        return null;
+    }
+    let parsed: URL;
+    try {
+        parsed = new URL(url);
+    } catch {
+        return null;
+    }
+    if (parsed.protocol != "http:" && parsed.protocol != "https:") {
+        return null;
+    }
+    const rest = parsed.pathname + parsed.search + parsed.hash;
+    return { secure: parsed.protocol == "https:", host: parsed.host, rest: rest == "/" ? "" : rest };
 }
 
 export class WebViewModel implements ViewModel {
@@ -140,11 +159,23 @@ export class WebViewModel implements ViewModel {
             });
             rtn.push({
                 elemtype: "iconbutton",
+                icon: refreshIcon,
+                click: this.handleRefresh.bind(this),
+            });
+            rtn.push({
+                elemtype: "iconbutton",
                 icon: "house",
                 click: this.handleHome.bind(this),
                 disabled: this.shouldDisableHomeButton(),
             });
+            const urlParts = splitUrlForDisplay(url);
             const divChildren: HeaderElem[] = [];
+            divChildren.push({
+                elemtype: "iconbutton",
+                icon: urlParts?.secure ? "lock" : "globe",
+                className: "url-scheme-icon",
+                noAction: true,
+            });
             divChildren.push({
                 elemtype: "input",
                 value: url,
@@ -155,6 +186,16 @@ export class WebViewModel implements ViewModel {
                 onFocus: this.handleFocus.bind(this),
                 onBlur: this.handleBlur.bind(this),
             });
+            if (urlParts != null) {
+                divChildren.push({
+                    elemtype: "div",
+                    className: "url-display",
+                    children: [
+                        { elemtype: "text", text: urlParts.host, className: "url-display-host", noGrow: true },
+                        { elemtype: "text", text: urlParts.rest, className: "url-display-rest" },
+                    ],
+                });
+            }
             if (mediaPlaying) {
                 divChildren.push({
                     elemtype: "iconbutton",
@@ -162,11 +203,6 @@ export class WebViewModel implements ViewModel {
                     click: this.handleMuteChange.bind(this),
                 });
             }
-            divChildren.push({
-                elemtype: "iconbutton",
-                icon: refreshIcon,
-                click: this.handleRefresh.bind(this),
-            });
             rtn.push({
                 elemtype: "div",
                 className: clsx("block-frame-div-url", urlWrapperClassName),

@@ -919,6 +919,8 @@ type FileTreeSharedProps = {
     model: PreviewModel;
     connection: string;
     showHiddenFiles: boolean;
+    // lowercased; narrows only the root directory's entries (see the filter bar in FileTree)
+    rootFilter: string;
     sort: TreeSortType;
     versionAtom: PrimitiveAtom<TreeVersionState>;
     onContextAction: (action: string, entry: FileInfo) => void;
@@ -937,7 +939,7 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
     onNavigateUp,
     root,
 }: FileTreeDirectoryProps) {
-    const { connection, showHiddenFiles, sort } = shared;
+    const { connection, showHiddenFiles, rootFilter, sort } = shared;
     const env = useWaveEnv<PreviewEnv>();
     const t = useT();
     const fullConfig = useAtomValue(env.atoms.fullConfigAtom);
@@ -1014,8 +1016,9 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
         () =>
             entries
                 .filter((entry) => showHiddenFiles || !entry.name.startsWith("."))
+                .filter((entry) => !root || isBlank(rootFilter) || entry.name.toLowerCase().includes(rootFilter))
                 .sort((a, b) => compareTreeEntries(a, b, sort)),
-        [entries, showHiddenFiles, sort]
+        [entries, showHiddenFiles, root, rootFilter, sort]
     );
     const shownEntries = renderLimit < visibleEntries.length ? visibleEntries.slice(0, renderLimit) : visibleEntries;
     const hiddenCount = visibleEntries.length - shownEntries.length;
@@ -1230,8 +1233,9 @@ const FileTreeEntry = React.memo(function FileTreeEntry({
                 data-tree-row=""
                 title={entry.path}
                 className={cn(
-                    "flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-hover focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2",
-                    selected && "bg-accentbg text-primary"
+                    "flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[6px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-hover focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2",
+                    selected && "bg-accentbg text-primary",
+                    !selected && entry.name.startsWith(".") && "opacity-60"
                 )}
                 onKeyDown={handleKeyDown}
                 onClick={() => {
@@ -1276,6 +1280,11 @@ export const FileTree = React.memo(function FileTree({
     const setErrorMsg = useSetAtom(model.errorMsgAtom);
     const [versionAtom] = useState(() => atom<TreeVersionState>({ all: 0, dirs: {} }));
     const setVersion = useSetAtom(versionAtom);
+    const [filterText, setFilterText] = useState("");
+    const rootFilter = filterText.trim().toLowerCase();
+    useEffect(() => {
+        setFilterText("");
+    }, [rootPath]);
     const loadableFileInfo = useAtomValue(model.loadableFileInfo);
     // getPreviewTreeRoot makes the root the active directory, so "the block sits on a directory"
     // and "the block sits on the root" are the same thing -- checked that way rather than by
@@ -1400,11 +1409,12 @@ export const FileTree = React.memo(function FileTree({
             model,
             connection,
             showHiddenFiles,
+            rootFilter,
             sort: treeSort,
             versionAtom,
             onContextAction: handleContextAction,
         }),
-        [model, connection, showHiddenFiles, treeSort, versionAtom, handleContextAction]
+        [model, connection, showHiddenFiles, rootFilter, treeSort, versionAtom, handleContextAction]
     );
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -1464,18 +1474,52 @@ export const FileTree = React.memo(function FileTree({
                 onKeyDown={handleKeyDown}
                 onClick={() => entryManagerProps && setEntryManagerProps(undefined)}
             >
-                <button
-                    type="button"
-                    title={rootPath}
-                    className={cn(
-                        "flex h-7 w-full shrink-0 cursor-pointer select-none items-center gap-1.5 border-b border-border px-2 text-left text-xs font-medium transition-colors hover:bg-hover",
-                        rootIsActive ? "text-primary" : "text-secondary"
-                    )}
-                    onClick={() => fireAndForget(() => model.goHistory(rootPath))}
-                >
-                    <i aria-hidden="true" className="fa-solid fa-folder-open shrink-0 text-[10px] opacity-70" />
-                    <span className="truncate">{getBaseName(rootPath)}</span>
-                </button>
+                {rootIsActive ? (
+                    // The block header already names the directory, so this row filters it instead
+                    // of repeating the path, and hosts the hidden-files toggle the header used to.
+                    <div className="@container flex h-[30px] w-full shrink-0 items-center gap-2 border-b-[0.5px] border-borderstrong pl-3 pr-1.5 text-xs text-secondary">
+                        <i aria-hidden="true" className="fa-solid fa-magnifying-glass shrink-0 text-[10px] opacity-70" />
+                        <input
+                            type="text"
+                            value={filterText}
+                            placeholder={t("preview.filterPlaceholder")}
+                            aria-label={t("preview.filterPlaceholder")}
+                            className="min-w-0 flex-1 bg-transparent text-primary outline-none placeholder:text-muted"
+                            onChange={(e) => setFilterText(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key == "Escape" && filterText != "") {
+                                    e.stopPropagation();
+                                    setFilterText("");
+                                }
+                            }}
+                        />
+                        <button
+                            type="button"
+                            title={showHiddenFiles ? "Hide Hidden Files" : "Show Hidden Files"}
+                            className={cn(
+                                "flex h-5 shrink-0 cursor-pointer items-center gap-1 rounded-[5px] px-1.5 text-[11px] font-medium transition-colors",
+                                showHiddenFiles ? "bg-accent/15 text-accent" : "text-secondary hover:bg-hover"
+                            )}
+                            onClick={() => globalStore.set(model.showHiddenFiles, (prev) => !prev)}
+                        >
+                            <i
+                                aria-hidden="true"
+                                className={cn("fa-solid text-[10px]", showHiddenFiles ? "fa-eye" : "fa-eye-slash")}
+                            />
+                            {t("preview.hiddenFiles")}
+                        </button>
+                    </div>
+                ) : (
+                    <button
+                        type="button"
+                        title={rootPath}
+                        className="flex h-7 w-full shrink-0 cursor-pointer select-none items-center gap-1.5 border-b border-border px-2 text-left text-xs font-medium text-secondary transition-colors hover:bg-hover"
+                        onClick={() => fireAndForget(() => model.goHistory(rootPath))}
+                    >
+                        <i aria-hidden="true" className="fa-solid fa-folder-open shrink-0 text-[10px] opacity-70" />
+                        <span className="truncate">{getBaseName(rootPath)}</span>
+                    </button>
+                )}
                 <div className="min-h-0 flex-1 overflow-auto p-1 scrollbar-hide-until-hover">
                     <FileTreeDirectory
                         key={`${connection}:${rootPath}`}

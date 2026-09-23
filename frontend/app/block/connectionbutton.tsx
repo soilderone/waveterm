@@ -15,12 +15,11 @@ import { BlockEnv } from "./blockenv";
 interface ConnectionButtonProps {
     connection: string;
     changeConnModalAtom: jotai.PrimitiveAtom<boolean>;
-    isTerminalBlock?: boolean;
 }
 
 export const ConnectionButton = React.memo(
     React.forwardRef<HTMLDivElement, ConnectionButtonProps>(
-        ({ connection, changeConnModalAtom, isTerminalBlock }: ConnectionButtonProps, ref) => {
+        ({ connection, changeConnModalAtom }: ConnectionButtonProps, ref) => {
             const t = useT();
             const waveEnv = useWaveEnv<BlockEnv>();
             const [_connModalOpen, setConnModalOpen] = jotai.useAtom(changeConnModalAtom);
@@ -38,7 +37,6 @@ export const ConnectionButton = React.memo(
             let titleText = null;
             let shouldSpin = false;
             let connDisplayName: string = null;
-            let extraDisplayNameClassName = "";
             if (isLocal) {
                 color = "var(--color-secondary)";
                 if (connection === "local:gitbash") {
@@ -49,10 +47,9 @@ export const ConnectionButton = React.memo(
                     if (localName) {
                         titleText += ` (${localName})`;
                     }
-                    if (isTerminalBlock) {
-                        connDisplayName = localName;
-                        extraDisplayNameClassName = "text-muted group-hover:text-secondary";
-                    }
+                    // the full user@host lives in the tooltip; repeated in every header it only
+                    // crowded out the working directory next to it
+                    connDisplayName = t("chrome.localConnection");
                 }
                 connIconElem = (
                     <i
@@ -112,13 +109,13 @@ export const ConnectionButton = React.memo(
                 <>
                     <div
                         ref={ref}
-                        className="group flex items-center flex-nowrap overflow-hidden text-ellipsis min-w-0 font-normal text-primary rounded-sm hover:bg-highlightbg cursor-pointer"
+                        className="group flex h-[22px] shrink items-center flex-nowrap overflow-hidden text-ellipsis min-w-0 pr-1 rounded-[6px] bg-hover text-[11px] font-medium text-secondary transition-colors hover:bg-hoverbg hover:text-primary cursor-pointer"
                         onClick={clickHandler}
                         title={titleText}
                     >
                         <span
                             className={util.cn(
-                                "fa-stack flex-[1_1_auto] overflow-hidden",
+                                "fa-stack flex-[0_0_auto] overflow-hidden",
                                 shouldSpin ? "fa-spin" : null
                             )}
                         >
@@ -132,14 +129,7 @@ export const ConnectionButton = React.memo(
                             />
                         </span>
                         {connDisplayName ? (
-                            <div
-                                className={util.cn(
-                                    "flex-[1_2_auto] overflow-hidden pr-1 ellipsis",
-                                    extraDisplayNameClassName
-                                )}
-                            >
-                                {connDisplayName}
-                            </div>
+                            <div className="flex-[1_2_auto] overflow-hidden pr-1 ellipsis">{connDisplayName}</div>
                         ) : isLocal ? null : (
                             <div className="flex-[1_2_auto] overflow-hidden pr-1 ellipsis">{connection}</div>
                         )}

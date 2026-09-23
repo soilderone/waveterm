@@ -39,13 +39,8 @@
 }
 
 .block-frame-div-url {
-    background: var(--sage-overlay-strong);
-
-    input {
-        opacity: 1;
-    }
-
-    .wave-iconbutton {
+    // the scheme icon has a fixed width so the url-display overlay lines up with the input text
+    .wave-iconbutton:not(.url-scheme-icon) {
         width: fit-content !important;
         margin-right: 5px;
     }

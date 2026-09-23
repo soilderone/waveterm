@@ -152,6 +152,17 @@
                             }
                         }
                     }
+
+                    // rtl so a long path is clipped at its start and the current directory stays visible
+                    &.term-cwd {
+                        direction: rtl;
+                        text-align: left;
+                        font-size: 11.5px;
+                    }
+
+                    &.preview-abspath {
+                        opacity: 0.45;
+                    }
                 }
 
                 .connection-button {
@@ -227,13 +238,85 @@
                             margin-left: 3px;
                         }
 
-                        // webview specific. for refresh button
+                        // webview specific. for the media (mute) button
                         .wave-iconbutton {
                             height: 100%;
                             width: 27px;
                             display: flex;
                             align-items: center;
                             justify-content: center;
+                        }
+
+                        // the web block's address field, drawn as a capsule. While it is not being
+                        // edited, the url-display overlay shows the host in the primary colour and
+                        // the rest of the URL dimmed over a transparent-text input.
+                        &.block-frame-div-url {
+                            position: relative;
+                            height: 24px;
+                            padding: 0 4px 0 8px;
+                            border-radius: 12px;
+                            background: var(--sage-overlay);
+                            transition:
+                                box-shadow 0.12s ease,
+                                background-color 0.12s ease;
+
+                            &:hover {
+                                box-shadow: inset 0 0 0 0.5px var(--sage-line-strong);
+                            }
+
+                            &:focus-within {
+                                background: var(--block-bg-color);
+                                box-shadow:
+                                    inset 0 0 0 0.5px var(--accent-color),
+                                    0 0 0 3px color-mix(in srgb, var(--accent-color) 28%, transparent);
+                            }
+
+                            .url-scheme-icon {
+                                width: 14px;
+                                margin-right: 4px;
+                                font-size: 10px;
+                                opacity: 0.6;
+                                cursor: default;
+                            }
+
+                            .input-wrapper input {
+                                opacity: 1;
+                                padding: 0 2px;
+                                font: 400 12px / normal var(--ui-font-family);
+                            }
+
+                            &:not(:focus-within):has(.url-display) .input-wrapper input {
+                                color: transparent;
+                            }
+
+                            .url-display {
+                                position: absolute;
+                                inset: 0 8px 0 28px;
+                                width: auto;
+                                height: auto;
+                                justify-content: flex-start;
+                                pointer-events: none;
+                                overflow: hidden;
+
+                                .block-frame-text {
+                                    font: 400 12px / normal var(--ui-font-family);
+                                    opacity: 1;
+                                    min-width: 0;
+                                }
+
+                                .url-display-host {
+                                    color: var(--main-text-color);
+                                    flex-shrink: 0;
+                                }
+
+                                .url-display-rest {
+                                    color: var(--grey-text-color);
+                                }
+                            }
+
+                            &:focus-within .url-display {
+                                display: none;
+                            }
                         }
                     }
 

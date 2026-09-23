@@ -248,10 +248,11 @@ export class PreviewModel implements ViewModel {
             const loadableSV = get(this.loadableSpecializedView);
             const isCeView = loadableSV.state == "hasData" && loadableSV.data.specializedView == "codeedit";
             const loadableFileInfo = get(this.loadableFileInfo);
+            let homeAbsPath: string = null;
             if (loadableFileInfo.state == "hasData") {
                 headerPath = loadableFileInfo.data?.path;
                 if (headerPath == "~") {
-                    headerPath = `~ (${loadableFileInfo.data?.dir + "/" + loadableFileInfo.data?.name})`;
+                    homeAbsPath = loadableFileInfo.data?.dir + "/" + loadableFileInfo.data?.name;
                 }
             }
             if (!isBlank(headerPath) && headerPath != "/" && headerPath.endsWith("/")) {
@@ -263,9 +264,17 @@ export class PreviewModel implements ViewModel {
                     text: headerPath,
                     ref: this.previewTextRef,
                     className: "preview-filename",
+                    noGrow: homeAbsPath != null,
                     onClick: () => this.toggleOpenFileModal(),
                 },
             ];
+            if (homeAbsPath != null) {
+                viewTextChildren.push({
+                    elemtype: "text",
+                    text: homeAbsPath,
+                    className: "preview-abspath",
+                });
+            }
             let saveClassName = "grey";
             if (get(this.newFileContent) !== null) {
                 saveClassName = "green";
@@ -342,16 +351,8 @@ export class PreviewModel implements ViewModel {
             const loadableSV = get(this.loadableSpecializedView);
             const isCeView = loadableSV.state == "hasData" && loadableSV.data.specializedView == "codeedit";
             if (mimeType == "directory") {
-                const showHiddenFiles = get(this.showHiddenFiles);
+                // the hidden-files toggle lives in the tree's filter bar (preview-directory.tsx)
                 return [
-                    {
-                        elemtype: "iconbutton",
-                        icon: showHiddenFiles ? "eye" : "eye-slash",
-                        title: showHiddenFiles ? "Hide Hidden Files" : "Show Hidden Files",
-                        click: () => {
-                            globalStore.set(this.showHiddenFiles, (prev) => !prev);
-                        },
-                    },
                     {
                         elemtype: "iconbutton",
                         icon: "arrows-rotate",

@@ -15,6 +15,7 @@ export const enChrome: Record<string, string> = {
     "chrome.toggleAiPanel": "Toggle Wave AI Panel",
     "chrome.workspaceSwitcher": "Workspace Switcher",
     "chrome.addTab": "Add Tab",
+    "chrome.localConnection": "local",
     "chrome.tabLoading": "Tab Loading",
     "chrome.tabNotFound": "Tab Not Found",
 
