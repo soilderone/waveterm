@@ -49,7 +49,7 @@
         "display:order": -1,
         "icon": "list-tree",
         "color": "var(--type-sys)",
-        "label": "processes",
+        "label": "procs",
         "blockdef": {
             "meta": {
                 "view": "processviewer"

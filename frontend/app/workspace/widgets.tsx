@@ -19,7 +19,7 @@ import {
 } from "@floating-ui/react";
 import clsx from "clsx";
 import { useAtomValue } from "jotai";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, memo, useCallback, useEffect, useRef, useState } from "react";
 
 export type WidgetsEnv = WaveEnvSubset<{
     isDev: WaveEnv["isDev"];
@@ -39,6 +39,20 @@ export type WidgetsEnv = WaveEnvSubset<{
     createBlock: WaveEnv["createBlock"];
     showContextMenu: WaveEnv["showContextMenu"];
 }>;
+
+const MonitorViews = new Set(["sysinfo", "processviewer"]);
+
+function isMonitorWidget(widget: WidgetConfigType): boolean {
+    return MonitorViews.has(widget?.blockdef?.meta?.view);
+}
+
+// the rail groups "create" widgets and "monitor" widgets, with a hairline where one run ends
+function needsGroupDivider(widgets: WidgetConfigType[], idx: number): boolean {
+    if (idx == 0) {
+        return false;
+    }
+    return isMonitorWidget(widgets[idx]) && !isMonitorWidget(widgets[idx - 1]);
+}
 
 function sortByDisplayOrder(wmap: { [key: string]: WidgetConfigType }): WidgetConfigType[] {
     if (wmap == null) {
@@ -75,25 +89,28 @@ const Widget = memo(({ widget, mode, env }: WidgetPropsType) => {
 
     const shouldDisableTooltip = mode !== "normal" ? false : !isTruncated;
 
+    // Monochrome at rest; the widget's type colour only appears under the pointer, so the rail
+    // stays quiet next to the blocks it creates.
     return (
         <Tooltip
             content={widget.description || widget.label}
             placement="left"
             disable={shouldDisableTooltip}
             divClassName={clsx(
-                "flex flex-col justify-center items-center w-full py-1.5 pr-0.5 text-secondary overflow-hidden rounded-md hover:bg-hoverbg hover:text-primary cursor-pointer",
+                "group flex flex-col justify-center items-center w-full py-1.5 pr-0.5 text-secondary overflow-hidden rounded-lg transition-colors hover:bg-[color-mix(in_srgb,var(--widget-color)_13%,transparent)] cursor-pointer",
                 mode === "supercompact" ? "text-sm" : "text-lg",
                 widget["display:hidden"] && "hidden"
             )}
+            divStyle={{ "--widget-color": widget.color ?? "var(--accent-color)" } as React.CSSProperties}
             divOnClick={() => handleWidgetSelect(widget, env)}
         >
-            <div style={{ color: widget.color }}>
+            <div className="transition-colors group-hover:text-[var(--widget-color)]">
                 <i className={makeIconClass(widget.icon, true, { defaultIcon: "browser" })}></i>
             </div>
             {mode === "normal" && !isBlank(widget.label) ? (
                 <div
                     ref={labelRef}
-                    className="text-xxs mt-0.5 w-full px-0.5 text-center whitespace-nowrap overflow-hidden text-ellipsis"
+                    className="text-xxs tracking-[0.012em] mt-0.5 w-full px-0.5 text-center whitespace-nowrap overflow-hidden text-ellipsis group-hover:text-primary"
                 >
                     {widget.label}
                 </div>
@@ -526,7 +543,12 @@ const Widgets = memo(() => {
                 ) : (
                     <>
                         {widgets?.map((data, idx) => (
-                            <Widget key={`widget-${idx}`} widget={data} mode={mode} env={env} />
+                            <Fragment key={`widget-${idx}`}>
+                                {needsGroupDivider(widgets, idx) && (
+                                    <div className="mx-auto my-1.5 h-px w-[22px] shrink-0 bg-borderstrong" />
+                                )}
+                                <Widget widget={data} mode={mode} env={env} />
+                            </Fragment>
                         ))}
                         <div className="flex-grow" />
                         {env.isDev() || featureWaveAppBuilder ? (
