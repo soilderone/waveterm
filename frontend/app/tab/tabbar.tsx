@@ -66,7 +66,7 @@ const WaveAIButton = memo(({ divRef }: { divRef?: React.RefObject<HTMLDivElement
             content={t("chrome.toggleAiPanel")}
             placement="bottom"
             hideOnClick
-            divClassName={`flex h-[22px] px-3.5 justify-end mb-1 items-center rounded-md mr-1 box-border cursor-pointer bg-hover hover:bg-hoverbg transition-colors text-[12px] ${aiPanelOpen ? "text-typeai" : "text-secondary"}`}
+            divClassName={`flex h-7 w-7 justify-center items-center rounded-[7px] mr-1 box-border cursor-pointer hover:bg-hoverbg transition-colors text-[13px] ${aiPanelOpen ? "text-typeai bg-hover" : "text-secondary hover:text-primary"}`}
             divStyle={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
             divOnClick={onClick}
             divRef={divRef}
@@ -567,8 +567,6 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
         });
     }, []);
 
-    const activeTabIndex = tabIds.indexOf(activeTabId);
-
     function onEllipsisClick() {
         env.electron.showWorkspaceAppMenu(workspace.oid);
     }
@@ -638,13 +636,11 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
                     {!noTabs &&
                         tabIds.map((tabId, index) => {
                             const isActive = activeTabId === tabId;
-                            const showDivider = index !== 0 && !isActive && index !== activeTabIndex + 1;
                             return (
                                 <Tab
                                     key={tabId}
                                     ref={tabRefs.current[index]}
                                     id={tabId}
-                                    showDivider={showDivider}
                                     onSelect={() => handleSelectTab(tabId)}
                                     active={isActive}
                                     onDragStart={(event) => handleDragStart(event, tabId, tabRefs.current[index])}
@@ -661,7 +657,7 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
             <button
                 ref={addBtnRef}
                 title={t("chrome.addTab")}
-                className={`flex h-[22px] px-2 mb-1 mx-1 items-center rounded-md box-border cursor-pointer hover:bg-hoverbg transition-colors text-[12px] text-secondary hover:text-primary${noTabs ? " invisible" : ""}`}
+                className={`flex h-6 w-6 mx-1.5 justify-center items-center rounded-full box-border cursor-pointer hover:bg-hoverbg transition-colors text-[11px] text-secondary hover:text-primary${noTabs ? " invisible" : ""}`}
                 style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={handleAddTab}
             >

@@ -37,7 +37,6 @@ interface TabVProps {
     tabId: string;
     tabName: string;
     active: boolean;
-    showDivider: boolean;
     isDragging: boolean;
     tabWidth: number;
     isNew: boolean;
@@ -57,7 +56,6 @@ const TabV = forwardRef<HTMLDivElement, TabVProps>((props, ref) => {
         tabId,
         tabName,
         active,
-        showDivider,
         isDragging,
         tabWidth,
         isNew,
@@ -195,8 +193,7 @@ const TabV = forwardRef<HTMLDivElement, TabVProps>((props, ref) => {
             onContextMenu={onContextMenu}
             data-tab-id={tabId}
         >
-            {showDivider && <div className="tab-divider" />}
-            <div className="tab-inner">
+            <div className="tab-inner" data-has-badge={badges?.length > 0 || flagColor != null ? "true" : "false"}>
                 <div
                     ref={editableRef}
                     className={clsx("name", { focused: isEditable })}
@@ -227,7 +224,6 @@ TabV.displayName = "TabV";
 interface TabProps {
     id: string;
     active: boolean;
-    showDivider: boolean;
     isDragging: boolean;
     tabWidth: number;
     isNew: boolean;
@@ -238,7 +234,7 @@ interface TabProps {
 }
 
 const TabInner = forwardRef<HTMLDivElement, TabProps>((props, ref) => {
-    const { id, active, showDivider, isDragging, tabWidth, isNew, onLoaded, onSelect, onClose, onDragStart } = props;
+    const { id, active, isDragging, tabWidth, isNew, onLoaded, onSelect, onClose, onDragStart } = props;
     const env = useWaveEnv<TabEnv>();
     const [tabData, _] = env.wos.useWaveObjectValue<Tab>(makeORef("tab", id));
     const badges = useAtomValue(getTabBadgeAtom(id, env));
@@ -302,7 +298,6 @@ const TabInner = forwardRef<HTMLDivElement, TabProps>((props, ref) => {
             tabId={id}
             tabName={tabData?.name ?? ""}
             active={active}
-            showDivider={showDivider}
             isDragging={isDragging}
             tabWidth={tabWidth}
             isNew={isNew}

@@ -3,8 +3,9 @@
 
 .tab {
     position: absolute;
+    top: 2px;
     width: 130px;
-    height: calc(100% - 3px);
+    height: 28px;
     padding: 0 0 0 0;
     box-sizing: border-box;
     font-weight: bold;
@@ -14,20 +15,14 @@
     align-items: center;
     justify-content: center;
 
-    .tab-divider {
-        position: absolute;
-        left: 0;
-        width: 1px;
-        height: 14px;
-        background: rgb(from var(--main-text-color) r g b / 0.2);
-    }
-
+    // concentric with the 16px track: 2px inset, 14px radius
     .tab-inner {
         position: relative;
-        width: calc(100% - 6px);
+        width: calc(100% - 4px);
         height: 100%;
         white-space: nowrap;
-        border-radius: 6px;
+        border-radius: 14px;
+        transition: background-color 0.12s ease;
         &[data-has-badge="false"]::before {
             content: "";
             position: absolute;
@@ -37,6 +32,7 @@
             height: 6px;
             border-radius: 50%;
             background: var(--grey-text-color);
+            opacity: 0.7;
         }
     }
 
@@ -47,14 +43,9 @@
     }
 
     &.active {
-        .tab-inner {
-            border-color: transparent;
-            border-radius: 6px;
-            background: rgb(from var(--sage-panel) r g b / 0.8);
-            box-shadow: inset 0 0 0 1px var(--border-color);
-            &::before {
-                background: var(--accent-color);
-            }
+        .tab-inner::before {
+            background: var(--accent-color);
+            opacity: 1;
         }
 
         .name {
@@ -70,7 +61,7 @@
         transform: translate3d(0, -50%, 0);
         user-select: none;
         z-index: var(--zindex-tab-name);
-        font-size: 12px;
+        font-size: 12.5px;
         font-weight: 500;
         text-shadow: 0px 0px 4px rgb(from var(--main-bg-color) r g b / 0.25);
         overflow: hidden;
@@ -82,54 +73,61 @@
             outline: none;
             border: 1px solid rgb(from var(--main-text-color) r g b / 0.179);
             padding: 2px 6px;
-            border-radius: 2px;
+            border-radius: 6px;
         }
     }
 
     .wave-button {
         position: absolute;
         top: 50%;
-        right: 4px;
+        right: 5px;
         transform: translate3d(0, -50%, 0);
-        width: 20px;
-        height: 20px;
+        width: 18px;
+        height: 18px;
         display: flex;
         align-items: center;
         justify-content: center;
         cursor: pointer;
         z-index: var(--zindex-tab-name);
-        padding: 1px 2px;
+        padding: 0;
+        border-radius: 50%;
+        font-size: 10px;
         transition: none !important;
     }
 
     .close {
         visibility: hidden;
+
+        &:hover {
+            background-color: var(--sage-overlay-strong);
+        }
     }
+
+    &.active .close {
+        visibility: visible;
+    }
+}
+
+// the active tab is a solid pill on the tab track
+.tab.active .tab-inner {
+    background: var(--sage-thumb);
+    box-shadow:
+        0 0 0 0.5px var(--sage-line-strong),
+        0 1px 3px rgb(0 0 0 / 0.1);
 }
 
 // Only apply hover effects when not in nohover mode. This prevents the previously-hovered tab from remaining hovered while a tab view is not mounted.
-body:not(.nohover) .tab:hover + .tab,
-body:not(.nohover) .tab.dragging + .tab {
-    .tab-divider {
-        display: none;
+body:not(.nohover) .tab:not(.active):hover,
+body:not(.nohover) .tab:not(.active).dragging {
+    .tab-inner {
+        background: var(--sage-overlay);
     }
 }
 
-body:not(.nohover) .tab:hover,
-body:not(.nohover) .tab.dragging {
-    .tab-divider {
-        display: none;
-    }
-
-    .tab-inner {
-        border-color: transparent;
-        background: rgb(from var(--main-text-color) r g b / 0.1);
-    }
-    .close {
-        visibility: visible;
-        &:hover {
-            color: var(--main-text-color);
-        }
+body:not(.nohover) .tab:hover .close {
+    visibility: visible;
+    &:hover {
+        color: var(--main-text-color);
     }
 }
 

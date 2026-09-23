@@ -11,9 +11,9 @@
     align-items: center;
     width: 100vw;
     -webkit-app-region: drag;
-    height: max(48px, calc(36px * var(--zoomfactor-inv)));
-    background: var(--sage-surface);
-    border-bottom: 1px solid var(--border-color);
+    height: max(40px, calc(36px * var(--zoomfactor-inv)));
+    // one ground: the tab bar is the window canvas (and its material when window:blur is on)
+    background: transparent;
     flex-shrink: 0;
 
     button {

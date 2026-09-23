@@ -184,6 +184,8 @@ export class WaveBrowserWindow extends BaseWindow {
 
         if (opts.unamePlatform === "darwin") {
             winOpts.titleBarStyle = "hiddenInset";
+            // centre the lights on the 32px tab track in the 40px tab bar (tabbar.scss)
+            winOpts.trafficLightPosition = { x: 14, y: 13 };
             winOpts.titleBarOverlay = false;
             winOpts.autoHideMenuBar = !settings?.["window:showmenubar"];
             winOpts.acceptFirstMouse = true;

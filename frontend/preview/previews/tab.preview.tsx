@@ -78,10 +78,8 @@ export function TabPreview() {
 
     return (
         <div style={{ position: "relative", width: TAB_WIDTH * tabDefs.length, height: TAB_HEIGHT }}>
-            {tabDefs.map((tab, index) => {
-                const activeIndex = tabDefs.findIndex((t) => t.tabId === activeTabId);
+            {tabDefs.map((tab) => {
                 const isActive = tab.tabId === activeTabId;
-                const showDivider = index !== 0 && !isActive && index !== activeIndex + 1;
                 return (
                     <TabV
                         key={tab.tabId}
@@ -91,7 +89,6 @@ export function TabPreview() {
                         tabId={tab.tabId}
                         tabName={tabNames[tab.tabId]}
                         active={isActive}
-                        showDivider={showDivider}
                         isDragging={false}
                         tabWidth={TAB_WIDTH}
                         isNew={false}

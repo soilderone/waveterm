@@ -330,7 +330,7 @@ export function VTabBar({ workspace, className, onCollapse }: VTabBarProps) {
     return (
         <div
             className={cn("flex h-full flex-col overflow-hidden", className)}
-            style={{ backdropFilter: "blur(20px)", background: "rgb(from var(--sage-surface) r g b / 0.55)" }}
+            style={{ background: "transparent" }}
             onContextMenu={handleTabBarContextMenu}
         >
             {env.isMacOS() && <MacOSHeader />}

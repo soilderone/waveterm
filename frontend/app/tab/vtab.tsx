@@ -173,21 +173,21 @@ export function VTab({
         >
             {flagColor != null && (
                 <div
-                    className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-sm"
+                    className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-[8px]"
                     style={{ background: `color-mix(in srgb, ${flagColor} ${active ? 38 : 22}%, transparent)` }}
                 />
             )}
             {active && flagColor == null && (
                 <div
-                    className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-sm"
+                    className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-[8px]"
                     style={{
-                        background: "rgb(from var(--sage-panel) r g b / 0.8)",
-                        boxShadow: "inset 0 0 0 1px var(--border-color)",
+                        background: "var(--sage-thumb)",
+                        boxShadow: "0 0 0 0.5px var(--sage-line-strong), 0 1px 3px rgb(0 0 0 / 0.1)",
                     }}
                 />
             )}
             {!active && !isReordering && (
-                <div className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-sm bg-transparent transition-colors group-hover:bg-foreground/10" />
+                <div className="pointer-events-none absolute inset-x-1 inset-y-[4px] rounded-[8px] bg-transparent transition-colors group-hover:bg-hover" />
             )}
             <div
                 className={cn(
