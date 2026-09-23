@@ -2,7 +2,8 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { waveEventSubscribeSingle } from "@/app/store/wps";
-import { nativeTheme } from "electron";
+import { nativeTheme, systemPreferences } from "electron";
+import { unamePlatform } from "./emain-platform";
 
 // These paint before the renderer loads and must match --sage-bg in theme.scss.
 const DarkChromeBgColor = "#111713";
@@ -15,6 +16,27 @@ export function getChromeTheme() {
         background: light ? LightChromeBgColor : DarkChromeBgColor,
         symbol: light ? "#3a453e" : "#c3c8c2",
     };
+}
+
+// macOS reports the accent as RRGGBBAA; the renderer only needs the opaque colour
+export function getSystemAccentColor(): string {
+    if (unamePlatform !== "darwin") {
+        return "";
+    }
+    const rgba = systemPreferences.getAccentColor();
+    if (rgba == null || rgba.length < 6) {
+        return "";
+    }
+    return "#" + rgba.slice(0, 6);
+}
+
+export function subscribeSystemAccentColor(listener: (color: string) => void) {
+    if (unamePlatform !== "darwin") {
+        return;
+    }
+    systemPreferences.subscribeNotification("AppleColorPreferencesChangedNotification", () => {
+        listener(getSystemAccentColor());
+    });
 }
 
 export function subscribeChromeTheme(listener: () => void): () => void {

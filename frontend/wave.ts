@@ -3,6 +3,7 @@
 
 import { App } from "@/app/app";
 import { applyUITheme } from "@/app/uitheme";
+import { initAccentColor, initWindowFocusState } from "@/app/windowchrome";
 import { loadMonaco } from "@/app/monaco/monaco-env";
 import { loadBadges } from "@/app/store/badge";
 import { GlobalModel } from "@/app/store/global-model";
@@ -67,6 +68,7 @@ async function initBare() {
     getApi().onBuilderInit(initBuilderWrap);
     setKeyUtilPlatform(platform);
     document.documentElement.dataset.platform = platform;
+    initWindowFocusState();
     loadFonts();
     updateZoomFactor(getApi().getZoomFactor());
     getApi().onZoomFactorChange((zoomFactor) => {
@@ -198,6 +200,7 @@ async function initWave(initOpts: WaveInitOpts) {
     console.log("fullconfig", fullConfig);
     globalStore.set(atoms.fullConfigAtom, fullConfig);
     applyUITheme(fullConfig.settings?.["app:uitheme"]);
+    initAccentColor();
     setLanguage(fullConfig.settings?.["app:language"]);
     globalStore.sub(atoms.fullConfigAtom, () => {
         setLanguage(globalStore.get(atoms.fullConfigAtom)?.settings?.["app:language"]);
@@ -274,6 +277,7 @@ async function initBuilder(initOpts: BuilderInitOpts) {
     console.log("fullconfig", fullConfig);
     globalStore.set(atoms.fullConfigAtom, fullConfig);
     applyUITheme(fullConfig.settings?.["app:uitheme"]);
+    initAccentColor();
     setLanguage(fullConfig.settings?.["app:language"]);
     globalStore.sub(atoms.fullConfigAtom, () => {
         setLanguage(globalStore.get(atoms.fullConfigAtom)?.settings?.["app:language"]);

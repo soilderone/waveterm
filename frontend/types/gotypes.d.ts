@@ -1390,6 +1390,7 @@ declare global {
         "app:tabbar"?: string;
         "app:language"?: string;
         "app:uitheme"?: string;
+        "app:accentcolor"?: string;
         "feature:waveappbuilder"?: boolean;
         "ai:*"?: boolean;
         "ai:preset"?: string;

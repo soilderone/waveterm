@@ -56,7 +56,7 @@ import {
     WaveBrowserWindow,
 } from "./emain-window";
 import { ElectronWshClient, initElectronWshClient } from "./emain-wsh";
-import { initChromeTheme } from "./emain-theme";
+import { initChromeTheme, subscribeSystemAccentColor } from "./emain-theme";
 import { getLaunchSettings } from "./launchsettings";
 import { configureAutoUpdater, updater } from "./updater";
 
@@ -414,6 +414,11 @@ async function appMain() {
     const fullConfig = await RpcApi.GetFullConfigCommand(ElectronWshClient);
     setLanguage(fullConfig?.settings?.["app:language"]);
     initChromeTheme(fullConfig);
+    subscribeSystemAccentColor((color) => {
+        for (const win of getAllWaveWindows()) {
+            win.sendToAllTabViews("system-accent-change", color);
+        }
+    });
     checkIfRunningUnderARM64Translation(fullConfig);
     if (fullConfig?.settings?.["app:confirmquit"] != null) {
         confirmQuit = fullConfig.settings["app:confirmquit"];

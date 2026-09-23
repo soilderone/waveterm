@@ -4,6 +4,7 @@
 import { getOrefMetaKeyAtom, globalStore, recordTEvent } from "@/app/store/global";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { t } from "@/util/i18n";
+import { isMacOS } from "@/util/platformutil";
 import { fireAndForget } from "@/util/util";
 import { makeORef } from "../store/wos";
 import type { TabEnv } from "./tab";
@@ -80,6 +81,26 @@ export function buildTabBarContextMenu(env: TabEnv): ContextMenuItem[] {
             click: () => fireAndForget(() => env.rpc.SetConfigCommand(TabRpcClient, { "app:uitheme": "system" })),
         },
     ];
+    if (isMacOS()) {
+        const currentAccent = globalStore.get(env.getSettingsKeyAtom("app:accentcolor")) ?? "sage";
+        appearanceSubmenu.push(
+            { type: "separator" },
+            {
+                label: t("tabMenu.accentSage"),
+                type: "checkbox",
+                checked: currentAccent !== "system",
+                click: () =>
+                    fireAndForget(() => env.rpc.SetConfigCommand(TabRpcClient, { "app:accentcolor": "sage" })),
+            },
+            {
+                label: t("tabMenu.accentSystem"),
+                type: "checkbox",
+                checked: currentAccent === "system",
+                click: () =>
+                    fireAndForget(() => env.rpc.SetConfigCommand(TabRpcClient, { "app:accentcolor": "system" })),
+            }
+        );
+    }
     return [
         { label: t("tabMenu.tabBarPosition"), type: "submenu", submenu: tabBarSubmenu },
         { label: t("tabMenu.appearance"), type: "submenu", submenu: appearanceSubmenu },

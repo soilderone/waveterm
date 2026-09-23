@@ -9,7 +9,7 @@ import { useT } from "@/util/i18n-hooks";
 import { checkKeyPressed, isCharacterKeyEvent } from "@/util/keyutil";
 import { PLATFORM, PlatformMacOS } from "@/util/platformutil";
 import { addOpenMenuItems } from "@/util/previewutil";
-import { cn, fireAndForget, isBlank } from "@/util/util";
+import { cn, fireAndForget, isBlank, isLocalConnName } from "@/util/util";
 import { formatRemoteUri } from "@/util/waveutil";
 import { offset, useDismiss, useFloating, useInteractions } from "@floating-ui/react";
 import {
@@ -1197,6 +1197,12 @@ const FileTreeEntry = React.memo(function FileTreeEntry({
         if (event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) {
             return;
         }
+        // Finder's Quick Look: space previews the file in place instead of pressing the row
+        if (event.key == " " && !entry.isdir && PLATFORM == PlatformMacOS && isLocalConnName(shared.connection)) {
+            event.preventDefault();
+            env.electron.onQuicklook(entry.path);
+            return;
+        }
         if (event.key == "ArrowRight") {
             event.preventDefault();
             if (entry.isdir) {
@@ -1493,6 +1499,14 @@ export const FileTree = React.memo(function FileTree({
                                 }
                             }}
                         />
+                        {PLATFORM == PlatformMacOS && isLocalConnName(connection) && (
+                            <span className="hidden shrink-0 items-center gap-1 text-[11px] text-muted @min-[300px]:inline-flex">
+                                <kbd className="rounded-[4px] bg-raise px-1 py-px font-sans text-[10px] shadow-[inset_0_0_0_0.5px_var(--sage-line-strong)]">
+                                    space
+                                </kbd>
+                                {t("preview.quickLook")}
+                            </span>
+                        )}
                         <button
                             type="button"
                             title={showHiddenFiles ? "Hide Hidden Files" : "Show Hidden Files"}

@@ -23,6 +23,7 @@ import {
 import { createBuilderWindow, getAllBuilderWindows, getBuilderWindowByWebContentsId } from "./emain-builder";
 import { callWithOriginalXdgCurrentDesktopAsync, unamePlatform } from "./emain-platform";
 import { getWaveTabViewByWebContentsId } from "./emain-tabview";
+import { getSystemAccentColor } from "./emain-theme";
 import { handleCtrlShiftState } from "./emain-util";
 import { getWaveVersion } from "./emain-wavesrv";
 import { createNewWaveWindow, getWaveWindowByWebContentsId } from "./emain-window";
@@ -370,6 +371,10 @@ export function initIpcHandlers() {
         } catch (e) {
             console.error("Error updating window controls overlay:", e);
         }
+    });
+
+    electron.ipcMain.on("get-system-accent-color", (event) => {
+        event.returnValue = getSystemAccentColor();
     });
 
     electron.ipcMain.on("quicklook", (event, filePath: string) => {

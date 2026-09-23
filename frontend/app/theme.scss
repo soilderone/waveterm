@@ -341,6 +341,40 @@
     --ui-font-family: -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", sans-serif;
 }
 
+/* app:accentcolor = "system": emain hands the macOS accent to the renderer as --system-accent
+   (see app/windowchrome.ts). The ramp is mixed from it rather than tuned by hand, since the
+   user can pick any of the system colours. */
+:root[data-accent="system"] {
+    --sage-accent: var(--system-accent);
+    --sage-accent-hover: color-mix(in srgb, var(--system-accent) 82%, white);
+    --sage-accent-deep: color-mix(in srgb, var(--system-accent) 20%, var(--sage-panel));
+    --sage-on-accent: #ffffff;
+    --sage-accent-50: color-mix(in srgb, var(--system-accent) 10%, white);
+    --sage-accent-100: color-mix(in srgb, var(--system-accent) 20%, white);
+    --sage-accent-200: color-mix(in srgb, var(--system-accent) 36%, white);
+    --sage-accent-300: color-mix(in srgb, var(--system-accent) 62%, white);
+    --sage-accent-400: var(--system-accent);
+    --sage-accent-500: color-mix(in srgb, var(--system-accent) 86%, black);
+    --sage-accent-600: color-mix(in srgb, var(--system-accent) 72%, black);
+    --sage-accent-700: color-mix(in srgb, var(--system-accent) 58%, black);
+    --sage-accent-800: color-mix(in srgb, var(--system-accent) 44%, black);
+    --sage-accent-900: color-mix(in srgb, var(--system-accent) 30%, black);
+}
+
+/* The window resigned key: AppKit greys the accent out of selections, default buttons and the
+   focus ring so the key window is obvious at a glance. data-windowfocus is set from emain's
+   BrowserWindow focus/blur (see app/windowchrome.ts). Declared after the accent overrides so it
+   wins over both the sage and the system accent. */
+:root[data-windowfocus="off"] {
+    --sage-accent: var(--sage-text-3);
+    --sage-accent-hover: var(--sage-text-2);
+
+    // --block-accent is set inline on .block, so it can only be overridden on a descendant
+    .block.block-focused .block-frame-default-inner {
+        --block-accent: var(--sage-text-3);
+    }
+}
+
 @supports (corner-shape: squircle) {
     /* A continuous-curvature corner reads tighter than a circular one at the same radius, so the
        radius goes up with it. Everything that clips or outlines a block uses both variables. */

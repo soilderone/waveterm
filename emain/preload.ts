@@ -36,6 +36,10 @@ contextBridge.exposeInMainWorld("api", {
         ipcRenderer.on("fullscreen-change", (_event, isFullScreen) => callback(isFullScreen)),
     onZoomFactorChange: (callback) =>
         ipcRenderer.on("zoom-factor-change", (_event, zoomFactor) => callback(zoomFactor)),
+    onWindowFocusChange: (callback) =>
+        ipcRenderer.on("window-focus-change", (_event, focused) => callback(focused)),
+    getSystemAccentColor: () => ipcRenderer.sendSync("get-system-accent-color"),
+    onSystemAccentChange: (callback) => ipcRenderer.on("system-accent-change", (_event, color) => callback(color)),
     onUpdaterStatusChange: (callback) => ipcRenderer.on("app-update-status", (_event, status) => callback(status)),
     getUpdaterStatus: () => ipcRenderer.sendSync("get-app-update-status"),
     getUpdaterChannel: () => ipcRenderer.sendSync("get-updater-channel"),

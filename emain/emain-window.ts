@@ -192,7 +192,10 @@ export class WaveBrowserWindow extends BaseWindow {
             if (isTransparent) {
                 winOpts.transparent = true;
             } else if (isBlur) {
-                winOpts.vibrancy = "fullscreen-ui";
+                // the material sits under the window canvas only -- blocks paint an opaque
+                // --block-bg-color over it, so terminal contrast never depends on the desktop
+                winOpts.vibrancy = "under-window";
+                winOpts.visualEffectState = "followWindow";
             } else {
                 winOpts.backgroundColor = chromeBgColor;
             }
@@ -311,9 +314,14 @@ export class WaveBrowserWindow extends BaseWindow {
             fireAndForget(() => ClientService.FocusWindow(this.waveWindowId));
             setWasInFg(true);
             setWasActive(true);
+            this.sendToAllTabViews("window-focus-change", true);
             setTimeout(() => globalEvents.emit("windows-updated"), 50);
         });
         this.on("blur", () => {
+            if (this.isDestroyed()) {
+                return;
+            }
+            this.sendToAllTabViews("window-focus-change", false);
             setTimeout(() => globalEvents.emit("windows-updated"), 50);
         });
         this.on("close", (e) => {
@@ -381,6 +389,15 @@ export class WaveBrowserWindow extends BaseWindow {
         });
         waveWindowMap.set(waveWindow.oid, this);
         setTimeout(() => globalEvents.emit("windows-updated"), 50);
+    }
+
+    sendToAllTabViews(channel: string, ...args: any[]) {
+        for (const tabView of this.allLoadedTabViews.values()) {
+            if (tabView.webContents == null || tabView.webContents.isDestroyed()) {
+                continue;
+            }
+            tabView.webContents.send(channel, ...args);
+        }
     }
 
     private closeAllDevTools() {

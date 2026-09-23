@@ -139,6 +139,8 @@ export const zhCN: Record<string, string> = {
     "tabMenu.themeDark": "深色",
     "tabMenu.themeLight": "浅色",
     "tabMenu.themeSystem": "跟随系统",
+    "tabMenu.accentSage": "Sage 强调色",
+    "tabMenu.accentSystem": "跟随系统强调色",
     "tabMenu.closeTab": "关闭标签页",
 
     "vtab.newTab": "新建标签页",

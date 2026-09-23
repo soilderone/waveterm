@@ -67,6 +67,14 @@
           ],
           "description": "UI color theme - dark light or system"
         },
+        "app:accentcolor": {
+          "type": "string",
+          "enum": [
+            "sage",
+            "system"
+          ],
+          "description": "UI accent color - sage or the macOS system accent"
+        },
         "feature:waveappbuilder": {
           "type": "boolean"
         },

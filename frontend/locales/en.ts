@@ -139,6 +139,8 @@ export const enUS: Record<string, string> = {
     "tabMenu.themeDark": "Dark",
     "tabMenu.themeLight": "Light",
     "tabMenu.themeSystem": "Match System",
+    "tabMenu.accentSage": "Sage Accent",
+    "tabMenu.accentSystem": "System Accent Color",
     "tabMenu.closeTab": "Close Tab",
 
     "vtab.newTab": "New Tab",

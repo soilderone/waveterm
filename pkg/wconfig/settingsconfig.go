@@ -71,6 +71,7 @@ type SettingsType struct {
 	AppTabBar                     string `json:"app:tabbar,omitempty" jsonschema:"enum=top,enum=left"`
 	AppLanguage                   string `json:"app:language,omitempty" jsonschema:"enum=en,enum=zh-CN,description=UI language (en or zh-CN)"`
 	AppUITheme                    string `json:"app:uitheme,omitempty" jsonschema:"enum=dark,enum=light,enum=system,description=UI color theme - dark light or system"`
+	AppAccentColor                string `json:"app:accentcolor,omitempty" jsonschema:"enum=sage,enum=system,description=UI accent color - sage or the macOS system accent"`
 
 	FeatureWaveAppBuilder bool `json:"feature:waveappbuilder,omitempty"`
 

@@ -20,6 +20,7 @@ const (
 	ConfigKey_AppTabBar                      = "app:tabbar"
 	ConfigKey_AppLanguage                    = "app:language"
 	ConfigKey_AppUITheme                     = "app:uitheme"
+	ConfigKey_AppAccentColor                 = "app:accentcolor"
 
 	ConfigKey_FeatureWaveAppBuilder          = "feature:waveappbuilder"
 
