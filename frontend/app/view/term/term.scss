@@ -59,7 +59,8 @@
         min-height: 0;
         overflow: hidden;
         line-height: 1;
-        margin: 5px 1px 5px 4px;
+        // the right side stays tight because xterm's scrollbar lives there
+        margin: 10px 4px 8px 12px;
     }
 
     .term-htmlelem {

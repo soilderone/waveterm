@@ -103,7 +103,7 @@
     --header-font: 600 11.5px / normal "Inter", sans-serif;
     --header-icon-size: 14px;
     --header-icon-width: 16px;
-    --header-height: 42px;
+    --header-height: 36px;
 
     --tab-green: var(--sage-accent);
 
@@ -329,9 +329,5 @@
         --color-hoverbg: rgba(225, 232, 223, 0.16);
         color: var(--main-text-color);
         color-scheme: dark;
-    }
-
-    .block[data-view="term"] .block-frame-default-header {
-        background-color: var(--ink-raise);
     }
 }
