@@ -36,7 +36,11 @@
     --color-hover: var(--sage-overlay);
     --color-border: var(--sage-line);
     --color-borderstrong: var(--sage-line-strong);
-    --color-modalbg: var(--sage-panel);
+    --color-modalbg: var(--sage-popover);
+    --color-popover: var(--sage-popover);
+    --color-head: var(--sage-head);
+    --color-glass: var(--sage-glass);
+    --color-thumb: var(--sage-thumb);
     --color-raise: var(--sage-raise);
     --color-accentbg: var(--sage-accent-deep);
     --color-hoverbg: var(--sage-overlay-strong);

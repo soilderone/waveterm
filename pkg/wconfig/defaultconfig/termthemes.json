@@ -21,9 +21,9 @@
         "gray": "#8b918a",
         "cmdtext": "#f0f0f0",
         "foreground": "#c1c1c1",
-        "selectionBackground": "",
-        "background": "#19221e",
-        "cursor": ""
+        "selectionBackground": "#9cc4873d",
+        "background": "#181f1b",
+        "cursor": "#9cc487"
     },
     "default-light": {
         "display:name": "Default Light",
@@ -47,9 +47,9 @@
         "gray": "#788078",
         "cmdtext": "#19221e",
         "foreground": "#252d29",
-        "selectionBackground": "#cfdcc9",
-        "background": "#f6f7f3",
-        "cursor": "#305d42"
+        "selectionBackground": "#2f634338",
+        "background": "#fcfdfa",
+        "cursor": "#2f6343"
     },
     "onedarkpro": {
         "display:name": "One Dark Pro",

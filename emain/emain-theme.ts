@@ -5,8 +5,8 @@ import { waveEventSubscribeSingle } from "@/app/store/wps";
 import { nativeTheme } from "electron";
 
 // These paint before the renderer loads and must match --sage-bg in theme.scss.
-const DarkChromeBgColor = "#141b17";
-const LightChromeBgColor = "#e8eae5";
+const DarkChromeBgColor = "#111713";
+const LightChromeBgColor = "#e9ece5";
 const ThemeListeners = new Set<() => void>();
 
 export function getChromeTheme() {
