@@ -10,6 +10,7 @@ import {
 import { IconButton, ToggleIconButton } from "@/element/iconbutton";
 import { MagnifyIcon } from "@/element/magnify";
 import { MenuButton } from "@/element/menubutton";
+import { formatKeyDescription } from "@/util/keyutil";
 import * as util from "@/util/util";
 import clsx from "clsx";
 import * as jotai from "jotai";
@@ -234,7 +235,7 @@ export const OptMagnifyButton = React.memo(
         const magnifyDecl: IconButtonDecl = {
             elemtype: "iconbutton",
             icon: <MagnifyIcon enabled={magnified} />,
-            title: magnified ? "Minimize" : "Magnify",
+            title: `${magnified ? "Minimize" : "Magnify"}  ${formatKeyDescription("Cmd:m")}`,
             click: toggleMagnify,
             disabled,
         };

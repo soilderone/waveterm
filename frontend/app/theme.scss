@@ -72,7 +72,7 @@
     --grey-text-color: var(--sage-text-3);
     --main-bg-color: var(--sage-bg);
     --border-color: var(--sage-line);
-    --base-font: normal 14px / normal "Inter", sans-serif;
+    --base-font: normal 14px / normal var(--ui-font-family);
     --fixed-font: normal 12px / normal "Hack", monospace;
     --accent-color: var(--sage-accent);
     --panel-bg-color: rgba(28, 36, 32, 0.5);
@@ -100,7 +100,7 @@
     --scrollbar-thumb-hover-color: rgba(225, 232, 223, 0.4);
     --scrollbar-thumb-active-color: rgba(225, 232, 223, 0.55);
 
-    --header-font: 600 11.5px / normal "Inter", sans-serif;
+    --header-font: 500 12px / normal var(--ui-font-family);
     --header-icon-size: 14px;
     --header-icon-width: 16px;
     --header-height: 36px;
@@ -329,5 +329,23 @@
         --color-hoverbg: rgba(225, 232, 223, 0.16);
         color: var(--main-text-color);
         color-scheme: dark;
+    }
+
+    // the specular top edge AppKit draws on raised surfaces in dark mode
+    .block-frame-default-header {
+        box-shadow: inset 0 0.5px 0 var(--sage-rim);
+    }
+}
+
+:root[data-platform="darwin"] {
+    --ui-font-family: -apple-system, BlinkMacSystemFont, "Inter", "PingFang SC", sans-serif;
+}
+
+@supports (corner-shape: squircle) {
+    /* A continuous-curvature corner reads tighter than a circular one at the same radius, so the
+       radius goes up with it. Everything that clips or outlines a block uses both variables. */
+    :root {
+        --block-border-radius: 14px;
+        --block-corner-shape: squircle;
     }
 }

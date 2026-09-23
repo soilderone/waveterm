@@ -66,6 +66,7 @@ async function initBare() {
     getApi().onWaveInit(initWaveWrap);
     getApi().onBuilderInit(initBuilderWrap);
     setKeyUtilPlatform(platform);
+    document.documentElement.dataset.platform = platform;
     loadFonts();
     updateZoomFactor(getApi().getZoomFactor());
     getApi().onZoomFactorChange((zoomFactor) => {

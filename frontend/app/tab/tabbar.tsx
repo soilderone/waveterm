@@ -7,6 +7,7 @@ import { useWaveEnv } from "@/app/waveenv/waveenv";
 import { WorkspaceLayoutModel } from "@/app/workspace/workspace-layout-model";
 import { deleteLayoutModelForTab } from "@/layout/index";
 import { useT } from "@/util/i18n-hooks";
+import { formatKeyDescription } from "@/util/keyutil";
 import { isMacOSTahoeOrLater } from "@/util/platformutil";
 import { fireAndForget } from "@/util/util";
 import { useAtomValue } from "jotai";
@@ -109,6 +110,8 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
     const tabBarRef = useRef<HTMLDivElement>(null);
     const tabsWrapperRef = useRef<HTMLDivElement>(null);
     const tabRefs = useRef<React.RefObject<HTMLDivElement>[]>([]);
+    const thumbRef = useRef<HTMLDivElement>(null);
+    const activeTabIdRef = useRef<string>(null);
     const addBtnRef = useRef<HTMLButtonElement>(null);
     const draggingRemovedRef = useRef(false);
     const draggingTabDataRef = useRef({
@@ -131,6 +134,7 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
     const scrollableRef = useRef<boolean>(false);
     const prevAllLoadedRef = useRef<boolean>(false);
     const activeTabId = useAtomValue(env.atoms.staticTabId);
+    activeTabIdRef.current = activeTabId;
     const isFullScreen = useAtomValue(env.atoms.isFullScreen);
     const zoomFactor = useAtomValue(env.atoms.zoomFactorAtom);
     const showMenuBar = useAtomValue(env.getSettingsKeyAtom("window:showmenubar"));
@@ -175,6 +179,28 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
 
         setDragStartPositions(newStartPositions);
     }, []);
+
+    // The active tab's pill is one element that glides between tabs on a spring, like the thumb of
+    // an AppKit segmented control. Layout passes place it instantly; only a tab switch animates.
+    const positionThumb = (tabWidth: number, animate: boolean) => {
+        const thumb = thumbRef.current;
+        if (thumb == null) {
+            return;
+        }
+        const index = tabIds.indexOf(activeTabIdRef.current);
+        if (index < 0) {
+            thumb.classList.remove("placed");
+            return;
+        }
+        thumb.classList.toggle("animate", animate);
+        thumb.style.width = `${tabWidth - 4}px`;
+        thumb.style.transform = `translate3d(${index * tabWidth + 2}px,0,0)`;
+        thumb.classList.add("placed");
+    };
+
+    useEffect(() => {
+        positionThumb(tabWidthRef.current, true);
+    }, [activeTabId]);
 
     const setSizeAndPosition = (animate?: boolean) => {
         const tabBar = tabBarRef.current;
@@ -233,6 +259,7 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
         if (idealTabWidth !== tabWidthRef.current) {
             tabWidthRef.current = idealTabWidth;
         }
+        positionThumb(idealTabWidth, false);
 
         // Update the state with the new scrollable state if it has changed
         if (newScrollable !== scrollableRef.current) {
@@ -633,6 +660,7 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
                         ...(noTabs ? ({ WebkitAppRegion: "drag" } as React.CSSProperties) : {}),
                     }}
                 >
+                    {!noTabs && <div ref={thumbRef} className="tab-thumb" />}
                     {!noTabs &&
                         tabIds.map((tabId, index) => {
                             const isActive = activeTabId === tabId;
@@ -656,7 +684,7 @@ const TabBar = memo(({ workspace, noTabs }: TabBarProps) => {
             </div>
             <button
                 ref={addBtnRef}
-                title={t("chrome.addTab")}
+                title={`${t("chrome.addTab")}  ${formatKeyDescription("Cmd:t")}`}
                 className={`flex h-6 w-6 mx-1.5 justify-center items-center rounded-full box-border cursor-pointer hover:bg-hoverbg transition-colors text-[11px] text-secondary hover:text-primary${noTabs ? " invisible" : ""}`}
                 style={{ WebkitAppRegion: "no-drag" } as React.CSSProperties}
                 onClick={handleAddTab}

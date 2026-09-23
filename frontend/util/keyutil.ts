@@ -271,6 +271,39 @@ function adaptFromElectronKeyEvent(event: any): WaveKeyboardEvent {
     return rtn;
 }
 
+// macOS lists modifiers in the order ⌃⌥⇧⌘ and never spells them out; elsewhere "Cmd" is Alt
+// (see adaptFromReactOrNativeKeyEvent), so the same binding reads as Alt+T.
+const MacModGlyphs: Record<string, string> = { Ctrl: "⌃", Option: "⌥", Shift: "⇧", Cmd: "⌘" };
+const MacModOrder = ["Ctrl", "Option", "Shift", "Cmd"];
+const OtherModNames: Record<string, string> = { Ctrl: "Ctrl", Option: "Meta", Shift: "Shift", Cmd: "Alt" };
+const OtherModOrder = ["Ctrl", "Cmd", "Option", "Shift"];
+const MacKeyGlyphs: Record<string, string> = {
+    ArrowLeft: "←",
+    ArrowRight: "→",
+    ArrowUp: "↑",
+    ArrowDown: "↓",
+    Enter: "↩",
+    Escape: "⎋",
+    Backspace: "⌫",
+    Delete: "⌦",
+    Tab: "⇥",
+};
+
+function formatKeyDescription(keyDescription: string): string {
+    const parts = keyDescription.split(":");
+    const key = parts[parts.length - 1];
+    const mods = new Set(parts.slice(0, -1));
+    const keyLabel = key.length == 1 ? key.toUpperCase() : key;
+    if (PLATFORM == PlatformMacOS) {
+        const modText = MacModOrder.filter((m) => mods.has(m))
+            .map((m) => MacModGlyphs[m])
+            .join("");
+        return modText + (MacKeyGlyphs[key] ?? keyLabel);
+    }
+    const modNames = OtherModOrder.filter((m) => mods.has(m)).map((m) => OtherModNames[m]);
+    return [...modNames, keyLabel].join("+");
+}
+
 const keyMap = {
     Enter: "\r",
     Backspace: "\x7f",
@@ -325,6 +358,7 @@ export {
     adaptFromElectronKeyEvent,
     adaptFromReactOrNativeKeyEvent,
     checkKeyPressed,
+    formatKeyDescription,
     getKeyUtilPlatform,
     isCharacterKeyEvent,
     isInputEvent,

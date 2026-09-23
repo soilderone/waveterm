@@ -51,7 +51,7 @@ const KeyBinding = ({ keyDecl }: { keyDecl: string }) => {
                 continue;
             }
             if (part == "Ctrl") {
-                elems.push(<KeyCap key={`${chordIdx}-ctrl`}>^ Ctrl</KeyCap>);
+                elems.push(<KeyCap key={`${chordIdx}-ctrl`}>⌃ Ctrl</KeyCap>);
                 continue;
             }
             if (part == "Shift") {
@@ -167,7 +167,7 @@ const QuickTips = () => {
 
                     <div className="flex flex-col gap-1.5">
                         <div className="text-sm text-accent font-semibold uppercase tracking-wide mb-1">
-                            {t("chrome.tabSwitching", { key: PLATFORM === PlatformMacOS ? "Cmd" : "Alt" })}
+                            {t("chrome.tabSwitching", { key: PLATFORM === PlatformMacOS ? "⌘" : "Alt" })}
                         </div>
                         <div className="flex flex-col gap-0.5 p-2 rounded-md hover:bg-hover transition-colors">
                             <span className="text-[15px]">{t("chrome.switchNthTab")}</span>

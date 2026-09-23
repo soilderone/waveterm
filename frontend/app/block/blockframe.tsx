@@ -91,6 +91,38 @@ const BlockMask = React.memo(({ nodeModel }: { nodeModel: NodeModel }) => {
     );
 });
 
+// Scroll events don't bubble, but a capturing listener on the frame still sees every scroller
+// inside it, whichever view owns it. The class drives the header's scroll-edge separator; the
+// data attribute (which React leaves alone) lets the scroller itself fade under the edge.
+function useScrollEdge(innerRef: React.RefObject<HTMLDivElement>, disabled: boolean) {
+    React.useEffect(() => {
+        const inner = innerRef.current;
+        if (inner == null || disabled) {
+            return;
+        }
+        const onScroll = (e: Event) => {
+            const target = e.target as HTMLElement;
+            if (!(target instanceof HTMLElement) || target.closest(".block-frame-default-header") != null) {
+                return;
+            }
+            if (target.scrollHeight <= target.clientHeight) {
+                return;
+            }
+            const scrolled = target.scrollTop > 0;
+            inner.classList.toggle("block-scrolled", scrolled);
+            if (scrolled) {
+                target.dataset.scrollEdge = "";
+            } else {
+                delete target.dataset.scrollEdge;
+            }
+        };
+        inner.addEventListener("scroll", onScroll, { capture: true, passive: true });
+        return () => {
+            inner.removeEventListener("scroll", onScroll, { capture: true });
+        };
+    }, [disabled]);
+}
+
 const BlockFrame_Default_Component = (props: BlockFrameProps) => {
     const waveEnv = useWaveEnv<BlockEnv>();
     const { nodeModel, viewModel, blockModel, preview, numBlocksInTab, children } = props;
@@ -118,6 +150,8 @@ const BlockFrame_Default_Component = (props: BlockFrameProps) => {
     const connName = jotai.useAtomValue(waveEnv.getBlockMetaKeyAtom(nodeModel.blockId, "connection"));
     const iconColor = jotai.useAtomValue(waveEnv.getBlockMetaKeyAtom(nodeModel.blockId, "icon:color"));
     const noHeader = util.useAtomValueSafe(viewModel?.noHeader);
+    const innerRef = React.useRef<HTMLDivElement>(null);
+    useScrollEdge(innerRef, preview);
 
     React.useEffect(() => {
         if (!manageConnection) {
@@ -197,7 +231,7 @@ const BlockFrame_Default_Component = (props: BlockFrameProps) => {
                     changeConnModalAtom={changeConnModalAtom}
                 />
             )}
-            <div className="block-frame-default-inner" style={innerStyle}>
+            <div className="block-frame-default-inner" style={innerStyle} ref={innerRef}>
                 {noHeader || <ErrorBoundary fallback={headerElemNoView}>{headerElem}</ErrorBoundary>}
                 {preview ? previewElem : children}
             </div>

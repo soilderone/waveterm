@@ -11,6 +11,7 @@
     overflow: hidden;
     min-height: 0;
     border-radius: var(--block-border-radius);
+    corner-shape: var(--block-corner-shape, round);
 
     .block-frame-icon {
         margin-right: 0.5em;
@@ -71,8 +72,10 @@
             background-color: var(--block-bg-color);
             width: 100%;
             height: 100%;
-            border: 1px solid var(--border-color);
+            // 0.5px lands on one device pixel on Retina; Chromium draws it as 1px elsewhere
+            border: 0.5px solid var(--sage-line-strong);
             border-radius: var(--block-border-radius);
+            corner-shape: var(--block-corner-shape, round);
             display: flex;
             flex-direction: column;
             transition:
@@ -88,8 +91,11 @@
                 gap: 8px;
                 font: var(--header-font);
                 background-color: var(--sage-head);
-                border-bottom: 1px solid var(--border-color);
+                // AppKit's scroll-edge behaviour: the separator only appears once content has
+                // scrolled under the header (.block-scrolled is set by blockframe.tsx)
+                border-bottom: 0.5px solid transparent;
                 border-radius: var(--block-border-radius) var(--block-border-radius) 0 0;
+                corner-shape: var(--block-corner-shape, round);
                 transition:
                     background-color 0.16s ease,
                     border-color 0.16s ease;
@@ -282,12 +288,17 @@
                 }
             }
 
+            &.block-scrolled > .block-frame-default-header {
+                border-bottom-color: var(--sage-line-strong);
+            }
+
             .block-frame-preview {
                 background-color: rgb(from var(--block-bg-color) r g b / 70%);
                 width: 100%;
                 flex-grow: 1;
                 border-bottom-left-radius: var(--block-border-radius);
                 border-bottom-right-radius: var(--block-border-radius);
+                corner-shape: var(--block-corner-shape, round);
                 display: flex;
                 align-items: center;
                 justify-content: center;
@@ -302,6 +313,12 @@
 
         &:hover .block-frame-end-icons {
             opacity: 1;
+        }
+
+        // content fades as it slides under the scroller's top edge -- previews only; the
+        // terminal's top row must stay crisp, and a web page scrolls inside its own guest
+        &[data-view="preview"] [data-scroll-edge] {
+            mask-image: linear-gradient(to bottom, rgb(0 0 0 / 0.25), #000 16px);
         }
 
         --magnified-block-opacity: 0.6;
@@ -439,6 +456,7 @@
             pointer-events: none;
             padding: 2px;
             border-radius: var(--block-border-radius);
+            corner-shape: var(--block-corner-shape, round);
             z-index: var(--zindex-block-mask-inner);
 
             &.show-block-mask {

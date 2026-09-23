@@ -12,6 +12,7 @@
     margin: 0;
     user-select: none;
     border-radius: 0 0 var(--block-border-radius) var(--block-border-radius);
+    corner-shape: var(--block-corner-shape, round);
 
     // try to force pixel alignment to prevent
     // subpixel rendering artifacts

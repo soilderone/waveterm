@@ -76,7 +76,7 @@ function clearTimeoutRef(ref: React.RefObject<number | null>) {
 
 const HoverDelayMs = 600;
 const MaxHoverTimeMs = 2200;
-const modKey = PLATFORM === PlatformMacOS ? "Cmd" : "Ctrl";
+const modKey = PLATFORM === PlatformMacOS ? "⌘" : "Ctrl";
 
 interface TermLinkTooltipProps {
     /**
