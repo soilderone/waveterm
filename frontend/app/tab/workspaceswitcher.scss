@@ -3,19 +3,26 @@
 
 .workspace-switcher-button {
     display: flex;
-    height: 30px;
-    padding: 0px 8px;
-    justify-content: flex-end;
+    height: 28px;
+    min-width: 28px;
+    padding: 0px 6px;
+    justify-content: center;
     align-items: center;
     gap: 8px;
-    border-radius: 6px;
+    border-radius: 7px;
     margin-right: 6px;
     margin-bottom: 0;
     box-sizing: border-box;
+    // .wave-button.solid.grey sets color with higher specificity
+    color: var(--secondary-text-color) !important;
     background-color: transparent !important;
+    transition:
+        background-color 0.12s,
+        color 0.12s;
 
     &:hover {
-        background-color: rgb(from var(--main-text-color) r g b / 0.14) !important;
+        color: var(--main-text-color) !important;
+        background-color: var(--sage-overlay-strong) !important;
     }
 
     .workspace-icon {
