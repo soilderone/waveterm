@@ -68,6 +68,30 @@ function detectWebGLSupport(): boolean {
 export const WebGLSupported = detectWebGLSupport();
 let loggedWebGL = false;
 
+// @xterm/addon-webgl 0.19.0 shares one glyph atlas between every terminal with the same font and
+// theme. A page merge shifts atlas pages between GPU texture slots, but a renderer only re-uploads
+// a slot whose page version changed, and those per-page counters collide -- the slot keeps the old
+// bitmap and every glyph cached on that page draws blank (backgrounds and the cursor still show)
+// until the terminal is resized. Upstream fixed it by invalidating all textures after a merge
+// (xtermjs/xterm.js 3bcb575, 0.20 beta only); this does the same from outside until a stable
+// release carries it. Page merges are the only thing that fires onRemoveTextureAtlasCanvas.
+const webglTermWraps = new Set<TermWrap>();
+let atlasTextureResetPending = false;
+
+function scheduleAtlasTextureReset() {
+    if (atlasTextureResetPending) {
+        return;
+    }
+    atlasTextureResetPending = true;
+    // the merge fires in the middle of one renderer's model update, so let that frame finish first
+    requestAnimationFrame(() => {
+        atlasTextureResetPending = false;
+        for (const termWrap of webglTermWraps) {
+            termWrap.resetAtlasTextures();
+        }
+    });
+}
+
 type TermWrapOptions = {
     keydownHandler?: (e: KeyboardEvent) => boolean;
     useWebGl?: boolean;
@@ -96,6 +120,7 @@ export class TermWrap {
     toDispose: TermTypes.IDisposable[] = [];
     webglAddon: WebglAddon | null = null;
     webglContextLossDisposable: TermTypes.IDisposable | null = null;
+    webglAtlasMergeDisposable: TermTypes.IDisposable | null = null;
     webglEnabledAtom: jotai.PrimitiveAtom<boolean>;
     pasteActive: boolean = false;
     lastUpdated: number;
@@ -355,6 +380,9 @@ export class TermWrap {
         if (this.webglAddon != null) {
             this.webglContextLossDisposable?.dispose();
             this.webglContextLossDisposable = null;
+            this.webglAtlasMergeDisposable?.dispose();
+            this.webglAtlasMergeDisposable = null;
+            webglTermWraps.delete(this);
             this.webglAddon.dispose();
             this.webglAddon = null;
             globalStore.set(this.webglEnabledAtom, false);
@@ -364,8 +392,10 @@ export class TermWrap {
             this.webglContextLossDisposable = addon.onContextLoss(() => {
                 this.setTermRenderer("dom");
             });
+            this.webglAtlasMergeDisposable = addon.onRemoveTextureAtlasCanvas(() => scheduleAtlasTextureReset());
             this.terminal.loadAddon(addon);
             this.webglAddon = addon;
+            webglTermWraps.add(this);
             globalStore.set(this.webglEnabledAtom, true);
             if (!loggedWebGL) {
                 console.log("loaded webgl!");
@@ -380,6 +410,18 @@ export class TermWrap {
 
     isWebGlEnabled(): boolean {
         return this.webglAddon != null;
+    }
+
+    // Reaches into addon-webgl 0.19.0 internals (see scheduleAtlasTextureReset); a no-op if they move.
+    resetAtlasTextures() {
+        const renderer = (this.webglAddon as any)?._renderer;
+        const glyphRenderer = renderer?._glyphRenderer?.value;
+        if (glyphRenderer == null || renderer._charAtlas == null) {
+            return;
+        }
+        // setAtlas marks every texture slot stale, so the next frame re-uploads all atlas pages
+        glyphRenderer.setAtlas(renderer._charAtlas);
+        this.terminal.refresh(0, this.terminal.rows - 1);
     }
 
     async initTerminal() {
@@ -455,6 +497,9 @@ export class TermWrap {
         this.promptMarkers = [];
         this.webglContextLossDisposable?.dispose();
         this.webglContextLossDisposable = null;
+        this.webglAtlasMergeDisposable?.dispose();
+        this.webglAtlasMergeDisposable = null;
+        webglTermWraps.delete(this);
         this.terminal.dispose();
         this.toDispose.forEach((d) => {
             try {
