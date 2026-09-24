@@ -350,16 +350,16 @@ export class PreviewModel implements ViewModel {
             const mimeType = jotaiLoadableValue(get(this.fileMimeTypeLoadable), "");
             const loadableSV = get(this.loadableSpecializedView);
             const isCeView = loadableSV.state == "hasData" && loadableSV.data.specializedView == "codeedit";
-            if (mimeType == "directory") {
-                // the hidden-files toggle lives in the tree's filter bar (preview-directory.tsx)
-                return [
-                    {
-                        elemtype: "iconbutton",
-                        icon: "arrows-rotate",
-                        click: () => this.refreshCallback?.(),
-                    },
-                ] as IconButtonDecl[];
-            } else if (!isCeView && isMarkdownLike(mimeType)) {
+            // Kept for every file type (and while the file is missing or loading): it is the only way
+            // to pull disk changes into the file tree, which sits beside whatever file is open.
+            // The hidden-files toggle lives in the tree's filter bar (preview-directory.tsx).
+            const refreshButton: IconButtonDecl = {
+                elemtype: "iconbutton",
+                icon: "arrows-rotate",
+                title: t("common.refresh"),
+                click: () => this.refresh(),
+            };
+            if (!isCeView && isMarkdownLike(mimeType)) {
                 return [
                     {
                         elemtype: "iconbutton",
@@ -367,25 +367,10 @@ export class PreviewModel implements ViewModel {
                         title: "Table of Contents",
                         click: () => this.markdownShowTocToggle(),
                     },
-                    {
-                        elemtype: "iconbutton",
-                        icon: "arrows-rotate",
-                        title: "Refresh",
-                        click: () => this.refreshCallback?.(),
-                    },
-                ] as IconButtonDecl[];
-            } else if (!isCeView && mimeType) {
-                // For all other file types (text, code, etc.), add refresh button
-                return [
-                    {
-                        elemtype: "iconbutton",
-                        icon: "arrows-rotate",
-                        title: "Refresh",
-                        click: () => this.refreshCallback?.(),
-                    },
+                    refreshButton,
                 ] as IconButtonDecl[];
             }
-            return null;
+            return [refreshButton];
         });
         this.metaFilePath = atom<string>((get) => {
             const file = get(this.blockAtom)?.meta?.file;
@@ -499,6 +484,16 @@ export class PreviewModel implements ViewModel {
         });
 
         this.noPadding = atom(true);
+    }
+
+    // Views that don't register a refreshCallback (images, PDFs, ...) still need the button to
+    // refresh the tree, which folds refreshVersion into every directory it lists.
+    refresh() {
+        if (this.refreshCallback) {
+            this.refreshCallback();
+            return;
+        }
+        globalStore.set(this.refreshVersion, (v) => v + 1);
     }
 
     markdownShowTocToggle() {
