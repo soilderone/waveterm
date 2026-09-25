@@ -46,6 +46,9 @@ export function blockViewToIcon(view: string): string {
     if (view == "processviewer") {
         return "microchip";
     }
+    if (view == "git") {
+        return "code-branch";
+    }
     return "square";
 }
 
@@ -64,6 +67,9 @@ export function blockViewToAccentVar(view: string): string {
     }
     if (view == "processviewer" || view == "sysinfo") {
         return "var(--type-sys)";
+    }
+    if (view == "git") {
+        return "var(--type-git)";
     }
     return "var(--accent-color)";
 }
@@ -92,6 +98,9 @@ export function blockViewToName(view: string): string {
     }
     if (view == "processviewer") {
         return "Processes";
+    }
+    if (view == "git") {
+        return "Git";
     }
     return view;
 }
