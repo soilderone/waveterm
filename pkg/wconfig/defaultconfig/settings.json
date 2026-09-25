@@ -43,5 +43,6 @@
     "term:transparency": 0,
     "waveai:showcloudmodes": true,
     "waveai:defaultmode": "waveai@balanced",
+    "waveai:defaultaccesslevel": "collab",
     "preview:defaultsort": "name"
 }

@@ -1288,6 +1288,11 @@ func (ws *WshServer) GetWaveAIChatCommand(ctx context.Context, data wshrpc.Comma
 	if err != nil {
 		return nil, fmt.Errorf("error converting AI chat to UI chat: %w", err)
 	}
+	if uiChat != nil {
+		usage := aiusechat.GetChatUsage(aiChat)
+		uiChat.Usage = &usage
+		uiChat.ContextTokens = aiusechat.GetChatContextTokens(aiChat)
+	}
 	return uiChat, nil
 }
 
@@ -1296,7 +1301,14 @@ func (ws *WshServer) GetWaveAIRateLimitCommand(ctx context.Context) (*uctypes.Ra
 }
 
 func (ws *WshServer) WaveAIToolApproveCommand(ctx context.Context, data wshrpc.CommandWaveAIToolApproveData) error {
-	return aiusechat.UpdateToolApproval(data.ToolCallId, data.Approval)
+	return aiusechat.UpdateToolApproval(data.ToolCallId, data.Approval, data.RememberForChat)
+}
+
+func (ws *WshServer) WaveAITruncateChatCommand(ctx context.Context, data wshrpc.CommandWaveAITruncateChatData) (bool, error) {
+	if data.ChatId == "" || data.MessageId == "" {
+		return false, fmt.Errorf("chatid and messageid are required")
+	}
+	return chatstore.DefaultChatStore.TruncateAtMessage(data.ChatId, data.MessageId, data.KeepMessage), nil
 }
 
 func (ws *WshServer) WaveAIGetToolDiffCommand(ctx context.Context, data wshrpc.CommandWaveAIGetToolDiffData) (*wshrpc.CommandWaveAIGetToolDiffRtnData, error) {

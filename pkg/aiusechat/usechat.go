@@ -212,6 +212,18 @@ func GetChatUsage(chat *uctypes.AIChat) uctypes.AIUsage {
 	return usage
 }
 
+// GetChatContextTokens approximates the current context size from the most recent call: its input
+// already covered the whole history, and its output was appended to it.
+func GetChatContextTokens(chat *uctypes.AIChat) int {
+	for i := len(chat.NativeMessages) - 1; i >= 0; i-- {
+		usage := chat.NativeMessages[i].GetUsage()
+		if usage != nil && usage.InputTokens > 0 {
+			return usage.InputTokens + usage.OutputTokens
+		}
+	}
+	return 0
+}
+
 func updateToolUseDataInChat(backend UseChatBackend, chatOpts uctypes.WaveChatOpts, toolCallID string, toolUseData uctypes.UIMessageDataToolUse) {
 	if err := backend.UpdateToolUseData(chatOpts.ChatId, toolCallID, toolUseData); err != nil {
 		log.Printf("failed to update tool use data in chat: %v\n", err)
@@ -339,12 +351,13 @@ func processAllToolCalls(backend UseChatBackend, stopReason *uctypes.WaveStopRea
 			}
 		}
 		toolUseData := aiutil.CreateToolUseData(toolCall.ID, toolCall.Name, argsJSON, chatOpts)
+		applyAccessPolicy(&toolUseData, chatOpts.GetToolDefinition(toolCall.Name), toolCall.Input, chatOpts)
 		stopReason.ToolCalls[i].ToolUseData = &toolUseData
 		log.Printf("AI data-tooluse %s\n", toolCall.ID)
 		_ = sseHandler.AiMsgData("data-tooluse", toolCall.ID, toolUseData)
 		updateToolUseDataInChat(backend, chatOpts, toolCall.ID, toolUseData)
 		if toolUseData.Approval == uctypes.ApprovalNeedsApproval {
-			RegisterToolApproval(toolCall.ID, sseHandler)
+			RegisterToolApproval(toolCall.ID, chatOpts.ChatId, toolCall.Name, sseHandler)
 		}
 	}
 	// At this point, all ToolCalls are guaranteed to have non-nil ToolUseData
@@ -546,6 +559,21 @@ func ResolveToolCall(toolDef *uctypes.ToolDefinition, toolCall uctypes.WaveToolC
 	return
 }
 
+// validateRegenerate checks that the stored history ends with a user turn, which is what the
+// frontend leaves behind after truncating a reply it wants regenerated.
+func validateRegenerate(chatId string) error {
+	chat := chatstore.DefaultChatStore.Get(chatId)
+	if chat == nil || len(chat.NativeMessages) == 0 {
+		return fmt.Errorf("chat has no stored messages")
+	}
+	lastMsg := chat.NativeMessages[len(chat.NativeMessages)-1]
+	if lastMsg.GetRole() != "user" {
+		return fmt.Errorf("chat does not end with a user message")
+	}
+	return nil
+}
+
+// message may be nil to regenerate from the stored history without posting a new user message
 func WaveAIPostMessageWrap(ctx context.Context, sseHandler *sse.SSEHandlerCh, message *uctypes.AIMessage, chatOpts uctypes.WaveChatOpts) error {
 	startTime := time.Now()
 
@@ -554,30 +582,34 @@ func WaveAIPostMessageWrap(ctx context.Context, sseHandler *sse.SSEHandlerCh, me
 	if err != nil {
 		return err
 	}
-	convertedMessage, err := backend.ConvertAIMessageToNativeChatMessage(*message)
-	if err != nil {
-		return fmt.Errorf("message conversion failed: %w", err)
-	}
+	if message != nil {
+		convertedMessage, err := backend.ConvertAIMessageToNativeChatMessage(*message)
+		if err != nil {
+			return fmt.Errorf("message conversion failed: %w", err)
+		}
 
-	// Post message to chat store
-	if err := chatstore.DefaultChatStore.PostMessage(chatOpts.ChatId, &chatOpts.Config, convertedMessage); err != nil {
-		return fmt.Errorf("failed to store message: %w", err)
+		// Post message to chat store
+		if err := chatstore.DefaultChatStore.PostMessage(chatOpts.ChatId, &chatOpts.Config, convertedMessage); err != nil {
+			return fmt.Errorf("failed to store message: %w", err)
+		}
 	}
 
 	metrics, err := RunAIChat(ctx, sseHandler, backend, chatOpts)
 	if metrics != nil {
 		metrics.RequestDuration = int(time.Since(startTime).Milliseconds())
-		for _, part := range message.Parts {
-			if part.Type == uctypes.AIMessagePartTypeText {
-				metrics.TextLen += len(part.Text)
-			} else if part.Type == uctypes.AIMessagePartTypeFile {
-				mimeType := strings.ToLower(part.MimeType)
-				if strings.HasPrefix(mimeType, "image/") {
-					metrics.ImageCount++
-				} else if mimeType == "application/pdf" {
-					metrics.PDFCount++
-				} else {
-					metrics.TextDocCount++
+		if message != nil {
+			for _, part := range message.Parts {
+				if part.Type == uctypes.AIMessagePartTypeText {
+					metrics.TextLen += len(part.Text)
+				} else if part.Type == uctypes.AIMessagePartTypeFile {
+					mimeType := strings.ToLower(part.MimeType)
+					if strings.HasPrefix(mimeType, "image/") {
+						metrics.ImageCount++
+					} else if mimeType == "application/pdf" {
+						metrics.PDFCount++
+					} else {
+						metrics.TextDocCount++
+					}
 				}
 			}
 		}
@@ -623,13 +655,15 @@ func sendAIMetricsTelemetry(ctx context.Context, metrics *uctypes.AIMetrics) {
 
 // PostMessageRequest represents the request body for posting a message
 type PostMessageRequest struct {
-	TabId        string            `json:"tabid,omitempty"`
-	BuilderId    string            `json:"builderid,omitempty"`
-	BuilderAppId string            `json:"builderappid,omitempty"`
-	ChatID       string            `json:"chatid"`
-	Msg          uctypes.AIMessage `json:"msg"`
-	WidgetAccess bool              `json:"widgetaccess,omitempty"`
-	AIMode       string            `json:"aimode"`
+	TabId          string            `json:"tabid,omitempty"`
+	BuilderId      string            `json:"builderid,omitempty"`
+	BuilderAppId   string            `json:"builderappid,omitempty"`
+	ChatID         string            `json:"chatid"`
+	Msg            uctypes.AIMessage `json:"msg"`
+	AccessLevel    string            `json:"accesslevel,omitempty"`
+	FocusedBlockId string            `json:"focusedblockid,omitempty"`
+	AIMode         string            `json:"aimode"`
+	Regenerate     bool              `json:"regenerate,omitempty"`
 }
 
 func WaveAIPostMessageHandler(w http.ResponseWriter, r *http.Request) {
@@ -683,11 +717,14 @@ func WaveAIPostMessageHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Call the core WaveAIPostMessage function
+	accessLevel := NormalizeAccessLevel(req.AccessLevel)
 	chatOpts := uctypes.WaveChatOpts{
 		ChatId:               req.ChatID,
 		ClientId:             wstore.GetClientId(),
 		Config:               *aiOpts,
-		WidgetAccess:         req.WidgetAccess,
+		WidgetAccess:         accessLevel != uctypes.AccessLevelOff,
+		AccessLevel:          accessLevel,
+		FocusedBlockId:       req.FocusedBlockId,
 		AllowNativeWebSearch: true,
 		BuilderId:            req.BuilderId,
 		BuilderAppId:         req.BuilderAppId,
@@ -696,7 +733,7 @@ func WaveAIPostMessageHandler(w http.ResponseWriter, r *http.Request) {
 
 	if req.TabId != "" {
 		chatOpts.TabStateGenerator = func() (string, []uctypes.ToolDefinition, string, error) {
-			tabState, tabTools, err := GenerateTabStateAndTools(r.Context(), req.TabId, req.WidgetAccess, &chatOpts)
+			tabState, tabTools, err := GenerateTabStateAndTools(r.Context(), req.TabId, &chatOpts)
 			return tabState, tabTools, req.TabId, err
 		}
 	}
@@ -715,17 +752,25 @@ func WaveAIPostMessageHandler(w http.ResponseWriter, r *http.Request) {
 		)
 	}
 
-	// Validate the message
-	if err := req.Msg.Validate(); err != nil {
-		http.Error(w, fmt.Sprintf("Message validation failed: %v", err), http.StatusInternalServerError)
-		return
+	var msg *uctypes.AIMessage
+	if req.Regenerate {
+		if err := validateRegenerate(req.ChatID); err != nil {
+			http.Error(w, fmt.Sprintf("Cannot regenerate: %v", err), http.StatusBadRequest)
+			return
+		}
+	} else {
+		if err := req.Msg.Validate(); err != nil {
+			http.Error(w, fmt.Sprintf("Message validation failed: %v", err), http.StatusInternalServerError)
+			return
+		}
+		msg = &req.Msg
 	}
 
 	// Create SSE handler and set up streaming
 	sseHandler := sse.MakeSSEHandlerCh(w, r.Context())
 	defer sseHandler.Close()
 
-	if err := WaveAIPostMessageWrap(r.Context(), sseHandler, &req.Msg, chatOpts); err != nil {
+	if err := WaveAIPostMessageWrap(r.Context(), sseHandler, msg, chatOpts); err != nil {
 		http.Error(w, fmt.Sprintf("Failed to post message: %v", err), http.StatusInternalServerError)
 		return
 	}

@@ -126,6 +126,12 @@
         "waveai:defaultmode": {
           "type": "string"
         },
+        "waveai:defaultaccesslevel": {
+          "type": "string"
+        },
+        "waveai:hidegettingstarted": {
+          "type": "boolean"
+        },
         "term:*": {
           "type": "boolean"
         },

@@ -131,6 +131,7 @@ func GetTsunamiGetDataToolDefinition(block *waveobj.Block, rtInfo *waveobj.ObjRT
 	return &uctypes.ToolDefinition{
 		Name:        toolName,
 		ToolLogName: "tsunami:getdata",
+		ToolRisk:    uctypes.ToolRiskObserve,
 		Strict:      true,
 		InputSchema: map[string]any{
 			"type":                 "object",
@@ -156,6 +157,7 @@ func GetTsunamiGetConfigToolDefinition(block *waveobj.Block, rtInfo *waveobj.Obj
 	return &uctypes.ToolDefinition{
 		Name:        toolName,
 		ToolLogName: "tsunami:getconfig",
+		ToolRisk:    uctypes.ToolRiskObserve,
 		Strict:      true,
 		InputSchema: map[string]any{
 			"type":                 "object",
@@ -194,6 +196,7 @@ func GetTsunamiSetConfigToolDefinition(block *waveobj.Block, rtInfo *waveobj.Obj
 	return &uctypes.ToolDefinition{
 		Name:        toolName,
 		ToolLogName: "tsunami:setconfig",
+		ToolRisk:    uctypes.ToolRiskAction,
 		InputSchema: inputSchema,
 		ToolCallDesc: func(input any, output any, toolUseData *uctypes.UIMessageDataToolUse) string {
 			return fmt.Sprintf("updating config for %s (%s)", desc, blockIdPrefix)

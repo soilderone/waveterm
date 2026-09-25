@@ -42,6 +42,15 @@ declare global {
         configs: {[key: string]: AIModeConfigType};
     };
 
+    // uctypes.AIUsage
+    type AIUsage = {
+        apitype: string;
+        model: string;
+        inputtokens?: number;
+        outputtokens?: number;
+        nativewebsearchcount?: number;
+    };
+
     // wshrpc.ActivityDisplayType
     type ActivityDisplayType = {
         width: number;
@@ -780,6 +789,14 @@ declare global {
     type CommandWaveAIToolApproveData = {
         toolcallid: string;
         approval?: string;
+        rememberforchat?: boolean;
+    };
+
+    // wshrpc.CommandWaveAITruncateChatData
+    type CommandWaveAITruncateChatData = {
+        chatid: string;
+        messageid: string;
+        keepmessage?: boolean;
     };
 
     // wshrpc.CommandWaveFileReadStreamData
@@ -1275,7 +1292,7 @@ declare global {
         "waveai:panelwidth"?: number;
         "waveai:model"?: string;
         "waveai:chatid"?: string;
-        "waveai:widgetcontext"?: boolean;
+        "waveai:accesslevel"?: string;
         "term:*"?: boolean;
         "term:fontsize"?: number;
         "term:fontfamily"?: string;
@@ -1514,6 +1531,8 @@ declare global {
         "ai:fixedfontsize"?: number;
         "waveai:showcloudmodes"?: boolean;
         "waveai:defaultmode"?: string;
+        "waveai:defaultaccesslevel"?: string;
+        "waveai:hidegettingstarted"?: boolean;
         "term:*"?: boolean;
         "term:fontsize"?: number;
         "term:fontfamily"?: string;
@@ -1841,6 +1860,8 @@ declare global {
         model: string;
         apiversion: string;
         messages: UIMessage[];
+        usage?: AIUsage;
+        contexttokens?: number;
     };
 
     // waveobj.UIContext

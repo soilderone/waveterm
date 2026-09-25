@@ -90,8 +90,10 @@ type SettingsType struct {
 	AiFontSize      float64 `json:"ai:fontsize,omitempty"`
 	AiFixedFontSize float64 `json:"ai:fixedfontsize,omitempty"`
 
-	WaveAiShowCloudModes bool   `json:"waveai:showcloudmodes,omitempty"`
-	WaveAiDefaultMode    string `json:"waveai:defaultmode,omitempty"`
+	WaveAiShowCloudModes     bool   `json:"waveai:showcloudmodes,omitempty"`
+	WaveAiDefaultMode        string `json:"waveai:defaultmode,omitempty"`
+	WaveAiDefaultAccessLevel string `json:"waveai:defaultaccesslevel,omitempty"`
+	WaveAiHideGettingStarted bool   `json:"waveai:hidegettingstarted,omitempty"`
 
 	TermClear               bool     `json:"term:*,omitempty"`
 	TermFontSize            float64  `json:"term:fontsize,omitempty"`

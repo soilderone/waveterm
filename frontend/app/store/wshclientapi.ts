@@ -1032,6 +1032,12 @@ export class RpcApiType {
         return client.wshRpcCall("waveaitoolapprove", data, opts);
     }
 
+    // command "waveaitruncatechat" [call]
+    WaveAITruncateChatCommand(client: WshClient, data: CommandWaveAITruncateChatData, opts?: RpcOpts): Promise<boolean> {
+        if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "waveaitruncatechat", data, opts);
+        return client.wshRpcCall("waveaitruncatechat", data, opts);
+    }
+
     // command "wavefilereadstream" [call]
     WaveFileReadStreamCommand(client: WshClient, data: CommandWaveFileReadStreamData, opts?: RpcOpts): Promise<WaveFileInfo> {
         if (this.mockClient) return this.mockClient.mockWshRpcCall(client, "wavefilereadstream", data, opts);

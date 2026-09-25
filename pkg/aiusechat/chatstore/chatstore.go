@@ -127,3 +127,27 @@ func (cs *ChatStore) RemoveMessage(chatId string, messageId string) bool {
 
 	return len(chat.NativeMessages) < initialLen
 }
+
+// TruncateAtMessage drops every message after messageId, and messageId itself unless keepMessage is set.
+// Returns false (leaving the chat untouched) when the message is not in the chat.
+func (cs *ChatStore) TruncateAtMessage(chatId string, messageId string, keepMessage bool) bool {
+	cs.lock.Lock()
+	defer cs.lock.Unlock()
+
+	chat := cs.chats[chatId]
+	if chat == nil {
+		return false
+	}
+
+	idx := slices.IndexFunc(chat.NativeMessages, func(msg uctypes.GenAIMessage) bool {
+		return msg.GetMessageId() == messageId
+	})
+	if idx == -1 {
+		return false
+	}
+	if keepMessage {
+		idx++
+	}
+	chat.NativeMessages = chat.NativeMessages[:idx]
+	return true
+}

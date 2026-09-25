@@ -1024,6 +1024,12 @@ func WaveAIToolApproveCommand(w *wshutil.WshRpc, data wshrpc.CommandWaveAIToolAp
 	return err
 }
 
+// command "waveaitruncatechat", wshserver.WaveAITruncateChatCommand
+func WaveAITruncateChatCommand(w *wshutil.WshRpc, data wshrpc.CommandWaveAITruncateChatData, opts *wshrpc.RpcOpts) (bool, error) {
+	resp, err := sendRpcRequestCallHelper[bool](w, "waveaitruncatechat", data, opts)
+	return resp, err
+}
+
 // command "wavefilereadstream", wshserver.WaveFileReadStreamCommand
 func WaveFileReadStreamCommand(w *wshutil.WshRpc, data wshrpc.CommandWaveFileReadStreamData, opts *wshrpc.RpcOpts) (*wshrpc.WaveFileInfo, error) {
 	resp, err := sendRpcRequestCallHelper[*wshrpc.WaveFileInfo](w, "wavefilereadstream", data, opts)

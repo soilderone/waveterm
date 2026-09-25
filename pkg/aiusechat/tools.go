@@ -133,10 +133,12 @@ func MakeBlockShortDesc(block *waveobj.Block) string {
 	}
 }
 
-func GenerateTabStateAndTools(ctx context.Context, tabid string, widgetAccess bool, chatOpts *uctypes.WaveChatOpts) (string, []uctypes.ToolDefinition, error) {
+func GenerateTabStateAndTools(ctx context.Context, tabid string, chatOpts *uctypes.WaveChatOpts) (string, []uctypes.ToolDefinition, error) {
 	if tabid == "" {
 		return "", nil, nil
 	}
+	accessLevel := NormalizeAccessLevel(chatOpts.AccessLevel)
+	widgetAccess := accessLevel != uctypes.AccessLevelOff
 	var blocks []*waveobj.Block
 	if widgetAccess {
 		if _, err := uuid.Parse(tabid); err != nil {
@@ -156,7 +158,7 @@ func GenerateTabStateAndTools(ctx context.Context, tabid string, widgetAccess bo
 			blocks = append(blocks, block)
 		}
 	}
-	tabState := GenerateCurrentTabStatePrompt(blocks, widgetAccess)
+	tabState := GenerateCurrentTabStatePrompt(blocks, accessLevel, chatOpts.FocusedBlockId)
 	// for debugging
 	// log.Printf("TABPROMPT %s\n", tabState)
 	var tools []uctypes.ToolDefinition
@@ -196,14 +198,15 @@ func GenerateTabStateAndTools(ctx context.Context, tabid string, widgetAccess bo
 			tools = append(tools, GetWebNavigateToolDefinition(tabid))
 		}
 	}
-	return tabState, tools, nil
+	return tabState, filterToolsForAccessLevel(accessLevel, tools), nil
 }
 
-func GenerateCurrentTabStatePrompt(blocks []*waveobj.Block, widgetAccess bool) string {
-	if !widgetAccess {
+func GenerateCurrentTabStatePrompt(blocks []*waveobj.Block, accessLevel string, focusedBlockId string) string {
+	if accessLevel == uctypes.AccessLevelOff {
 		return `<current_tab_state>The user has chosen not to share widget context with you</current_tab_state>`
 	}
 	var widgetDescriptions []string
+	var focusedDesc string
 	for _, block := range blocks {
 		desc := MakeBlockShortDesc(block)
 		if desc == "" {
@@ -212,6 +215,9 @@ func GenerateCurrentTabStatePrompt(blocks []*waveobj.Block, widgetAccess bool) s
 		blockIdPrefix := block.OID[:8]
 		fullDesc := fmt.Sprintf("(%s) %s", blockIdPrefix, desc)
 		widgetDescriptions = append(widgetDescriptions, fullDesc)
+		if block.OID == focusedBlockId {
+			focusedDesc = fullDesc
+		}
 	}
 
 	var prompt strings.Builder
@@ -231,6 +237,13 @@ func GenerateCurrentTabStatePrompt(blocks []*waveobj.Block, widgetAccess bool) s
 			prompt.WriteString(desc)
 			prompt.WriteString("\n")
 		}
+	}
+	if focusedDesc != "" {
+		prompt.WriteString(fmt.Sprintf("Focused Widget: %s (the widget the user was last working in; prefer it when the request does not name a widget)\n", focusedDesc))
+	}
+	if levelLine := accessLevelPromptLine(accessLevel); levelLine != "" {
+		prompt.WriteString(levelLine)
+		prompt.WriteString("\n")
 	}
 	prompt.WriteString("</current_tab_state>")
 	rtn := prompt.String()

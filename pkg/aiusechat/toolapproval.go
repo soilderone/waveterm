@@ -17,6 +17,8 @@ type ApprovalRequest struct {
 	doneChan       chan struct{}
 	mu             sync.Mutex
 	onCloseUnregFn func()
+	chatId         string
+	toolName       string
 }
 
 func (req *ApprovalRequest) updateApproval(approval string) {
@@ -69,13 +71,15 @@ func getToolApprovalRequest(toolCallId string) (*ApprovalRequest, bool) {
 	return req, exists
 }
 
-func RegisterToolApproval(toolCallId string, sseHandler *sse.SSEHandlerCh) {
+func RegisterToolApproval(toolCallId string, chatId string, toolName string, sseHandler *sse.SSEHandlerCh) {
 	req := &ApprovalRequest{
 		doneChan: make(chan struct{}),
+		chatId:   chatId,
+		toolName: toolName,
 	}
 
 	onCloseId := sseHandler.RegisterOnClose(func() {
-		UpdateToolApproval(toolCallId, uctypes.ApprovalCanceled)
+		UpdateToolApproval(toolCallId, uctypes.ApprovalCanceled, false)
 	})
 
 	req.onCloseUnregFn = func() {
@@ -85,12 +89,16 @@ func RegisterToolApproval(toolCallId string, sseHandler *sse.SSEHandlerCh) {
 	registerToolApprovalRequest(toolCallId, req)
 }
 
-func UpdateToolApproval(toolCallId string, approval string) error {
+// rememberForChat applies to later calls of the same tool in the same chat (see applyAccessPolicy)
+func UpdateToolApproval(toolCallId string, approval string, rememberForChat bool) error {
 	req, exists := getToolApprovalRequest(toolCallId)
 	if !exists {
 		return nil
 	}
 
+	if rememberForChat && approval == uctypes.ApprovalUserApproved && req.chatId != "" && req.toolName != "" {
+		chatToolAllowList.allow(req.chatId, req.toolName)
+	}
 	req.updateApproval(approval)
 	return nil
 }

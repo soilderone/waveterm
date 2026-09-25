@@ -186,6 +186,7 @@ func GetWriteTextFileToolDefinition() uctypes.ToolDefinition {
 		DisplayName: "Write Text File",
 		Description: "Write a text file to the filesystem. Will create or overwrite the file. Maximum file size: 100KB.",
 		ToolLogName: "gen:writefile",
+		ToolRisk:    uctypes.ToolRiskWrite,
 		Strict:      true,
 		InputSchema: map[string]any{
 			"type": "object",
@@ -214,6 +215,7 @@ func GetWriteTextFileToolDefinition() uctypes.ToolDefinition {
 			return uctypes.ApprovalNeedsApproval
 		},
 		ToolVerifyInput: verifyWriteTextFileInput,
+		ToolInputPath:   writeTextFileInputPath,
 	}
 }
 
@@ -354,6 +356,7 @@ func GetEditTextFileToolDefinition() uctypes.ToolDefinition {
 			"All edits are applied atomically - if any single edit fails, the entire operation fails and no changes are made. " +
 			"Maximum file size: 100KB.",
 		ToolLogName: "gen:editfile",
+		ToolRisk:    uctypes.ToolRiskWrite,
 		Strict:      true,
 		InputSchema: map[string]any{
 			"type": "object",
@@ -406,6 +409,7 @@ func GetEditTextFileToolDefinition() uctypes.ToolDefinition {
 			return uctypes.ApprovalNeedsApproval
 		},
 		ToolVerifyInput: verifyEditTextFileInput,
+		ToolInputPath:   editTextFileInputPath,
 	}
 }
 
@@ -498,6 +502,7 @@ func GetDeleteTextFileToolDefinition() uctypes.ToolDefinition {
 		DisplayName: "Delete Text File",
 		Description: "Delete a text file from the filesystem. A backup is created before deletion. Maximum file size: 100KB.",
 		ToolLogName: "gen:deletefile",
+		ToolRisk:    uctypes.ToolRiskDelete,
 		Strict:      true,
 		InputSchema: map[string]any{
 			"type": "object",

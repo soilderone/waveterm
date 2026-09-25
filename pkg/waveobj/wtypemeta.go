@@ -107,11 +107,11 @@ type MetaTSType struct {
 	LayoutWidgetsVisible   *bool `json:"layout:widgetsvisible,omitempty"`
 
 	// for tabs+waveai
-	WaveAiPanelOpen     bool   `json:"waveai:panelopen,omitempty"`
-	WaveAiPanelWidth    int    `json:"waveai:panelwidth,omitempty"`
-	WaveAiModel         string `json:"waveai:model,omitempty"`
-	WaveAiChatId        string `json:"waveai:chatid,omitempty"`
-	WaveAiWidgetContext *bool  `json:"waveai:widgetcontext,omitempty"` // default is true
+	WaveAiPanelOpen   bool   `json:"waveai:panelopen,omitempty"`
+	WaveAiPanelWidth  int    `json:"waveai:panelwidth,omitempty"`
+	WaveAiModel       string `json:"waveai:model,omitempty"`
+	WaveAiChatId      string `json:"waveai:chatid,omitempty"`
+	WaveAiAccessLevel string `json:"waveai:accesslevel,omitempty"` // off, readonly, collab, trust (falls back to waveai:defaultaccesslevel)
 
 	TermClear               bool     `json:"term:*,omitempty"`
 	TermFontSize            int      `json:"term:fontsize,omitempty"`

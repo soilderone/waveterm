@@ -54,6 +54,7 @@ func GetWebNavigateToolDefinition(tabId string) uctypes.ToolDefinition {
 		DisplayName: "Navigate Web Widget",
 		Description: "Navigate a web browser widget to a new URL",
 		ToolLogName: "web:navigate",
+		ToolRisk:    uctypes.ToolRiskAction,
 		Strict:      true,
 		InputSchema: map[string]any{
 			"type": "object",

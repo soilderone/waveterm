@@ -162,6 +162,7 @@ type WshRpcInterface interface {
 	GetWaveAIChatCommand(ctx context.Context, data CommandGetWaveAIChatData) (*uctypes.UIChat, error)
 	GetWaveAIRateLimitCommand(ctx context.Context) (*uctypes.RateLimitInfo, error)
 	WaveAIToolApproveCommand(ctx context.Context, data CommandWaveAIToolApproveData) error
+	WaveAITruncateChatCommand(ctx context.Context, data CommandWaveAITruncateChatData) (bool, error)
 	WaveAIAddContextCommand(ctx context.Context, data CommandWaveAIAddContextData) error
 	WaveAIGetToolDiffCommand(ctx context.Context, data CommandWaveAIGetToolDiffData) (*CommandWaveAIGetToolDiffRtnData, error)
 
@@ -508,8 +509,15 @@ type CommandGetWaveAIChatData struct {
 }
 
 type CommandWaveAIToolApproveData struct {
-	ToolCallId string `json:"toolcallid"`
-	Approval   string `json:"approval,omitempty"`
+	ToolCallId      string `json:"toolcallid"`
+	Approval        string `json:"approval,omitempty"`
+	RememberForChat bool   `json:"rememberforchat,omitempty"`
+}
+
+type CommandWaveAITruncateChatData struct {
+	ChatId      string `json:"chatid"`
+	MessageId   string `json:"messageid"`
+	KeepMessage bool   `json:"keepmessage,omitempty"`
 }
 
 type AIAttachedFile struct {

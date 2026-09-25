@@ -40,11 +40,13 @@ type UseChatRequest struct {
 }
 
 type UIChat struct {
-	ChatId     string      `json:"chatid"`
-	APIType    string      `json:"apitype"`
-	Model      string      `json:"model"`
-	APIVersion string      `json:"apiversion"`
-	Messages   []UIMessage `json:"messages"`
+	ChatId        string      `json:"chatid"`
+	APIType       string      `json:"apitype"`
+	Model         string      `json:"model"`
+	APIVersion    string      `json:"apiversion"`
+	Messages      []UIMessage `json:"messages"`
+	Usage         *AIUsage    `json:"usage,omitempty"`
+	ContextTokens int         `json:"contexttokens,omitempty"`
 }
 
 type UIMessage struct {
@@ -114,6 +116,11 @@ type ToolDefinition struct {
 	ToolApproval     func(any) string                              `json:"-"`
 	ToolVerifyInput  func(any, *UIMessageDataToolUse) error        `json:"-"` // *UIMessageDataToolUse will NOT be nil
 	ToolProgressDesc func(any) ([]string, error)                   `json:"-"`
+
+	// ToolRisk (ToolRisk* consts) decides which access levels expose the tool and when it may skip approval.
+	// ToolInputPath returns the filesystem path a call touches, so the trust level can auto approve inside trusted roots.
+	ToolRisk      string           `json:"-"`
+	ToolInputPath func(any) string `json:"-"`
 }
 
 func (td *ToolDefinition) Clean() *ToolDefinition {
@@ -180,6 +187,21 @@ const (
 	AICapabilityTools  = "tools"
 	AICapabilityImages = "images"
 	AICapabilityPdfs   = "pdfs"
+)
+
+const (
+	AccessLevelOff      = "off"
+	AccessLevelReadOnly = "readonly"
+	AccessLevelCollab   = "collab"
+	AccessLevelTrust    = "trust"
+)
+
+const (
+	ToolRiskObserve = "observe"
+	ToolRiskAction  = "action"
+	ToolRiskRead    = "read"
+	ToolRiskWrite   = "write"
+	ToolRiskDelete  = "delete"
 )
 
 const (
@@ -507,6 +529,8 @@ type WaveChatOpts struct {
 	TabStateGenerator    func() (string, []ToolDefinition, string, error)
 	BuilderAppGenerator  func() (string, string, string, error)
 	WidgetAccess         bool
+	AccessLevel          string
+	FocusedBlockId       string
 	AllowNativeWebSearch bool
 	BuilderId            string
 	BuilderAppId         string
