@@ -3,6 +3,7 @@
 
 import { Tooltip } from "@/app/element/tooltip";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
+import { withFocusedBlockRepo } from "@/app/view/gitview/gitblockdef";
 import { useWaveEnv, WaveEnv, WaveEnvSubset } from "@/app/waveenv/waveenv";
 import { shouldIncludeWidgetForWorkspace } from "@/app/workspace/widgetfilter";
 import { modalsModel } from "@/store/modalmodel";
@@ -72,7 +73,10 @@ type WidgetPropsType = {
 };
 
 async function handleWidgetSelect(widget: WidgetConfigType, env: WidgetsEnv) {
-    const blockDef = widget.blockdef;
+    let blockDef = widget.blockdef;
+    if (blockDef?.meta?.view == "git") {
+        blockDef = withFocusedBlockRepo(blockDef);
+    }
     env.createBlock(blockDef, widget.magnified);
 }
 

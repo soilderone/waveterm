@@ -34,6 +34,17 @@
             }
         }
     },
+    "defwidget@git": {
+        "display:order": -2.5,
+        "icon": "code-branch",
+        "color": "var(--type-git)",
+        "label": "git",
+        "blockdef": {
+            "meta": {
+                "view": "git"
+            }
+        }
+    },
     "defwidget@sysinfo": {
         "display:order": -2,
         "icon": "chart-line",
