@@ -3,7 +3,7 @@
 
 import { waveAIHasSelection } from "@/app/aipanel/waveai-focus-utils";
 import { ContextMenuModel } from "@/app/store/contextmenu";
-import { isDev } from "@/app/store/global";
+import { getSettingsKeyAtom, isDev } from "@/app/store/global";
 import { globalStore } from "@/app/store/jotaiStore";
 import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
@@ -43,6 +43,8 @@ export async function handleWaveAIContextMenu(e: React.MouseEvent, showCopy: boo
 
     const defaultTokens = model.inBuilder ? 24576 : 4096;
     const currentMaxTokens = rtInfo?.["waveai:maxoutputtokens"] ?? defaultTokens;
+    // the "Pro" tiers only mean something for Wave's own cloud modes, not for a user's own API key
+    const isCloudMode = globalStore.get(model.currentAIMode)?.startsWith("waveai") ?? false;
 
     const maxTokensSubmenu: ContextMenuItem[] = [];
 
@@ -60,7 +62,7 @@ export async function handleWaveAIContextMenu(e: React.MouseEvent, showCopy: boo
                 },
             },
             {
-                label: t("ai.tokens64kPro"),
+                label: isCloudMode ? t("ai.tokens64kPro") : t("ai.tokens64k"),
                 type: "checkbox",
                 checked: currentMaxTokens === 65536,
                 click: () => {
@@ -98,7 +100,7 @@ export async function handleWaveAIContextMenu(e: React.MouseEvent, showCopy: boo
                 },
             },
             {
-                label: t("ai.tokens16kPro"),
+                label: isCloudMode ? t("ai.tokens16kPro") : t("ai.tokens16k"),
                 type: "checkbox",
                 checked: currentMaxTokens === 16384,
                 click: () => {
@@ -109,7 +111,7 @@ export async function handleWaveAIContextMenu(e: React.MouseEvent, showCopy: boo
                 },
             },
             {
-                label: t("ai.tokens64kPro"),
+                label: isCloudMode ? t("ai.tokens64kPro") : t("ai.tokens64k"),
                 type: "checkbox",
                 checked: currentMaxTokens === 65536,
                 click: () => {
@@ -128,6 +130,15 @@ export async function handleWaveAIContextMenu(e: React.MouseEvent, showCopy: boo
     });
 
     menu.push({ type: "separator" });
+
+    if (!model.inBuilder && globalStore.get(getSettingsKeyAtom("waveai:hidegettingstarted"))) {
+        menu.push({
+            label: t("ai.showGettingStarted"),
+            click: () => {
+                RpcApi.SetConfigCommand(TabRpcClient, { "waveai:hidegettingstarted": null });
+            },
+        });
+    }
 
     menu.push({
         label: t("ai.configureModes"),

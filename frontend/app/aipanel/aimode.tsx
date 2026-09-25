@@ -141,6 +141,7 @@ interface AIModeDropdownProps {
     compatibilityMode?: boolean;
 }
 
+// lives in the input toolbar, so the menu opens upward
 export const AIModeDropdown = memo(({ compatibilityMode = false }: AIModeDropdownProps) => {
     const t = useT();
     const model = WaveAIModel.getInstance();
@@ -217,33 +218,34 @@ export const AIModeDropdown = memo(({ compatibilityMode = false }: AIModeDropdow
     };
 
     return (
-        <div className="relative" ref={dropdownRef}>
+        <div className="relative flex items-center min-w-0" ref={dropdownRef}>
             <button
+                type="button"
                 onClick={() => setIsOpen(!isOpen)}
                 className={cn(
-                    "group flex items-center gap-1.5 px-2 py-1 text-xs text-secondary hover:text-primary rounded transition-colors cursor-pointer border border-border/50",
-                    isOpen ? "bg-raise" : "bg-raise/50 hover:bg-raise"
+                    "group flex items-center gap-1.5 px-1.5 py-0.5 text-secondary hover:text-primary rounded transition-colors cursor-pointer min-w-0",
+                    isOpen ? "bg-hoverbg text-primary" : "hover:bg-hoverbg"
                 )}
                 title={t("ai.aiModeTitle", { name: displayName })}
             >
-                <i className={cn(makeIconClass(displayIcon, false), "text-[10px]")}></i>
-                <span className={`text-[11px]`}>{displayName}</span>
-                <i className="fa fa-chevron-down text-[8px]"></i>
+                <i className={cn(makeIconClass(displayIcon, false), "text-[10px] flex-shrink-0")}></i>
+                <span className="text-[11px] truncate max-w-[140px]">{displayName}</span>
+                <i className="fa fa-chevron-down text-[8px] flex-shrink-0"></i>
             </button>
 
             {showNoToolsWarning && (
-                <Tooltip content={<div className="max-w-xs">{t("ai.noToolsWarning")}</div>} placement="bottom">
-                    <div className="flex items-center gap-1 text-[10px] text-warning mt-1 ml-1 cursor-default">
-                        <i className="fa fa-triangle-exclamation"></i>
-                        <span>{t("ai.noToolsSupport")}</span>
-                    </div>
+                <Tooltip content={<div className="max-w-xs">{t("ai.noToolsWarning")}</div>} placement="top">
+                    <i
+                        className="fa fa-triangle-exclamation text-[10px] text-warning ml-0.5 cursor-default"
+                        aria-label={t("ai.noToolsSupport")}
+                    ></i>
                 </Tooltip>
             )}
 
             {isOpen && (
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-                    <div className="absolute top-full left-0 mt-1 bg-raise border border-border rounded shadow-lg z-50 min-w-[280px]">
+                    <div className="absolute bottom-full left-0 mb-1 bg-raise border border-border rounded shadow-lg z-50 min-w-[280px] max-w-[calc(100vw-32px)] max-h-[60vh] overflow-y-auto">
                         {sections.map((section, sectionIndex) => {
                             const isFirstSection = sectionIndex === 0;
                             const isLastSection = sectionIndex === sections.length - 1;

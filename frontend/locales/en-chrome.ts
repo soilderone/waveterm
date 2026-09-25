@@ -62,6 +62,7 @@ export const enChrome: Record<string, string> = {
     "chrome.activeSuffix": " (Active)",
 
     "chrome.copy": "Copy",
+    "chrome.insertIntoTerminal": "Insert into terminal",
     "chrome.failedRenderDiagram": "Failed to render diagram: {error}",
     "chrome.diagramError": "Error: {error}",
     "chrome.loadingDiagram": "Loading diagram...",

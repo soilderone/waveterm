@@ -5,12 +5,12 @@ import { WaveStreamdown } from "@/app/element/streamdown";
 import { t } from "@/util/i18n";
 import { useT } from "@/util/i18n-hooks";
 import { cn } from "@/util/util";
-import { memo, useEffect, useRef } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import { getFileIcon } from "./ai-utils";
-import { AIFeedbackButtons } from "./aifeedbackbuttons";
+import { AIAssistantActions, AIUserActions } from "./aimessageactions";
 import { AIToolUseGroup } from "./aitooluse";
 import { WaveUIMessage, WaveUIMessagePart } from "./aitypes";
-import { WaveAIModel } from "./waveai-model";
+import { getMessageText, WaveAIModel } from "./waveai-model";
 
 const AIThinking = memo(
     ({
@@ -62,6 +62,31 @@ const AIThinking = memo(
 );
 
 AIThinking.displayName = "AIThinking";
+
+const AIReasoningBlock = memo(({ text }: { text: string }) => {
+    const t = useT();
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <div className="text-[12px]">
+            <button
+                onClick={() => setIsOpen(!isOpen)}
+                className="flex items-center gap-1.5 text-muted hover:text-secondary cursor-pointer transition-colors"
+            >
+                <i className={cn("fa fa-chevron-right text-[9px] transition-transform", isOpen && "rotate-90")}></i>
+                <i className="fa fa-brain text-[10px]"></i>
+                <span>{t("ai.reasoning")}</span>
+            </button>
+            {isOpen && (
+                <div className="mt-1 ml-1 pl-3 border-l-2 border-border text-muted whitespace-pre-wrap break-words max-h-[300px] overflow-y-auto">
+                    {text}
+                </div>
+            )}
+        </div>
+    );
+});
+
+AIReasoningBlock.displayName = "AIReasoningBlock";
 
 interface UserMessageFilesProps {
     fileParts: Array<WaveUIMessagePart & { type: "data-userfile" }>;
@@ -118,6 +143,10 @@ interface AIMessagePartProps {
 const AIMessagePart = memo(({ part, role, isStreaming }: AIMessagePartProps) => {
     const model = WaveAIModel.getInstance();
 
+    if (part.type === "reasoning") {
+        return <AIReasoningBlock text={part.text ?? ""} />;
+    }
+
     if (part.type === "text") {
         const content = part.text ?? "";
 
@@ -130,6 +159,7 @@ const AIMessagePart = memo(({ part, role, isStreaming }: AIMessagePartProps) => 
                     parseIncompleteMarkdown={isStreaming}
                     className="text-primary"
                     codeBlockMaxWidthAtom={model.codeBlockMaxWidth}
+                    onClickExecute={model.inBuilder ? undefined : model.handleInsertIntoTerminal}
                 />
             );
         }
@@ -143,6 +173,8 @@ AIMessagePart.displayName = "AIMessagePart";
 interface AIMessageProps {
     message: WaveUIMessage;
     isStreaming: boolean;
+    isLast: boolean;
+    isChatBusy: boolean;
 }
 
 const isDisplayPart = (part: WaveUIMessagePart): boolean => {
@@ -212,10 +244,15 @@ const getThinkingMessage = (
     return { message: "" };
 };
 
-export const AIMessage = memo(({ message, isStreaming }: AIMessageProps) => {
+export const AIMessage = memo(({ message, isStreaming, isLast, isChatBusy }: AIMessageProps) => {
     const t = useT();
     const parts = message.parts || [];
-    const displayParts = parts.filter(isDisplayPart);
+    const lastPart = parts[parts.length - 1];
+    // while it is still streaming, the last reasoning part is shown live by AIThinking instead
+    const displayParts = parts.filter(
+        (part) =>
+            isDisplayPart(part) || (part.type === "reasoning" && !!part.text && !(isStreaming && part === lastPart))
+    );
     const fileParts = parts.filter(
         (part): part is WaveUIMessagePart & { type: "data-userfile" } => part.type === "data-userfile"
     );
@@ -223,8 +260,10 @@ export const AIMessage = memo(({ message, isStreaming }: AIMessageProps) => {
     const thinkingData = getThinkingMessage(parts, isStreaming, message.role);
     const groupedParts = groupMessageParts(displayParts);
 
+    const isUser = message.role === "user";
+
     return (
-        <div className={cn("flex", message.role === "user" ? "justify-end" : "justify-start")}>
+        <div className={cn("flex", isUser ? "flex-col items-end group" : "justify-start")}>
             <div
                 className={cn(
                     "px-2 rounded-lg [&>*:first-child]:!mt-0",
@@ -258,16 +297,17 @@ export const AIMessage = memo(({ message, isStreaming }: AIMessageProps) => {
                     </>
                 )}
 
-                {message.role === "user" && <UserMessageFiles fileParts={fileParts} />}
+                {isUser && <UserMessageFiles fileParts={fileParts} />}
                 {message.role === "assistant" && !isStreaming && displayParts.length > 0 && (
-                    <AIFeedbackButtons
-                        messageText={parts
-                            .filter((p) => p.type === "text")
-                            .map((p) => p.text || "")
-                            .join("\n\n")}
+                    <AIAssistantActions
+                        messageText={getMessageText(message)}
+                        canRegenerate={isLast && !isChatBusy}
                     />
                 )}
             </div>
+            {isUser && (
+                <AIUserActions messageId={message.id} messageText={getMessageText(message)} canEdit={!isChatBusy} />
+            )}
         </div>
     );
 });

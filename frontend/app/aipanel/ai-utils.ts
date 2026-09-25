@@ -622,3 +622,98 @@ export function getModeDisplayDescription(config: AIModeConfigType): string {
     const key = BuilderModeDescriptionKeys[description];
     return key ? t(key) : description;
 }
+
+export type WaveAIAccessLevel = "off" | "readonly" | "collab" | "trust";
+
+// least to most permissive; mirrors the AccessLevel* consts in pkg/aiusechat/uctypes/uctypes.go
+export const WaveAIAccessLevels: WaveAIAccessLevel[] = ["off", "readonly", "collab", "trust"];
+
+export const WaveAIAccessLevelIcons: Record<WaveAIAccessLevel, string> = {
+    off: "lock",
+    readonly: "eye",
+    collab: "handshake",
+    trust: "shield-check",
+};
+
+export function normalizeAccessLevel(level: string): WaveAIAccessLevel {
+    if (WaveAIAccessLevels.includes(level as WaveAIAccessLevel)) {
+        return level as WaveAIAccessLevel;
+    }
+    return "collab";
+}
+
+export interface BlockContextLabel {
+    icon: string;
+    label: string;
+    detail?: string;
+}
+
+function lastPathSegments(path: string, count: number): string {
+    const parts = path.split(/[\\/]+/).filter((p) => p !== "");
+    if (parts.length <= count) {
+        return path;
+    }
+    return "…/" + parts.slice(parts.length - count).join("/");
+}
+
+// null means the block is not something the AI can meaningfully be pointed at
+export function getBlockContextLabel(block: Block): BlockContextLabel | null {
+    const meta = block?.meta;
+    if (meta == null) {
+        return null;
+    }
+    const connection = meta.connection;
+    if (meta.view === "term") {
+        const cwd = meta["cmd:cwd"];
+        return {
+            icon: "terminal",
+            label: connection || t("ai.contextLocalTerminal"),
+            detail: cwd ? lastPathSegments(cwd, 2) : undefined,
+        };
+    }
+    if (meta.view === "preview") {
+        const file = meta.file;
+        if (!file) {
+            return null;
+        }
+        return { icon: "file-lines", label: lastPathSegments(file, 1), detail: connection || undefined };
+    }
+    if (meta.view === "web") {
+        const url = meta.url;
+        if (!url) {
+            return null;
+        }
+        let host = url;
+        try {
+            host = new URL(url).host || url;
+        } catch {
+            // not a parseable URL, show it as-is
+        }
+        return { icon: "globe", label: host };
+    }
+    return null;
+}
+
+// models often echo prompts ("$ ls") in shell snippets; those would be pasted as part of the command
+export function stripShellPrompts(code: string): string {
+    const text = code.replace(/\n+$/, "");
+    const lines = text.split("\n");
+    const nonEmpty = lines.filter((line) => line.trim() !== "");
+    if (nonEmpty.length === 0 || !nonEmpty.every((line) => /^\s*\$ /.test(line))) {
+        return text;
+    }
+    return lines.map((line) => line.replace(/^\s*\$ /, "")).join("\n");
+}
+
+export function formatTokenCount(count: number): string {
+    if (count == null || count <= 0) {
+        return "0";
+    }
+    if (count < 1000) {
+        return String(count);
+    }
+    if (count < 1000000) {
+        return `${(count / 1000).toFixed(count < 10000 ? 1 : 0)}k`;
+    }
+    return `${(count / 1000000).toFixed(1)}M`;
+}

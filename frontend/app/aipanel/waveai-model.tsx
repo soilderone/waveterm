@@ -8,17 +8,26 @@ import {
     WaveUIMessagePart,
 } from "@/app/aipanel/aitypes";
 import { FocusManager } from "@/app/store/focusManager";
-import { atoms, createBlock, getOrefMetaKeyAtom, getSettingsKeyAtom } from "@/app/store/global";
+import {
+    atoms,
+    createBlock,
+    getBlockComponentModel,
+    getOrefMetaKeyAtom,
+    getSettingsKeyAtom,
+} from "@/app/store/global";
 import { globalStore } from "@/app/store/jotaiStore";
 import { isBuilderWindow } from "@/app/store/windowtype";
 import * as WOS from "@/app/store/wos";
 import { RpcApi } from "@/app/store/wshclientapi";
 import { TabRpcClient } from "@/app/store/wshrpcutil";
+import type { TermViewModel } from "@/app/view/term/term-model";
 import { WorkspaceLayoutModel } from "@/app/workspace/workspace-layout-model";
 import { BuilderFocusManager } from "@/builder/store/builder-focusmanager";
+import { getLayoutModelForStaticTab } from "@/layout/index";
 import { getWebServerEndpoint } from "@/util/endpoints";
 import { t } from "@/util/i18n";
-import { base64ToArrayBuffer } from "@/util/util";
+import { base64ToArrayBuffer, fireAndForget } from "@/util/util";
+import { formatRemoteUri } from "@/util/waveutil";
 import { ChatStatus } from "ai";
 import * as jotai from "jotai";
 import type React from "react";
@@ -27,9 +36,12 @@ import {
     createImagePreview,
     formatFileSizeError,
     isAcceptableFile,
+    normalizeAccessLevel,
     normalizeMimeType,
     resizeImage,
+    stripShellPrompts,
     validateFileSizeFromInfo,
+    type WaveAIAccessLevel,
 } from "./ai-utils";
 import type { AIPanelInputRef } from "./aipanelinput";
 
@@ -40,6 +52,28 @@ export interface DroppedFile {
     type: string;
     size: number;
     previewUrl?: string;
+}
+
+export interface WaveAIChatUsage {
+    inputtokens: number;
+    outputtokens: number;
+    contexttokens: number;
+}
+
+export interface FailedCommandInfo {
+    cmd: string;
+    exitCode: number;
+    output: string;
+}
+
+const FailedCommandOutputMaxChars = 8000;
+
+export function getMessageText(message: WaveUIMessage): string {
+    return (message?.parts ?? [])
+        .filter((part) => part.type === "text")
+        .map((part) => (part as { text?: string }).text ?? "")
+        .join("\n\n")
+        .trim();
 }
 
 const BuilderAIModeConfigs: Record<string, AIModeConfigType> = {
@@ -71,13 +105,24 @@ export class WaveAIModel {
     useChatSetMessages: UseChatSetMessagesType | null = null;
     useChatStatus: ChatStatus = "ready";
     useChatStop: (() => void) | null = null;
+    useChatMessages: WaveUIMessage[] = [];
     // Used for injecting Wave-specific message data into DefaultChatTransport's prepareSendMessagesRequest
     realMessage: AIMessage | null = null;
+    regenerateNext: boolean = false;
+    // stable identity: WaveStreamdown rebuilds its markdown components (and re-highlights code) when this changes
+    handleInsertIntoTerminal = (code: string) => {
+        this.insertIntoTerminal(code);
+    };
     orefContext: ORef;
     inBuilder: boolean = false;
     isAIStreaming = jotai.atom(false);
 
+    accessLevelAtom!: jotai.Atom<WaveAIAccessLevel>;
     widgetAccessAtom!: jotai.Atom<boolean>;
+    tabBlocksAtom!: jotai.Atom<Block[]>;
+    focusedBlockIdAtom!: jotai.Atom<string>;
+    editingMessageIdAtom: jotai.PrimitiveAtom<string> = jotai.atom(null) as jotai.PrimitiveAtom<string>;
+    chatUsageAtom: jotai.PrimitiveAtom<WaveAIChatUsage> = jotai.atom(null) as jotai.PrimitiveAtom<WaveAIChatUsage>;
     droppedFiles: jotai.PrimitiveAtom<DroppedFile[]> = jotai.atom([]);
     chatId!: jotai.PrimitiveAtom<string>;
     currentAIMode!: jotai.PrimitiveAtom<string>;
@@ -113,13 +158,41 @@ export class WaveAIModel {
             return !rateLimitInfo || rateLimitInfo.unknown || rateLimitInfo.preq > 0;
         });
 
-        this.widgetAccessAtom = jotai.atom((get) => {
+        this.accessLevelAtom = jotai.atom((get) => {
             if (this.inBuilder) {
-                return true;
+                return "collab" as WaveAIAccessLevel;
             }
-            const widgetAccessMetaAtom = getOrefMetaKeyAtom(this.orefContext, "waveai:widgetcontext");
-            const value = get(widgetAccessMetaAtom);
-            return value ?? true;
+            const tabLevel = get(getOrefMetaKeyAtom(this.orefContext, "waveai:accesslevel"));
+            const defaultLevel = get(getSettingsKeyAtom("waveai:defaultaccesslevel"));
+            return normalizeAccessLevel(tabLevel ?? defaultLevel);
+        });
+
+        this.widgetAccessAtom = jotai.atom((get) => get(this.accessLevelAtom) !== "off");
+
+        this.tabBlocksAtom = jotai.atom((get) => {
+            if (this.inBuilder) {
+                return [];
+            }
+            const tab = get(WOS.getWaveObjectAtom<Tab>(this.orefContext));
+            const blocks: Block[] = [];
+            for (const blockId of tab?.blockids ?? []) {
+                const block = get(WOS.getWaveObjectAtom<Block>(WOS.makeORef("block", blockId)));
+                if (block != null) {
+                    blocks.push(block);
+                }
+            }
+            return blocks;
+        });
+
+        this.focusedBlockIdAtom = jotai.atom((get) => {
+            if (this.inBuilder) {
+                return null;
+            }
+            const layoutModel = getLayoutModelForStaticTab();
+            if (layoutModel == null) {
+                return null;
+            }
+            return get(layoutModel.focusedNode)?.data?.blockId ?? null;
         });
 
         this.codeBlockMaxWidth = jotai.atom((get) => {
@@ -294,6 +367,8 @@ export class WaveAIModel {
         this.useChatStop?.();
         this.clearFiles();
         this.clearError();
+        globalStore.set(this.editingMessageIdAtom, null);
+        globalStore.set(this.chatUsageAtom, null);
         globalStore.set(this.isChatEmptyAtom, true);
         const newChatId = crypto.randomUUID();
         globalStore.set(this.chatId, newChatId);
@@ -326,12 +401,14 @@ export class WaveAIModel {
         sendMessage: UseChatSendMessageType,
         setMessages: UseChatSetMessagesType,
         status: ChatStatus,
-        stop: () => void
+        stop: () => void,
+        messages: WaveUIMessage[]
     ) {
         this.useChatSendMessage = sendMessage;
         this.useChatSetMessages = setMessages;
         this.useChatStatus = status;
         this.useChatStop = stop;
+        this.useChatMessages = messages;
     }
 
     scrollToBottom() {
@@ -351,7 +428,37 @@ export class WaveAIModel {
         const chatData = await RpcApi.GetWaveAIChatCommand(TabRpcClient, { chatid: chatIdValue });
         const messages: UIMessage[] = chatData?.messages ?? [];
         globalStore.set(this.isChatEmptyAtom, messages.length === 0);
+        this.setChatUsage(chatData);
         return messages as WaveUIMessage[];
+    }
+
+    setChatUsage(chatData: UIChat) {
+        const usage = chatData?.usage;
+        if (usage == null || (!usage.inputtokens && !usage.outputtokens)) {
+            globalStore.set(this.chatUsageAtom, null);
+            return;
+        }
+        globalStore.set(this.chatUsageAtom, {
+            inputtokens: usage.inputtokens ?? 0,
+            outputtokens: usage.outputtokens ?? 0,
+            contexttokens: chatData.contexttokens ?? 0,
+        });
+    }
+
+    async refreshChatUsage() {
+        const chatIdValue = globalStore.get(this.chatId);
+        if (!chatIdValue) {
+            return;
+        }
+        try {
+            const chatData = await RpcApi.GetWaveAIChatCommand(TabRpcClient, { chatid: chatIdValue });
+            if (globalStore.get(this.chatId) !== chatIdValue) {
+                return;
+            }
+            this.setChatUsage(chatData);
+        } catch (error) {
+            console.error("Failed to refresh chat usage:", error);
+        }
     }
 
     async stopResponse() {
@@ -374,6 +481,20 @@ export class WaveAIModel {
         const msg = this.realMessage;
         this.realMessage = null;
         return msg;
+    }
+
+    getAndClearRegenerate(): boolean {
+        const regenerate = this.regenerateNext;
+        this.regenerateNext = false;
+        return regenerate;
+    }
+
+    isBusy(): boolean {
+        return (
+            this.useChatStatus === "streaming" ||
+            this.useChatStatus === "submitted" ||
+            globalStore.get(this.isLoadingChatAtom)
+        );
     }
 
     hasNonEmptyInput(): boolean {
@@ -410,10 +531,10 @@ export class WaveAIModel {
         });
     }
 
-    setWidgetAccess(enabled: boolean) {
+    setAccessLevel(level: WaveAIAccessLevel) {
         RpcApi.SetMetaCommand(TabRpcClient, {
             oref: this.orefContext,
-            meta: { "waveai:widgetcontext": enabled },
+            meta: { "waveai:accesslevel": level },
         });
     }
 
@@ -524,6 +645,11 @@ export class WaveAIModel {
 
         this.clearError();
 
+        const editingMessageId = globalStore.get(this.editingMessageIdAtom);
+        if (editingMessageId) {
+            await this.truncateBeforeMessage(editingMessageId);
+        }
+
         const aiMessageParts: AIMessagePart[] = [];
         const uiMessageParts: WaveUIMessagePart[] = [];
 
@@ -564,7 +690,8 @@ export class WaveAIModel {
 
         // console.log("SUBMIT MESSAGE", realMessage);
 
-        this.useChatSendMessage?.({ parts: uiMessageParts });
+        // the UI message shares the backend message id so edit/regenerate can truncate the stored chat at it
+        this.useChatSendMessage?.({ id: realMessage.messageid, parts: uiMessageParts });
 
         globalStore.set(this.isChatEmptyAtom, false);
         globalStore.set(this.inputAtom, "");
@@ -596,17 +723,208 @@ export class WaveAIModel {
         }
     }
 
-    handleAIFeedback(feedback: "good" | "bad") {
-        RpcApi.RecordTEventCommand(
-            TabRpcClient,
-            {
-                event: "waveai:feedback",
-                props: {
-                    "waveai:feedback": feedback,
-                },
-            },
-            { noresponse: true }
-        );
+    async truncateBeforeMessage(messageId: string) {
+        globalStore.set(this.editingMessageIdAtom, null);
+        const messages = this.useChatMessages;
+        const idx = messages.findIndex((msg) => msg.id === messageId);
+        if (idx === -1) {
+            return;
+        }
+        try {
+            await RpcApi.WaveAITruncateChatCommand(TabRpcClient, {
+                chatid: globalStore.get(this.chatId),
+                messageid: messageId,
+            });
+        } catch (error) {
+            console.error("Failed to truncate chat for edit:", error);
+        }
+        this.useChatSetMessages?.(messages.slice(0, idx));
+    }
+
+    startEditMessage(messageId: string) {
+        if (this.isBusy()) {
+            return;
+        }
+        const message = this.useChatMessages.find((msg) => msg.id === messageId);
+        if (message == null || message.role !== "user") {
+            return;
+        }
+        globalStore.set(this.editingMessageIdAtom, messageId);
+        globalStore.set(this.inputAtom, getMessageText(message));
+        this.focusInput();
+    }
+
+    cancelEditMessage() {
+        globalStore.set(this.editingMessageIdAtom, null);
+        globalStore.set(this.inputAtom, "");
+    }
+
+    async regenerateLastResponse() {
+        if (this.isBusy()) {
+            return;
+        }
+        const messages = this.useChatMessages;
+        let lastUserIdx = -1;
+        for (let i = messages.length - 1; i >= 0; i--) {
+            if (messages[i].role === "user") {
+                lastUserIdx = i;
+                break;
+            }
+        }
+        if (lastUserIdx === -1) {
+            return;
+        }
+        const lastUser = messages[lastUserIdx];
+        this.clearError();
+        let truncated = false;
+        try {
+            truncated = await RpcApi.WaveAITruncateChatCommand(TabRpcClient, {
+                chatid: globalStore.get(this.chatId),
+                messageid: lastUser.id,
+                keepmessage: true,
+            });
+        } catch (error) {
+            console.error("Failed to truncate chat for regenerate:", error);
+        }
+        if (truncated) {
+            this.useChatSetMessages?.(messages.slice(0, lastUserIdx + 1));
+            this.regenerateNext = true;
+            this.useChatSendMessage?.();
+            return;
+        }
+        // the backend never stored this turn (the request failed before it was posted), so send its text again;
+        // attachments are not kept in the UI message and cannot be resent this way
+        const text = getMessageText(lastUser);
+        if (!text) {
+            return;
+        }
+        this.useChatSetMessages?.(messages.slice(0, lastUserIdx));
+        globalStore.set(this.inputAtom, text);
+        await this.handleSubmit();
+    }
+
+    // newest first
+    getUserPromptHistory(): string[] {
+        const history: string[] = [];
+        for (let i = this.useChatMessages.length - 1; i >= 0; i--) {
+            const message = this.useChatMessages[i];
+            if (message.role !== "user") {
+                continue;
+            }
+            const text = getMessageText(message);
+            if (text && history[history.length - 1] !== text) {
+                history.push(text);
+            }
+        }
+        return history;
+    }
+
+    async submitPrompt(text: string) {
+        if (this.isBusy()) {
+            return;
+        }
+        globalStore.set(this.inputAtom, text);
+        await this.handleSubmit();
+    }
+
+    getTermViewModel(blockId: string): TermViewModel | null {
+        const viewModel = getBlockComponentModel(blockId)?.viewModel;
+        if (viewModel?.viewType !== "term") {
+            return null;
+        }
+        return viewModel as TermViewModel;
+    }
+
+    findTargetTermBlockId(): string | null {
+        const blocks = globalStore.get(this.tabBlocksAtom);
+        const isShellTerm = (block: Block) => block.meta?.view === "term" && block.meta?.controller !== "cmd";
+        const focusedBlockId = globalStore.get(this.focusedBlockIdAtom);
+        const focused = blocks.find((block) => block.oid === focusedBlockId);
+        if (focused != null && isShellTerm(focused)) {
+            return focused.oid;
+        }
+        return blocks.find(isShellTerm)?.oid ?? null;
+    }
+
+    focusBlock(blockId: string) {
+        const layoutModel = getLayoutModelForStaticTab();
+        const node = layoutModel?.getNodeByBlockId(blockId);
+        if (node == null) {
+            return;
+        }
+        layoutModel.focusNode(node.id);
+        FocusManager.getInstance().setBlockFocus(true);
+    }
+
+    // pasted (not typed) so bracketed paste keeps multi-line snippets from running line by line; never presses Enter
+    insertIntoTerminal(code: string) {
+        const blockId = this.findTargetTermBlockId();
+        const terminal = blockId ? this.getTermViewModel(blockId)?.termRef?.current?.terminal : null;
+        if (terminal == null) {
+            this.setError(t("ai.noTerminalToInsert"));
+            return;
+        }
+        terminal.paste(stripShellPrompts(code));
+        this.focusBlock(blockId);
+    }
+
+    attachTerminalOutput(blockId: string, label: string) {
+        const text = this.getTermViewModel(blockId)?.getRecentOutputText();
+        if (!text) {
+            this.setError(t("ai.terminalOutputUnavailable"));
+            return;
+        }
+        const safeName = label.replace(/[^\w.-]+/g, "-").replace(/^-+|-+$/g, "") || "terminal";
+        const file = new File([text], `${safeName}-output.txt`, { type: "text/plain" });
+        fireAndForget(() => this.addFile(file));
+    }
+
+    attachBlockContext(block: Block) {
+        const meta = block?.meta;
+        if (meta == null) {
+            return;
+        }
+        if (meta.view === "term") {
+            this.attachTerminalOutput(block.oid, meta.connection || "terminal");
+            return;
+        }
+        if (meta.view === "preview" && meta.file) {
+            const relName = meta.file.split(/[\\/]/).filter((part) => part !== "").pop() ?? meta.file;
+            fireAndForget(() =>
+                this.addFileFromRemoteUri({
+                    uri: formatRemoteUri(meta.file, meta.connection),
+                    absParent: "",
+                    relName,
+                    isDir: false,
+                })
+            );
+            return;
+        }
+        if (meta.view === "web" && meta.url) {
+            this.appendText(meta.url);
+        }
+    }
+
+    askAboutFailedCommand(info: FailedCommandInfo) {
+        const workspaceLayoutModel = WorkspaceLayoutModel.getInstance();
+        if (!workspaceLayoutModel.getAIPanelVisible()) {
+            workspaceLayoutModel.setAIPanelVisible(true);
+        }
+        let output = info.output.trim();
+        if (output.length > FailedCommandOutputMaxChars) {
+            output = "…\n" + output.slice(output.length - FailedCommandOutputMaxChars);
+        }
+        const prompt = t("ai.failedCommandPrompt", {
+            cmd: info.cmd || t("ai.unknownCommand"),
+            code: info.exitCode,
+            output: output || t("ai.noCommandOutput"),
+        });
+        if (!this.isBusy() && !this.hasNonEmptyInput()) {
+            fireAndForget(() => this.submitPrompt(prompt));
+            return;
+        }
+        this.appendText(prompt, true, { scrollToBottom: true });
+        this.focusInput();
     }
 
     requestWaveAIFocus() {
@@ -629,10 +947,11 @@ export class WaveAIModel {
         return globalStore.get(this.chatId);
     }
 
-    toolUseSendApproval(toolcallid: string, approval: string) {
+    toolUseSendApproval(toolcallid: string, approval: string, rememberForChat?: boolean) {
         RpcApi.WaveAIToolApproveCommand(TabRpcClient, {
             toolcallid: toolcallid,
             approval: approval,
+            rememberforchat: rememberForChat,
         });
     }
 

@@ -62,6 +62,7 @@ export const zhCNChrome: Record<string, string> = {
     "chrome.activeSuffix": "（已激活）",
 
     "chrome.copy": "复制",
+    "chrome.insertIntoTerminal": "插入到终端",
     "chrome.failedRenderDiagram": "图表渲染失败：{error}",
     "chrome.diagramError": "错误：{error}",
     "chrome.loadingDiagram": "正在加载图表…",

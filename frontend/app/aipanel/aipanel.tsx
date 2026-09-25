@@ -9,19 +9,21 @@ import { atoms, getSettingsKeyAtom } from "@/app/store/global";
 import { globalStore } from "@/app/store/jotaiStore";
 import { useTabModelMaybe } from "@/app/store/tab-model";
 import { isBuilderWindow } from "@/app/store/windowtype";
+import { RpcApi } from "@/app/store/wshclientapi";
+import { TabRpcClient } from "@/app/store/wshrpcutil";
 import { useWaveEnv } from "@/app/waveenv/waveenv";
 import { useT } from "@/util/i18n-hooks";
 import { checkKeyPressed, keydownWrapper } from "@/util/keyutil";
 import { isMacOS, isWindows } from "@/util/platformutil";
-import { cn } from "@/util/util";
+import { cn, fireAndForget, makeIconClass } from "@/util/util";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import * as jotai from "jotai";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useDrop } from "react-dnd";
 import { formatFileSizeError, isAcceptableFile, validateFileSize } from "./ai-utils";
+import { getContextEntries, type ContextEntry } from "./aicontext";
 import { AIDroppedFiles } from "./aidroppedfiles";
-import { AIModeDropdown } from "./aimode";
 import { AIPanelHeader } from "./aipanelheader";
 import { AIPanelInput } from "./aipanelinput";
 import { AIPanelMessages } from "./aipanelmessages";
@@ -77,7 +79,7 @@ const KeyCap = memo(({ children, className }: { children: React.ReactNode; class
     return (
         <kbd
             className={cn(
-                "px-1.5 py-0.5 text-xs bg-raise border border-border rounded-sm shadow-sm font-mono",
+                "px-1 py-px text-[10px] bg-raise border border-border rounded-sm shadow-sm font-mono",
                 className
             )}
         >
@@ -88,93 +90,151 @@ const KeyCap = memo(({ children, className }: { children: React.ReactNode; class
 
 KeyCap.displayName = "KeyCap";
 
-const AIWelcomeMessage = memo(() => {
+interface SuggestedPrompt {
+    icon: string;
+    text: string;
+}
+
+function getSuggestedPrompts(
+    t: (key: string, params?: Record<string, string | number>) => string,
+    accessLevel: string,
+    entries: ContextEntry[],
+    focusedBlockId: string
+): SuggestedPrompt[] {
+    if (accessLevel === "off") {
+        return [
+            { icon: "terminal", text: t("ai.suggestFindLargeFiles") },
+            { icon: "lightbulb", text: t("ai.suggestExplainCommand") },
+            { icon: "code", text: t("ai.suggestShellScript") },
+        ];
+    }
+    const prompts: SuggestedPrompt[] = [];
+    const focused = entries.find((entry) => entry.block.oid === focusedBlockId);
+    if (focused?.block.meta?.view === "preview") {
+        prompts.push({ icon: "file-lines", text: t("ai.suggestExplainFile", { name: focused.label.label }) });
+    }
+    if (entries.some((entry) => entry.block.meta?.view === "term")) {
+        prompts.push({ icon: "terminal", text: t("ai.suggestExplainLastOutput") });
+        prompts.push({ icon: "list-check", text: t("ai.suggestSummarizeTerminal") });
+    }
+    prompts.push({ icon: "folder-open", text: t("ai.suggestWhatProject") });
+    return prompts.slice(0, 3);
+}
+
+const AISuggestedPrompts = memo(() => {
+    const t = useT();
+    const model = WaveAIModel.getInstance();
+    const accessLevel = jotai.useAtomValue(model.accessLevelAtom);
+    const tabBlocks = jotai.useAtomValue(model.tabBlocksAtom);
+    const focusedBlockId = jotai.useAtomValue(model.focusedBlockIdAtom);
+    const prompts = getSuggestedPrompts(t, accessLevel, getContextEntries(tabBlocks), focusedBlockId);
+
+    return (
+        <div className="mt-5 flex flex-col gap-1.5">
+            {prompts.map((prompt) => (
+                <button
+                    key={prompt.text}
+                    onClick={() => fireAndForget(() => model.submitPrompt(prompt.text))}
+                    className="flex items-center gap-2.5 px-3 py-2 text-left text-sm text-secondary bg-raise/50 border border-border rounded-lg hover:border-typeai/50 hover:text-primary cursor-pointer transition-colors"
+                >
+                    <i className={cn(makeIconClass(prompt.icon, false), "w-4 text-center text-[12px] text-typeai")}></i>
+                    <span className="flex-1 min-w-0">{prompt.text}</span>
+                </button>
+            ))}
+        </div>
+    );
+});
+
+AISuggestedPrompts.displayName = "AISuggestedPrompts";
+
+const AIGettingStarted = memo(() => {
     const t = useT();
     const modKey = isMacOS() ? "⌘" : "Alt";
-    const aiModeConfigs = jotai.useAtomValue(atoms.waveaiModeConfigAtom);
-    const hasCustomModes = Object.keys(aiModeConfigs).some((key) => !key.startsWith("waveai@"));
+
+    const handleDismiss = () => {
+        fireAndForget(() => RpcApi.SetConfigCommand(TabRpcClient, { "waveai:hidegettingstarted": true }));
+    };
+
     return (
-        <div className="text-secondary py-8">
-            <div className="text-center">
-                <i className="fa fa-sparkles text-4xl text-typeai mb-2 block"></i>
-                <p className="text-lg font-bold text-primary">{t("ai.welcomeTitle")}</p>
-            </div>
-            <div className="mt-4 text-left max-w-md mx-auto">
-                <p className="text-sm mb-6">{t("ai.welcomeDesc")}</p>
-                <div className="bg-typeai/10 border border-typeai/30 rounded-lg p-4">
-                    <div className="text-sm font-semibold mb-3 text-typeai">{t("ai.gettingStarted")}</div>
-                    <div className="space-y-3 text-sm">
-                        <div className="flex items-start gap-3">
-                            <div className="w-4 text-center flex-shrink-0">
-                                <i className="fa-solid fa-plug text-typeai"></i>
-                            </div>
-                            <div>
-                                <span className="font-bold">{t("ai.widgetContext")}</span>
-                                <div className="">{t("ai.widgetContextOnDesc")}</div>
-                                <div className="">{t("ai.widgetContextOffDesc")}</div>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                            <div className="w-4 text-center flex-shrink-0">
-                                <i className="fa-solid fa-file-import text-typeai"></i>
-                            </div>
-                            <div>{t("ai.dragDropHint")}</div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                            <div className="w-4 text-center flex-shrink-0">
-                                <i className="fa-solid fa-keyboard text-typeai"></i>
-                            </div>
-                            <div className="space-y-1">
-                                <div>
-                                    <KeyCap>{modKey}</KeyCap>
-                                    <KeyCap className="ml-1">K</KeyCap>
-                                    <span className="ml-1.5">{t("ai.shortcutNewChat")}</span>
-                                </div>
-                                <div>
-                                    <KeyCap>{modKey}</KeyCap>
-                                    <KeyCap className="ml-1">Shift</KeyCap>
-                                    <KeyCap className="ml-1">A</KeyCap>
-                                    <span className="ml-1.5">{t("ai.shortcutTogglePanel")}</span>
-                                </div>
-                                <div>
-                                    {isWindows() ? (
-                                        <>
-                                            <KeyCap>Alt</KeyCap>
-                                            <KeyCap className="ml-1">0</KeyCap>
-                                            <span className="ml-1.5">{t("ai.shortcutFocus")}</span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <KeyCap>Ctrl</KeyCap>
-                                            <KeyCap className="ml-1">Shift</KeyCap>
-                                            <KeyCap className="ml-1">0</KeyCap>
-                                            <span className="ml-1.5">{t("ai.shortcutFocus")}</span>
-                                        </>
-                                    )}
-                                </div>
-                            </div>
-                        </div>
-                        <div className="flex items-start gap-3">
-                            <div className="w-4 text-center flex-shrink-0">
-                                <i className="fa-brands fa-discord text-typeai"></i>
-                            </div>
-                            <div>
-                                {t("ai.questionsFeedback")}{" "}
-                                <a
-                                    target="_blank"
-                                    href="https://discord.gg/XfvZ334gwU"
-                                    rel="noopener"
-                                    className="text-typeai hover:underline cursor-pointer"
-                                >
-                                    {t("ai.joinDiscord")}
-                                </a>
-                            </div>
-                        </div>
+        <div className="mt-5 bg-typeai/5 border border-typeai/20 rounded-lg px-3 py-2.5 text-[12px] relative">
+            <button
+                onClick={handleDismiss}
+                className="absolute top-1.5 right-1.5 w-5 h-5 flex items-center justify-center rounded text-muted hover:text-primary hover:bg-hoverbg cursor-pointer transition-colors"
+                title={t("ai.dismiss")}
+            >
+                <i className="fa fa-xmark text-[11px]"></i>
+            </button>
+            <div className="text-[11px] font-semibold mb-2 text-typeai">{t("ai.gettingStarted")}</div>
+            <div className="space-y-1.5 pr-4">
+                <div className="flex items-start gap-2">
+                    <i className="fa-solid fa-shield-check text-typeai w-3.5 text-center mt-0.5"></i>
+                    <span>{t("ai.tipAccessLevel")}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                    <i className="fa-solid fa-at text-typeai w-3.5 text-center mt-0.5"></i>
+                    <span>{t("ai.tipMentions")}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                    <i className="fa-solid fa-keyboard text-typeai w-3.5 text-center mt-0.5"></i>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                        <span>
+                            <KeyCap>{modKey}</KeyCap>
+                            <KeyCap className="ml-0.5">K</KeyCap>
+                            <span className="ml-1">{t("ai.shortcutNewChat")}</span>
+                        </span>
+                        <span>
+                            <KeyCap>{modKey}</KeyCap>
+                            <KeyCap className="ml-0.5">Shift</KeyCap>
+                            <KeyCap className="ml-0.5">A</KeyCap>
+                            <span className="ml-1">{t("ai.shortcutTogglePanel")}</span>
+                        </span>
+                        <span>
+                            {isWindows() ? (
+                                <>
+                                    <KeyCap>Alt</KeyCap>
+                                    <KeyCap className="ml-0.5">0</KeyCap>
+                                </>
+                            ) : (
+                                <>
+                                    <KeyCap>Ctrl</KeyCap>
+                                    <KeyCap className="ml-0.5">Shift</KeyCap>
+                                    <KeyCap className="ml-0.5">0</KeyCap>
+                                </>
+                            )}
+                            <span className="ml-1">{t("ai.shortcutFocus")}</span>
+                        </span>
+                        <span>
+                            <KeyCap>↑</KeyCap>
+                            <span className="ml-1">{t("ai.shortcutPrevPrompt")}</span>
+                        </span>
                     </div>
                 </div>
-                {!hasCustomModes && <BYOKAnnouncement />}
-                <div className="mt-4 text-center text-[12px] text-muted">{t("ai.betaNotice")}</div>
             </div>
+        </div>
+    );
+});
+
+AIGettingStarted.displayName = "AIGettingStarted";
+
+const AIWelcomeMessage = memo(() => {
+    const t = useT();
+    const model = WaveAIModel.getInstance();
+    const aiModeConfigs = jotai.useAtomValue(atoms.waveaiModeConfigAtom);
+    const currentMode = jotai.useAtomValue(model.currentAIMode);
+    const hideGettingStarted = jotai.useAtomValue(getSettingsKeyAtom("waveai:hidegettingstarted")) ?? false;
+    const hasCustomModes = Object.keys(aiModeConfigs).some((key) => !key.startsWith("waveai@"));
+    const isCloudMode = currentMode?.startsWith("waveai@") ?? false;
+    return (
+        <div className="text-secondary py-6 px-1 max-w-md mx-auto">
+            <div className="flex flex-col items-center text-center">
+                <i className="fa fa-sparkles text-2xl text-typeai mb-2"></i>
+                <p className="text-base font-semibold text-primary">{t("ai.welcomeTitle")}</p>
+                <p className="text-[12px] text-muted mt-1">{t("ai.welcomeSubtitle")}</p>
+            </div>
+            <AISuggestedPrompts />
+            {!hideGettingStarted && <AIGettingStarted />}
+            {!hasCustomModes && <BYOKAnnouncement />}
+            {isCloudMode && <div className="mt-4 text-center text-[11px] text-muted">{t("ai.betaNotice")}</div>}
         </div>
     );
 });
@@ -202,6 +262,7 @@ const AIErrorMessage = memo(() => {
     const t = useT();
     const model = WaveAIModel.getInstance();
     const errorMessage = jotai.useAtomValue(model.errorMessage);
+    const isChatEmpty = jotai.useAtomValue(model.isChatEmptyAtom);
 
     if (!errorMessage) {
         return null;
@@ -218,6 +279,14 @@ const AIErrorMessage = memo(() => {
             </button>
             <div className="text-sm pr-6 max-h-[100px] overflow-y-auto">
                 {errorMessage}
+                {!isChatEmpty && (
+                    <button
+                        onClick={() => fireAndForget(() => model.regenerateLastResponse())}
+                        className="ml-2 text-xs text-error hover:text-error/80 cursor-pointer underline"
+                    >
+                        {t("ai.retry")}
+                    </button>
+                )}
                 <button
                     onClick={() => model.clearChat()}
                     className="ml-2 text-xs text-error hover:text-error/80 cursor-pointer underline"
@@ -280,14 +349,18 @@ const AIPanelComponentInner = memo(({ roundTopLeft }: AIPanelComponentInnerProps
                 const body: any = {
                     msg,
                     chatid: globalStore.get(model.chatId),
-                    widgetaccess: globalStore.get(model.widgetAccessAtom),
+                    accesslevel: globalStore.get(model.accessLevelAtom),
                     aimode: globalStore.get(model.currentAIMode),
                 };
+                if (model.getAndClearRegenerate()) {
+                    body.regenerate = true;
+                }
                 if (isBuilderWindow()) {
                     body.builderid = globalStore.get(atoms.builderId);
                     body.builderappid = globalStore.get(atoms.builderAppId);
                 } else {
                     body.tabid = tabModel.tabId;
+                    body.focusedblockid = globalStore.get(model.focusedBlockIdAtom);
                 }
                 return { body };
             },
@@ -298,7 +371,7 @@ const AIPanelComponentInner = memo(({ roundTopLeft }: AIPanelComponentInnerProps
         },
     });
 
-    model.registerUseChatData(sendMessage, setMessages, status, stop);
+    model.registerUseChatData(sendMessage, setMessages, status, stop, messages);
 
     // console.log("AICHAT messages", messages);
     (window as any).aichatmessages = messages;
@@ -312,8 +385,14 @@ const AIPanelComponentInner = memo(({ roundTopLeft }: AIPanelComponentInnerProps
         return false;
     };
 
+    const prevStatusRef = useRef(status);
     useEffect(() => {
         globalStore.set(model.isAIStreaming, status === "streaming" || status === "submitted");
+        const wasBusy = prevStatusRef.current === "streaming" || prevStatusRef.current === "submitted";
+        prevStatusRef.current = status;
+        if (wasBusy && (status === "ready" || status === "error")) {
+            fireAndForget(() => model.refreshChatUsage());
+        }
     }, [status]);
 
     useEffect(() => {
@@ -594,9 +673,6 @@ const AIPanelComponentInner = memo(({ roundTopLeft }: AIPanelComponentInnerProps
                                 className="flex-1 overflow-y-auto p-2 relative"
                                 onContextMenu={(e) => handleWaveAIContextMenu(e, true)}
                             >
-                                <div className="absolute top-2 left-2 z-10">
-                                    <AIModeDropdown />
-                                </div>
                                 {model.inBuilder ? <AIBuilderWelcomeMessage /> : <AIWelcomeMessage />}
                             </div>
                         ) : (

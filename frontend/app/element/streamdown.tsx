@@ -15,6 +15,23 @@ import { throttle } from "throttle-debounce";
 const DarkShikiTheme = "github-dark-high-contrast";
 const LightShikiTheme = "github-light-high-contrast";
 
+// onClickExecute sends a snippet to a shell, so only offer it for languages a shell would accept
+const ShellCodeLanguages = new Set([
+    "sh",
+    "bash",
+    "zsh",
+    "fish",
+    "shell",
+    "shellscript",
+    "console",
+    "terminal",
+    "powershell",
+    "ps1",
+    "pwsh",
+    "cmd",
+    "bat",
+]);
+
 function extractText(node: React.ReactNode): string {
     if (node == null || typeof node === "boolean") return "";
     if (typeof node === "string" || typeof node === "number") return String(node);
@@ -154,6 +171,7 @@ const CodeBlock = ({ children, onClickExecute, codeBlockMaxWidthAtom }: CodeBloc
     };
 
     const language = getLanguage(children);
+    const showExecute = onClickExecute != null && ShellCodeLanguages.has(language.toLowerCase());
 
     return (
         <div
@@ -168,11 +186,12 @@ const CodeBlock = ({ children, onClickExecute, codeBlockMaxWidthAtom }: CodeBloc
                 <span className="text-[11px] text-secondary">{language}</span>
                 <div className="flex items-center gap-2">
                     <CopyButton onClick={handleCopy} title={t("chrome.copy")} />
-                    {onClickExecute && (
+                    {showExecute && (
                         <IconButton
                             decl={{
                                 elemtype: "iconbutton",
                                 icon: "regular@square-terminal",
+                                title: t("chrome.insertIntoTerminal"),
                                 click: handleExecute,
                             }}
                         />

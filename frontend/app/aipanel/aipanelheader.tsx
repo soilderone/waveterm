@@ -3,14 +3,13 @@
 
 import { handleWaveAIContextMenu } from "@/app/aipanel/aipanel-contextmenu";
 import { useT } from "@/util/i18n-hooks";
-import { useAtomValue } from "jotai";
 import { memo } from "react";
+import { AIAccessLevelDropdown } from "./aiaccesslevel";
 import { WaveAIModel } from "./waveai-model";
 
 export const AIPanelHeader = memo(() => {
     const t = useT();
     const model = WaveAIModel.getInstance();
-    const widgetAccess = useAtomValue(model.widgetAccessAtom);
     const inBuilder = model.inBuilder;
 
     const handleKebabClick = (e: React.MouseEvent) => {
@@ -23,54 +22,19 @@ export const AIPanelHeader = memo(() => {
 
     return (
         <div
-            className="py-2 pl-3 pr-1 @xs:p-2 @xs:pl-4 border-b border-border flex items-center justify-between min-w-0"
+            className="py-1.5 pl-3 pr-1 @xs:pl-4 border-b border-border flex items-center justify-between gap-2 min-w-0"
             onContextMenu={handleContextMenu}
         >
-            <h2 className="text-primary text-sm @xs:text-lg font-semibold flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
+            <h2 className="text-primary text-sm @xs:text-base font-semibold flex items-center gap-2 flex-shrink-0 whitespace-nowrap">
                 <i className="fa fa-sparkles text-typeai"></i>
                 Wave AI
             </h2>
 
             <div className="flex items-center flex-shrink-0 whitespace-nowrap">
-                {!inBuilder && (
-                    <div className="flex items-center text-sm whitespace-nowrap">
-                        <span className="text-secondary @xs:hidden mr-1 text-[12px]">{t("ai.contextShort")}</span>
-                        <span className="text-secondary hidden @xs:inline mr-2 text-[12px]">
-                            {t("ai.widgetContext")}
-                        </span>
-                        <button
-                            onClick={() => {
-                                model.setWidgetAccess(!widgetAccess);
-                                setTimeout(() => {
-                                    model.focusInput();
-                                }, 0);
-                            }}
-                            className={`relative inline-flex h-6 w-14 items-center rounded-full transition-colors cursor-pointer ${
-                                widgetAccess ? "bg-accent/80" : "bg-hoverbg"
-                            }`}
-                            title={t("ai.widgetAccessTitle", { state: widgetAccess ? t("ai.on") : t("ai.off") })}
-                        >
-                            <span
-                                className={`absolute inline-block h-4 w-4 transform rounded-full transition-all ${
-                                    widgetAccess ? "translate-x-8 bg-onaccent" : "translate-x-1 bg-primary"
-                                }`}
-                            />
-                            <span
-                                className={`relative z-10 text-xs transition-all ${
-                                    widgetAccess
-                                        ? "ml-2.5 mr-6 text-left text-onaccent"
-                                        : "ml-6 mr-1 text-right text-primary"
-                                }`}
-                            >
-                                {widgetAccess ? t("ai.on") : t("ai.off")}
-                            </span>
-                        </button>
-                    </div>
-                )}
-
+                {!inBuilder && <AIAccessLevelDropdown />}
                 <button
                     onClick={handleKebabClick}
-                    className="text-secondary hover:text-primary cursor-pointer transition-colors p-1 rounded flex-shrink-0 ml-2 focus:outline-none"
+                    className="text-secondary hover:text-primary cursor-pointer transition-colors p-1 rounded flex-shrink-0 ml-0.5 focus:outline-none"
                     title={t("ai.moreOptions")}
                 >
                     <i className="fa fa-ellipsis-vertical"></i>

@@ -14,6 +14,9 @@ import { WaveAIModel } from "./waveai-model";
 // matches pkg/filebackup/filebackup.go
 const BackupRetentionDays = 5;
 
+// matches applyAccessPolicy in pkg/aiusechat/accesslevel.go, which never auto approves deletes
+const NeverRememberTools = new Set(["delete_text_file"]);
+
 interface ToolDescLineProps {
     text: string;
 }
@@ -84,22 +87,32 @@ function getEffectiveApprovalStatus(baseApproval: string, isStreaming: boolean):
 interface AIToolApprovalButtonsProps {
     count: number;
     onApprove: () => void;
+    onApproveAlways?: () => void;
     onDeny: () => void;
 }
 
-const AIToolApprovalButtons = memo(({ count, onApprove, onDeny }: AIToolApprovalButtonsProps) => {
+const AIToolApprovalButtons = memo(({ count, onApprove, onApproveAlways, onDeny }: AIToolApprovalButtonsProps) => {
     const t = useT();
     const approveText = count > 1 ? t("ai.approveAll", { count }) : t("ai.approve");
     const denyText = count > 1 ? t("ai.denyAll") : t("ai.deny");
 
     return (
-        <div className="mt-2 flex gap-2">
+        <div className="mt-2 flex flex-wrap gap-2">
             <button
                 onClick={onApprove}
                 className="px-3 py-1 border border-border text-secondary hover:border-borderstrong hover:text-primary text-sm rounded cursor-pointer transition-colors"
             >
                 {approveText}
             </button>
+            {onApproveAlways && (
+                <button
+                    onClick={onApproveAlways}
+                    className="px-3 py-1 border border-border text-secondary hover:border-borderstrong hover:text-primary text-sm rounded cursor-pointer transition-colors"
+                    title={t("ai.approveAlwaysTitle")}
+                >
+                    {t("ai.approveAlways")}
+                </button>
+            )}
             <button
                 onClick={onDeny}
                 className="px-3 py-1 border border-border text-secondary hover:border-borderstrong hover:text-primary text-sm rounded cursor-pointer transition-colors"
@@ -155,10 +168,10 @@ const AIToolUseBatch = memo(({ parts, isStreaming }: AIToolUseBatchProps) => {
     const baseApproval = userApprovalOverride || firstTool.approval;
     const effectiveApproval = getEffectiveApprovalStatus(baseApproval, isStreaming);
 
-    const handleApprove = () => {
+    const handleApprove = (rememberForChat: boolean) => {
         setUserApprovalOverride("user-approved");
         parts.forEach((part) => {
-            WaveAIModel.getInstance().toolUseSendApproval(part.data.toolcallid, "user-approved");
+            WaveAIModel.getInstance().toolUseSendApproval(part.data.toolcallid, "user-approved", rememberForChat);
         });
     };
 
@@ -179,7 +192,12 @@ const AIToolUseBatch = memo(({ parts, isStreaming }: AIToolUseBatchProps) => {
                     ))}
                 </div>
                 {effectiveApproval === "needs-approval" && (
-                    <AIToolApprovalButtons count={parts.length} onApprove={handleApprove} onDeny={handleDeny} />
+                    <AIToolApprovalButtons
+                        count={parts.length}
+                        onApprove={() => handleApprove(false)}
+                        onApproveAlways={() => handleApprove(true)}
+                        onDeny={handleDeny}
+                    />
                 )}
             </div>
         </div>
@@ -224,9 +242,9 @@ const AIToolUse = memo(({ part, isStreaming }: AIToolUseProps) => {
         };
     }, []);
 
-    const handleApprove = () => {
+    const handleApprove = (rememberForChat: boolean) => {
         setUserApprovalOverride("user-approved");
-        WaveAIModel.getInstance().toolUseSendApproval(toolData.toolcallid, "user-approved");
+        WaveAIModel.getInstance().toolUseSendApproval(toolData.toolcallid, "user-approved", rememberForChat);
     };
 
     const handleDeny = () => {
@@ -318,7 +336,14 @@ const AIToolUse = memo(({ part, isStreaming }: AIToolUseProps) => {
             )}
             {effectiveApproval === "needs-approval" && (
                 <div className="pl-6">
-                    <AIToolApprovalButtons count={1} onApprove={handleApprove} onDeny={handleDeny} />
+                    <AIToolApprovalButtons
+                        count={1}
+                        onApprove={() => handleApprove(false)}
+                        onApproveAlways={
+                            NeverRememberTools.has(toolData.toolname) ? undefined : () => handleApprove(true)
+                        }
+                        onDeny={handleDeny}
+                    />
                 </div>
             )}
             {showRestoreModal && <RestoreBackupModal part={part} />}
