@@ -60,6 +60,8 @@ export const enUS: Record<string, string> = {
     "preview.saveFailed": "Save Failed",
     "preview.confirmDeleteDir": "Confirm Delete Directory",
     "preview.confirmDeleteDirText": "Deleting a directory requires the recursive flag. Proceed?",
+    "preview.pathNotFound": "Path Not Found",
+    "preview.pathNotFoundText": "{path} does not exist.",
     "preview.sortBy": "Sort by {field}",
 
     "previewMenu.copyFullPath": "Copy Full Path",

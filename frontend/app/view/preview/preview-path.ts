@@ -67,3 +67,24 @@ export function remapPath(path: string, oldPrefix: string, newPrefix: string): s
     }
     return newPrefix + path.substring(oldPrefix.length);
 }
+
+export function joinPath(dir: string, name: string): string {
+    const sep = getPathSeparator(dir);
+    return dir.endsWith(sep) ? dir + name : dir + sep + name;
+}
+
+// A path typed into the block header resolves the way a shell would: "~" and absolute paths stand
+// on their own, anything else is taken relative to the directory the block is showing.
+export function resolveTypedPath(input: string, baseDir: string): string {
+    const path = input?.trim();
+    if (path == null || path == "") {
+        return null;
+    }
+    const isAbsolute =
+        path.startsWith("~") || path.startsWith("/") || path.startsWith("\\") || /^[A-Za-z]:/.test(path);
+    if (isAbsolute || baseDir == null || baseDir == "") {
+        return path;
+    }
+    return joinPath(baseDir, path);
+}
+

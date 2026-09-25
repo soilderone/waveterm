@@ -60,6 +60,8 @@ export const zhCN: Record<string, string> = {
     "preview.saveFailed": "保存失败",
     "preview.confirmDeleteDir": "确认删除目录",
     "preview.confirmDeleteDirText": "删除目录需要递归标志，是否继续？",
+    "preview.pathNotFound": "路径不存在",
+    "preview.pathNotFoundText": "{path} 不存在。",
     "preview.sortBy": "排序方式：{field}",
 
     "previewMenu.copyFullPath": "复制完整路径",

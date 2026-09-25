@@ -1,5 +1,13 @@
 import { describe, expect, it } from "vitest";
-import { getBaseName, getParentPath, getPathSeparator, isPathInside, remapPath } from "./preview-path";
+import {
+    getBaseName,
+    getParentPath,
+    getPathSeparator,
+    isPathInside,
+    joinPath,
+    remapPath,
+    resolveTypedPath,
+} from "./preview-path";
 
 describe("getPathSeparator", () => {
     it("infers the separator from the path rather than the local platform", () => {
@@ -77,5 +85,31 @@ describe("remapPath", () => {
     it("leaves unrelated paths untouched", () => {
         expect(remapPath("/project/other.ts", "/project/old.ts", "/project/new.ts")).toBe("/project/other.ts");
         expect(remapPath("/project-old/a.ts", "/project", "/renamed")).toBe("/project-old/a.ts");
+    });
+});
+
+describe("joinPath", () => {
+    it("adds exactly one separator", () => {
+        expect(joinPath("~/project", "a.ts")).toBe("~/project/a.ts");
+        expect(joinPath("/", "etc")).toBe("/etc");
+        expect(joinPath("C:\\work", "a.ts")).toBe("C:\\work\\a.ts");
+    });
+});
+
+describe("resolveTypedPath", () => {
+    it("keeps home-relative and absolute paths as typed", () => {
+        expect(resolveTypedPath("  ~/Desktop ", "/tmp")).toBe("~/Desktop");
+        expect(resolveTypedPath("/etc", "~/project")).toBe("/etc");
+        expect(resolveTypedPath("C:\\work", "/tmp")).toBe("C:\\work");
+    });
+
+    it("resolves anything else against the current directory", () => {
+        expect(resolveTypedPath("src/app", "~/project")).toBe("~/project/src/app");
+        expect(resolveTypedPath("../other", "~/project")).toBe("~/project/../other");
+    });
+
+    it("returns null for blank input", () => {
+        expect(resolveTypedPath("   ", "~")).toBeNull();
+        expect(resolveTypedPath(null, "~")).toBeNull();
     });
 });
