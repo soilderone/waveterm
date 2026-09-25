@@ -23,14 +23,32 @@ Context-aware terminal assistant with access to terminal output, widgets, and fi
 | <Kbd k="Cmd:k"/> | Clear chat / start new |
 | <Kbd k="Enter"/> | Send message |
 | <Kbd k="Shift:Enter"/> | New line |
+| <Kbd k="ArrowUp"/> | Recall a previous prompt (when the input is empty) |
+| `@` | Attach a widget's content (terminal output, previewed file, web URL) |
 
-## Widget Context Toggle
+## Access Levels
 
-Controls AI's access to your workspace:
+The access level selector in the panel header controls what Wave AI can see and change in the current tab:
 
-**ON**: AI can read terminal output, capture widget screenshots, access files/directories (with approval), navigate web widgets, and use custom widget tools. Use for debugging, code analysis, and workspace tasks.
+| Level | Sees | Reads files | Edits files | Deletes files |
+|-------|------|-------------|-------------|---------------|
+| **Off** | Only your messages and attachments | No | No | No |
+| **Read-only** | Terminal output, widgets, screenshots | Asks first | Not offered | Not offered |
+| **Collaborate** (default) | Terminal output, widgets, screenshots | Asks first | Asks first | Asks first |
+| **Trusted** | Terminal output, widgets, screenshots | Automatic inside trusted directories | Automatic inside trusted directories | Always asks |
 
-**OFF**: AI only sees your messages and attached files. Standard chat mode for general questions.
+Trusted directories are the working directories of the local terminals in the tab (a terminal sitting in `/` or your home directory does not count). Anything outside them still asks, and sensitive files such as SSH keys are always blocked.
+
+When a tool asks for approval you can also pick **Always Allow in This Chat** to stop being asked for that tool until you start a new chat (deletes always ask).
+
+The default level for new tabs is the `waveai:defaultaccesslevel` setting.
+
+## Working with Replies
+
+- Shell code blocks have an **Insert into terminal** button that pastes the command into the focused terminal without running it.
+- Hover your own message to copy it or **edit and resend** it (everything after it is replaced); the last reply can be **regenerated**, and a failed request can be retried.
+- When a command fails in a terminal with shell integration, a button in the terminal header sends the command and its output to Wave AI.
+- The input bar shows the approximate context size of the current chat.
 
 ## File Attachments
 
@@ -54,7 +72,7 @@ wsh ai $(tail -n 500 my.log) -m "review" -s  # Auto-submit with output
 
 Supports text files, images, PDFs, and directories. Use `-n` for new chat, `-s` to auto-submit.
 
-## AI Tools (Widget Context Enabled)
+## AI Tools (Access Level Read-only or Higher)
 
 ### Terminal
 - **Read Terminal Output**: Fetches scrollback from terminal widgets, supports line ranges
@@ -62,16 +80,16 @@ Supports text files, images, PDFs, and directories. Use `-n` for new chat, `-s` 
 ### File System
 - **Read Files**: Reads text files with line range support (requires approval)
 - **List Directories**: Returns file info, sizes, permissions, timestamps (requires approval)
-- **Write Text Files**: Create or modify files with diff preview and approval (requires approval)
+- **Write Text Files**: Create or modify files with diff preview and approval (Collaborate or Trusted)
 
 ### Web
-- **Navigate Web**: Changes URLs in web browser widgets
+- **Navigate Web**: Changes URLs in web browser widgets (Collaborate or Trusted)
 
 ### All Widgets
 - **Capture Screenshots**: Takes screenshots of any widget for visual analysis (not supported on all models)
 
 :::warning Security
-File system operations require explicit approval. You control all file access.
+File system operations require explicit approval unless you choose the Trusted level or "Always Allow in This Chat". You control all file access.
 :::
 
 ## Local Models & BYOK
