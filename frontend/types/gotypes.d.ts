@@ -546,6 +546,35 @@ declare global {
         streammeta: StreamMeta;
     };
 
+    // wshrpc.CommandRemoteGitCommitData
+    type CommandRemoteGitCommitData = {
+        path: string;
+        hash: string;
+    };
+
+    // wshrpc.CommandRemoteGitDiffData
+    type CommandRemoteGitDiffData = {
+        path: string;
+        file: string;
+        origfile?: string;
+        mode: string;
+        hash?: string;
+        parent?: string;
+    };
+
+    // wshrpc.CommandRemoteGitLogData
+    type CommandRemoteGitLogData = {
+        path: string;
+        skip?: number;
+        limit?: number;
+        all?: boolean;
+    };
+
+    // wshrpc.CommandRemoteGitStatusData
+    type CommandRemoteGitStatusData = {
+        path: string;
+    };
+
     // wshrpc.CommandRemoteListEntriesData
     type CommandRemoteListEntriesData = {
         path: string;
@@ -1022,6 +1051,83 @@ declare global {
         configerrors: ConfigError[];
         version: string;
         buildtime: string;
+    };
+
+    // wshrpc.GitChangedFile
+    type GitChangedFile = {
+        path: string;
+        origpath?: string;
+        status: string;
+    };
+
+    // wshrpc.GitCommit
+    type GitCommit = {
+        hash: string;
+        parents?: string[];
+        author: string;
+        email?: string;
+        time: number;
+        subject: string;
+        refs?: GitRef[];
+    };
+
+    // wshrpc.GitCommitDetail
+    type GitCommitDetail = {
+        hash: string;
+        parents?: string[];
+        author: string;
+        authoremail?: string;
+        authortime: number;
+        committer?: string;
+        committeremail?: string;
+        committime?: number;
+        message: string;
+        files: GitChangedFile[];
+        truncated?: boolean;
+    };
+
+    // wshrpc.GitDiffResponse
+    type GitDiffResponse = {
+        original: string;
+        modified: string;
+        binary?: boolean;
+        toolarge?: boolean;
+    };
+
+    // wshrpc.GitLogResponse
+    type GitLogResponse = {
+        commits: GitCommit[];
+        hasmore?: boolean;
+    };
+
+    // wshrpc.GitRef
+    type GitRef = {
+        name: string;
+        type: string;
+        head?: boolean;
+    };
+
+    // wshrpc.GitStatusFile
+    type GitStatusFile = {
+        path: string;
+        origpath?: string;
+        index: string;
+        worktree: string;
+        kind: string;
+    };
+
+    // wshrpc.GitStatusResponse
+    type GitStatusResponse = {
+        isrepo: boolean;
+        reporoot?: string;
+        head?: string;
+        branch?: string;
+        upstream?: string;
+        ahead?: number;
+        behind?: number;
+        state?: string;
+        files: GitStatusFile[];
+        truncated?: boolean;
     };
 
     // waveobj.Job

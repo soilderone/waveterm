@@ -129,6 +129,10 @@ type WshRpcInterface interface {
 	BadgeWatchPidCommand(ctx context.Context, data CommandBadgeWatchPidData) error
 	RemoteProcessListCommand(ctx context.Context, data CommandRemoteProcessListData) (*ProcessListResponse, error)
 	RemoteProcessSignalCommand(ctx context.Context, data CommandRemoteProcessSignalData) error
+	RemoteGitStatusCommand(ctx context.Context, data CommandRemoteGitStatusData) (*GitStatusResponse, error)
+	RemoteGitLogCommand(ctx context.Context, data CommandRemoteGitLogData) (*GitLogResponse, error)
+	RemoteGitCommitCommand(ctx context.Context, data CommandRemoteGitCommitData) (*GitCommitDetail, error)
+	RemoteGitDiffCommand(ctx context.Context, data CommandRemoteGitDiffData) (*GitDiffResponse, error)
 
 	// emain
 	WebSelectorCommand(ctx context.Context, data CommandWebSelectorData) ([]string, error)
@@ -924,4 +928,100 @@ type CommandRemoteProcessListData struct {
 type CommandRemoteProcessSignalData struct {
 	Pid    int32  `json:"pid"`
 	Signal string `json:"signal"`
+}
+
+type CommandRemoteGitStatusData struct {
+	Path string `json:"path"`
+}
+
+// GitStatusFile is one entry of `git status --porcelain=v2`. Index and WorkTree hold the X and Y
+// status letters, with "." meaning unchanged on that side.
+type GitStatusFile struct {
+	Path     string `json:"path"`
+	OrigPath string `json:"origpath,omitempty"`
+	Index    string `json:"index"`
+	WorkTree string `json:"worktree"`
+	Kind     string `json:"kind"` // "changed", "renamed", "unmerged", or "untracked"
+}
+
+type GitStatusResponse struct {
+	IsRepo    bool            `json:"isrepo"`
+	RepoRoot  string          `json:"reporoot,omitempty"`
+	Head      string          `json:"head,omitempty"`   // empty on an unborn branch
+	Branch    string          `json:"branch,omitempty"` // empty when HEAD is detached
+	Upstream  string          `json:"upstream,omitempty"`
+	Ahead     int             `json:"ahead,omitempty"`
+	Behind    int             `json:"behind,omitempty"`
+	State     string          `json:"state,omitempty"` // merging, rebasing, cherrypicking, reverting, bisecting
+	Files     []GitStatusFile `json:"files"`
+	Truncated bool            `json:"truncated,omitempty"`
+}
+
+type CommandRemoteGitLogData struct {
+	Path  string `json:"path"`
+	Skip  int    `json:"skip,omitempty"`
+	Limit int    `json:"limit,omitempty"`
+	All   bool   `json:"all,omitempty"`
+}
+
+type GitRef struct {
+	Name string `json:"name"`
+	Type string `json:"type"` // "head" (detached HEAD), "branch", "remote", or "tag"
+	Head bool   `json:"head,omitempty"`
+}
+
+type GitCommit struct {
+	Hash    string   `json:"hash"`
+	Parents []string `json:"parents,omitempty"`
+	Author  string   `json:"author"`
+	Email   string   `json:"email,omitempty"`
+	Time    int64    `json:"time"`
+	Subject string   `json:"subject"`
+	Refs    []GitRef `json:"refs,omitempty"`
+}
+
+type GitLogResponse struct {
+	Commits []GitCommit `json:"commits"`
+	HasMore bool        `json:"hasmore,omitempty"`
+}
+
+type CommandRemoteGitCommitData struct {
+	Path string `json:"path"`
+	Hash string `json:"hash"`
+}
+
+type GitChangedFile struct {
+	Path     string `json:"path"`
+	OrigPath string `json:"origpath,omitempty"`
+	Status   string `json:"status"`
+}
+
+type GitCommitDetail struct {
+	Hash           string           `json:"hash"`
+	Parents        []string         `json:"parents,omitempty"`
+	Author         string           `json:"author"`
+	AuthorEmail    string           `json:"authoremail,omitempty"`
+	AuthorTime     int64            `json:"authortime"`
+	Committer      string           `json:"committer,omitempty"`
+	CommitterEmail string           `json:"committeremail,omitempty"`
+	CommitTime     int64            `json:"committime,omitempty"`
+	Message        string           `json:"message"`
+	Files          []GitChangedFile `json:"files"`
+	Truncated      bool             `json:"truncated,omitempty"`
+}
+
+type CommandRemoteGitDiffData struct {
+	Path     string `json:"path"`
+	File     string `json:"file"`
+	OrigFile string `json:"origfile,omitempty"`
+	Mode     string `json:"mode"`             // "unstaged", "staged", or "commit"
+	Hash     string `json:"hash,omitempty"`   // mode=commit only
+	Parent   string `json:"parent,omitempty"` // mode=commit only; empty for a root commit
+}
+
+type GitDiffResponse struct {
+	Original string `json:"original"`
+	Modified string `json:"modified"`
+	Binary   bool   `json:"binary,omitempty"`
+	TooLarge bool   `json:"toolarge,omitempty"`
 }

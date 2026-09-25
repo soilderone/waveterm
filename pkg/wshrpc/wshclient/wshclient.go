@@ -736,6 +736,30 @@ func RemoteGetInfoCommand(w *wshutil.WshRpc, opts *wshrpc.RpcOpts) (wshrpc.Remot
 	return resp, err
 }
 
+// command "remotegitcommit", wshserver.RemoteGitCommitCommand
+func RemoteGitCommitCommand(w *wshutil.WshRpc, data wshrpc.CommandRemoteGitCommitData, opts *wshrpc.RpcOpts) (*wshrpc.GitCommitDetail, error) {
+	resp, err := sendRpcRequestCallHelper[*wshrpc.GitCommitDetail](w, "remotegitcommit", data, opts)
+	return resp, err
+}
+
+// command "remotegitdiff", wshserver.RemoteGitDiffCommand
+func RemoteGitDiffCommand(w *wshutil.WshRpc, data wshrpc.CommandRemoteGitDiffData, opts *wshrpc.RpcOpts) (*wshrpc.GitDiffResponse, error) {
+	resp, err := sendRpcRequestCallHelper[*wshrpc.GitDiffResponse](w, "remotegitdiff", data, opts)
+	return resp, err
+}
+
+// command "remotegitlog", wshserver.RemoteGitLogCommand
+func RemoteGitLogCommand(w *wshutil.WshRpc, data wshrpc.CommandRemoteGitLogData, opts *wshrpc.RpcOpts) (*wshrpc.GitLogResponse, error) {
+	resp, err := sendRpcRequestCallHelper[*wshrpc.GitLogResponse](w, "remotegitlog", data, opts)
+	return resp, err
+}
+
+// command "remotegitstatus", wshserver.RemoteGitStatusCommand
+func RemoteGitStatusCommand(w *wshutil.WshRpc, data wshrpc.CommandRemoteGitStatusData, opts *wshrpc.RpcOpts) (*wshrpc.GitStatusResponse, error) {
+	resp, err := sendRpcRequestCallHelper[*wshrpc.GitStatusResponse](w, "remotegitstatus", data, opts)
+	return resp, err
+}
+
 // command "remoteinstallrcfiles", wshserver.RemoteInstallRcFilesCommand
 func RemoteInstallRcFilesCommand(w *wshutil.WshRpc, opts *wshrpc.RpcOpts) error {
 	_, err := sendRpcRequestCallHelper[any](w, "remoteinstallrcfiles", nil, opts)
