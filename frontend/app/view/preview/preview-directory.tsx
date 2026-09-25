@@ -50,7 +50,14 @@ import {
     type TreeSortType,
 } from "./preview-directory-utils";
 import { type PreviewModel } from "./preview-model";
-import { getBaseName, getParentPath, isPathInside } from "./preview-path";
+import {
+    canMovePathsInto,
+    getBaseName,
+    getParentPath,
+    isPathInside,
+    joinPath,
+    pruneNestedPaths,
+} from "./preview-path";
 import type { PreviewEnv } from "./previewenv";
 
 const PageJumpSize = 20;
@@ -58,6 +65,14 @@ const PageJumpSize = 20;
 // The tree is not virtualized, so a directory with thousands of entries would otherwise build
 // thousands of rows on expand. Entries past this count are held back behind a "show more" row.
 const TreeRenderChunkSize = 300;
+
+// Same drag type the old listing used, so the AI panel keeps accepting files dragged out of the tree.
+const TreeDragType = "FILE_ITEM";
+
+// How long a drag has to rest on a collapsed folder before it opens, so a file can be dropped deeper.
+const DragExpandDelayMs = 600;
+
+const EmptySelection: TreeSelection = { paths: new Set(), anchor: null };
 
 interface DirectoryTableHeaderCellProps {
     header: Header<FileInfo, unknown>;
@@ -914,6 +929,35 @@ type TreeVersionState = {
     dirs: Record<string, number>;
 };
 
+type TreeSelection = {
+    paths: Set<string>;
+    // where a shift-click range starts; the last row clicked without shift
+    anchor: string;
+};
+
+type TreeItemRef = {
+    path: string;
+    isdir: boolean;
+};
+
+type PathRename = {
+    from: string;
+    to: string;
+};
+
+// Still a DraggedFile, which is what the AI panel reads, with the whole selection riding along.
+type TreeDragItem = DraggedFile & {
+    connection: string;
+    blockId: string;
+    items: TreeItemRef[];
+    // lets the tree a drag started in refresh itself when it is dropped into another block's tree
+    onMoved: (renames: PathRename[]) => void;
+};
+
+function isSameConnection(a: string, b: string): boolean {
+    return a == b || (isLocalConnName(a) && isLocalConnName(b));
+}
+
 // Everything the whole subtree needs that is not per-node. Grouped into one referentially stable
 // object so FileTreeDirectory/FileTreeEntry can be memoized -- selection and refresh are delivered
 // through atoms instead of props so changing them only re-renders the nodes that actually care.
@@ -925,26 +969,94 @@ type FileTreeSharedProps = {
     rootFilter: string;
     sort: TreeSortType;
     versionAtom: PrimitiveAtom<TreeVersionState>;
+    selectionAtom: PrimitiveAtom<TreeSelection>;
     onContextAction: (action: string, entry: FileInfo) => void;
+    // true when the click only changed the selection (shift / cmd), so the row must not open
+    onRowClick: (e: React.MouseEvent, entry: FileInfo) => boolean;
+    getSelectedItems: (entry: FileInfo) => TreeItemRef[];
+    canDropInto: (item: TreeDragItem, targetDir: string) => boolean;
+    dropInto: (item: TreeDragItem, targetDir: string) => void;
+    onItemsMoved: (renames: PathRename[]) => void;
+    onDeleteItems: (items: TreeItemRef[]) => void;
 };
 
 type FileTreeDirectoryProps = {
     shared: FileTreeSharedProps;
     path: string;
+    parentPath?: string;
     onNavigateUp?: () => void;
     root?: boolean;
 };
 
+const TreeParentRow = React.memo(function TreeParentRow({
+    shared,
+    parentPath,
+    onNavigateUp,
+}: {
+    shared: FileTreeSharedProps;
+    parentPath: string;
+    onNavigateUp: () => void;
+}) {
+    const env = useWaveEnv<PreviewEnv>();
+    const t = useT();
+    const fullConfig = useAtomValue(env.atoms.fullConfigAtom);
+    const [{ dropActive }, drop] = useDrop(
+        () => ({
+            accept: TreeDragType,
+            canDrop: (item: TreeDragItem, monitor) =>
+                parentPath != null && monitor.isOver({ shallow: true }) && shared.canDropInto(item, parentPath),
+            drop: (item: TreeDragItem, monitor) => {
+                if (!monitor.didDrop()) {
+                    shared.dropInto(item, parentPath);
+                }
+            },
+            collect: (monitor) => ({ dropActive: monitor.isOver({ shallow: true }) && monitor.canDrop() }),
+        }),
+        [parentPath, shared]
+    );
+    const dropRef = useCallback(
+        (node: HTMLLIElement | null) => {
+            drop(node);
+        },
+        [drop]
+    );
+
+    return (
+        <li role="none" ref={dropRef}>
+            <button
+                type="button"
+                data-tree-row=""
+                title={t("preview.parentDirectory")}
+                className={cn(
+                    "flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-hover focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2",
+                    dropActive && "bg-accent/10 outline outline-accent/60 -outline-offset-1"
+                )}
+                onClick={onNavigateUp}
+            >
+                <i aria-hidden="true" className="fa-solid w-3 shrink-0 text-[10px] opacity-70 invisible" />
+                <i
+                    aria-hidden="true"
+                    className={cn(getMimeTypeIcon(fullConfig, "directory"), "shrink-0 text-xs")}
+                    style={{ color: getMimeTypeColor(fullConfig, "directory") }}
+                />
+                <span className="truncate">..</span>
+            </button>
+        </li>
+    );
+});
+
+TreeParentRow.displayName = "TreeParentRow";
+
 const FileTreeDirectory = React.memo(function FileTreeDirectory({
     shared,
     path,
+    parentPath,
     onNavigateUp,
     root,
 }: FileTreeDirectoryProps) {
     const { connection, showHiddenFiles, rootFilter, sort } = shared;
     const env = useWaveEnv<PreviewEnv>();
     const t = useT();
-    const fullConfig = useAtomValue(env.atoms.fullConfigAtom);
     const [entries, setEntries] = useState<FileInfo[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -1033,23 +1145,7 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
             className={cn("m-0 list-none p-0", !root && "ml-[13px] border-l border-border pl-1")}
         >
             {root && onNavigateUp && (
-                <li role="none">
-                    <button
-                        type="button"
-                        data-tree-row=""
-                        title={t("preview.parentDirectory")}
-                        className="flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[4px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-hover focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2"
-                        onClick={onNavigateUp}
-                    >
-                        <i aria-hidden="true" className="fa-solid w-3 shrink-0 text-[10px] opacity-70 invisible" />
-                        <i
-                            aria-hidden="true"
-                            className={cn(getMimeTypeIcon(fullConfig, "directory"), "shrink-0 text-xs")}
-                            style={{ color: getMimeTypeColor(fullConfig, "directory") }}
-                        />
-                        <span className="truncate">..</span>
-                    </button>
-                </li>
+                <TreeParentRow shared={shared} parentPath={parentPath} onNavigateUp={onNavigateUp} />
             )}
             {loading && (
                 <li role="none" className="flex items-center gap-1.5 px-2 py-1 text-xs text-secondary">
@@ -1113,9 +1209,14 @@ const FileTreeEntry = React.memo(function FileTreeEntry({
     const [expanded, setExpanded] = useState(false);
     const itemRef = useRef<HTMLLIElement>(null);
     const labelId = React.useId();
-    const selectedAtom = useMemo(
+    const activeAtom = useMemo(
         () => atom((get) => get(shared.model.metaFilePath) == entry.path),
         [shared.model, entry.path]
+    );
+    const active = useAtomValue(activeAtom);
+    const selectedAtom = useMemo(
+        () => atom((get) => get(shared.selectionAtom).paths.has(entry.path)),
+        [shared.selectionAtom, entry.path]
     );
     const selected = useAtomValue(selectedAtom);
     // Per-entry derived atoms rather than one shared subscription: jotai bails out when the
@@ -1137,6 +1238,66 @@ const FileTreeEntry = React.memo(function FileTreeEntry({
     const iconClass = getMimeTypeIcon(fullConfig, mimeType);
     const iconColor = getMimeTypeColor(fullConfig, mimeType);
 
+    const [{ isDragging }, drag] = useDrag(
+        () => ({
+            type: TreeDragType,
+            item: (): TreeDragItem => ({
+                relName: entry.name,
+                absParent: getParentPath(entry.path),
+                uri: formatRemoteUri(entry.path, shared.connection),
+                isDir: !!entry.isdir,
+                connection: shared.connection,
+                blockId: shared.model.blockId,
+                items: shared.getSelectedItems(entry),
+                onMoved: shared.onItemsMoved,
+            }),
+            collect: (monitor) => ({ isDragging: monitor.isDragging() }),
+        }),
+        [entry, shared]
+    );
+    // Only folders are drop targets, and a folder's target is its whole <li> (row plus expanded
+    // children). A drag over a file therefore lands on the innermost folder around it, and the
+    // shallow isOver check keeps every enclosing folder from also accepting the same drop.
+    const [{ isDropOver, canDropHere }, drop] = useDrop(
+        () => ({
+            accept: TreeDragType,
+            canDrop: (item: TreeDragItem, monitor) =>
+                entry.isdir && monitor.isOver({ shallow: true }) && shared.canDropInto(item, entry.path),
+            drop: (item: TreeDragItem, monitor) => {
+                if (!monitor.didDrop()) {
+                    shared.dropInto(item, entry.path);
+                }
+            },
+            collect: (monitor) => ({
+                isDropOver: monitor.isOver({ shallow: true }),
+                canDropHere: monitor.canDrop(),
+            }),
+        }),
+        [entry.path, entry.isdir, shared]
+    );
+    const setItemRef = useCallback(
+        (node: HTMLLIElement | null) => {
+            itemRef.current = node;
+            drop(entry.isdir ? node : null);
+        },
+        [drop, entry.isdir]
+    );
+    const setRowRef = useCallback(
+        (node: HTMLButtonElement | null) => {
+            drag(node);
+        },
+        [drag]
+    );
+    const dragHovering = isDropOver && !isDragging;
+
+    useEffect(() => {
+        if (!entry.isdir || expanded || !dragHovering) {
+            return;
+        }
+        const timer = setTimeout(() => setExpanded(true), DragExpandDelayMs);
+        return () => clearTimeout(timer);
+    }, [dragHovering, expanded, entry.isdir]);
+
     // Only ever expands, so a directory the user deliberately collapsed stays collapsed.
     useEffect(() => {
         if (shouldReveal) {
@@ -1145,18 +1306,40 @@ const FileTreeEntry = React.memo(function FileTreeEntry({
     }, [shouldReveal]);
 
     useEffect(() => {
-        if (!selected) {
+        if (!active) {
             return;
         }
         itemRef.current
             ?.querySelector<HTMLElement>("button[data-tree-row]")
             ?.scrollIntoView({ block: "nearest", inline: "nearest" });
-    }, [selected]);
+    }, [active]);
 
     const handleContextMenu = useCallback(
         (e: React.MouseEvent) => {
             e.preventDefault();
             e.stopPropagation();
+            const selectedItems = shared.getSelectedItems(entry);
+            if (selectedItems.length > 1) {
+                const paths = selectedItems.map((item) => item.path);
+                const deleteCount = pruneNestedPaths(selectedItems).length;
+                const multiMenu: ContextMenuItem[] = [
+                    {
+                        label: t("preview.copyFullPaths"),
+                        click: () => fireAndForget(() => navigator.clipboard.writeText(paths.join("\n"))),
+                    },
+                    {
+                        label: t("preview.copyFullPathsShellQuoted"),
+                        click: () => fireAndForget(() => navigator.clipboard.writeText(shellQuote(paths))),
+                    },
+                    { type: "separator" },
+                    {
+                        label: t("preview.deleteItems", { count: deleteCount }),
+                        click: () => shared.onDeleteItems(selectedItems),
+                    },
+                ];
+                ContextMenuModel.getInstance().showContextMenu(multiMenu, e);
+                return;
+            }
             const menu: ContextMenuItem[] = [];
             if (entry.isdir) {
                 menu.push(
@@ -1229,24 +1412,34 @@ const FileTreeEntry = React.memo(function FileTreeEntry({
 
     return (
         <li
-            ref={itemRef}
+            ref={setItemRef}
             role="treeitem"
             aria-labelledby={labelId}
             aria-expanded={entry.isdir ? expanded : undefined}
             aria-selected={selected}
+            className={cn(
+                isDropOver && canDropHere && "rounded-[6px] bg-accent/10 outline outline-accent/60 -outline-offset-1"
+            )}
         >
             <button
                 id={labelId}
+                ref={setRowRef}
                 type="button"
                 data-tree-row=""
+                data-tree-path={entry.path}
+                data-tree-isdir={entry.isdir ? "true" : "false"}
                 title={entry.path}
                 className={cn(
                     "flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[6px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-hover focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2",
                     selected && "bg-accentbg text-primary",
-                    !selected && entry.name.startsWith(".") && "opacity-60"
+                    !selected && entry.name.startsWith(".") && "opacity-60",
+                    isDragging && "opacity-50"
                 )}
                 onKeyDown={handleKeyDown}
-                onClick={() => {
+                onClick={(e) => {
+                    if (shared.onRowClick(e, entry)) {
+                        return;
+                    }
                     if (entry.isdir) {
                         setExpanded((value) => !value);
                         return;
@@ -1302,10 +1495,12 @@ TreeSortButton.displayName = "TreeSortButton";
 export const FileTree = React.memo(function FileTree({
     model,
     rootPath,
+    parentPath,
     onNavigateUp,
 }: {
     model: PreviewModel;
     rootPath: string;
+    parentPath?: string;
     onNavigateUp?: () => void;
 }) {
     const t = useT();
@@ -1315,6 +1510,9 @@ export const FileTree = React.memo(function FileTree({
     const setErrorMsg = useSetAtom(model.errorMsgAtom);
     const [versionAtom] = useState(() => atom<TreeVersionState>({ all: 0, dirs: {} }));
     const setVersion = useSetAtom(versionAtom);
+    const [selectionAtom] = useState(() => atom<TreeSelection>(EmptySelection));
+    const activePath = useAtomValue(model.metaFilePath);
+    const scrollRef = useRef<HTMLDivElement>(null);
     const [filterText, setFilterText] = useState("");
     const rootFilter = filterText.trim().toLowerCase();
     useEffect(() => {
@@ -1362,6 +1560,206 @@ export const FileTree = React.memo(function FileTree({
                 dirs: { ...version.dirs, [dirPath]: (version.dirs[dirPath] ?? 0) + 1 },
             })),
         [setVersion]
+    );
+
+    // Whatever the block opens -- from the tree, a tab or the header path -- becomes the selection,
+    // just as a plain click on its row would make it.
+    useEffect(() => {
+        if (isBlank(activePath) || activePath == rootPath) {
+            globalStore.set(selectionAtom, EmptySelection);
+            return;
+        }
+        globalStore.set(selectionAtom, { paths: new Set([activePath]), anchor: activePath });
+    }, [activePath, rootPath, selectionAtom]);
+
+    // Rows are read back from the DOM so ranges and batches follow exactly what is on screen: the
+    // current sort, the filter, and only folders that are expanded.
+    const getTreeRows = useCallback((): TreeItemRef[] => {
+        const rows = scrollRef.current?.querySelectorAll<HTMLElement>("[data-tree-path]");
+        if (rows == null) {
+            return [];
+        }
+        return Array.from(rows, (row) => ({ path: row.dataset.treePath, isdir: row.dataset.treeIsdir == "true" }));
+    }, []);
+
+    const handleRowClick = useCallback(
+        (e: React.MouseEvent, entry: FileInfo): boolean => {
+            const toggleKey = PLATFORM == PlatformMacOS ? e.metaKey : e.ctrlKey;
+            const selection = globalStore.get(selectionAtom);
+            if (e.shiftKey) {
+                const paths = getTreeRows().map((row) => row.path);
+                const targetIdx = paths.indexOf(entry.path);
+                if (targetIdx >= 0) {
+                    let anchorIdx = paths.indexOf(selection.anchor);
+                    if (anchorIdx < 0) {
+                        anchorIdx = targetIdx;
+                    }
+                    const startIdx = Math.min(anchorIdx, targetIdx);
+                    const endIdx = Math.max(anchorIdx, targetIdx);
+                    const nextPaths = new Set(toggleKey ? selection.paths : null);
+                    for (const path of paths.slice(startIdx, endIdx + 1)) {
+                        nextPaths.add(path);
+                    }
+                    globalStore.set(selectionAtom, { paths: nextPaths, anchor: paths[anchorIdx] });
+                    return true;
+                }
+            }
+            if (toggleKey) {
+                const nextPaths = new Set(selection.paths);
+                if (nextPaths.has(entry.path)) {
+                    nextPaths.delete(entry.path);
+                } else {
+                    nextPaths.add(entry.path);
+                }
+                globalStore.set(selectionAtom, { paths: nextPaths, anchor: entry.path });
+                return true;
+            }
+            globalStore.set(selectionAtom, { paths: new Set([entry.path]), anchor: entry.path });
+            return false;
+        },
+        [getTreeRows, selectionAtom]
+    );
+
+    // Acting on a row outside the selection (dragging it, right-clicking it) makes it the selection
+    // first, the way Finder does, so a batch never silently includes rows that were not highlighted.
+    const getSelectedItems = useCallback(
+        (entry: FileInfo): TreeItemRef[] => {
+            const entryItem: TreeItemRef = { path: entry.path, isdir: !!entry.isdir };
+            const selection = globalStore.get(selectionAtom);
+            if (!selection.paths.has(entry.path)) {
+                globalStore.set(selectionAtom, { paths: new Set([entry.path]), anchor: entry.path });
+                return [entryItem];
+            }
+            const items = getTreeRows().filter((row) => selection.paths.has(row.path));
+            return items.length > 0 ? items : [entryItem];
+        },
+        [getTreeRows, selectionAtom]
+    );
+
+    const canDropInto = useCallback(
+        (item: TreeDragItem, targetDir: string): boolean => {
+            if (item?.items == null || !isSameConnection(item.connection, connection)) {
+                return false;
+            }
+            return canMovePathsInto(item.items.map((treeItem) => treeItem.path), targetDir);
+        },
+        [connection]
+    );
+
+    const handleItemsMoved = useCallback(
+        (renames: PathRename[]) => {
+            for (const dirPath of new Set(renames.map((rename) => getParentPath(rename.from)))) {
+                refreshDir(dirPath);
+            }
+            for (const rename of renames) {
+                model.handlePathRenamed(rename.from, rename.to);
+            }
+        },
+        [model, refreshDir]
+    );
+
+    // A move never overwrites: the backend refuses when the destination name is taken, and that
+    // item is reported while the rest of the batch still goes through.
+    const dropInto = useCallback(
+        (item: TreeDragItem, targetDir: string) => {
+            fireAndForget(async () => {
+                const renames: PathRename[] = [];
+                const failures: string[] = [];
+                for (const treeItem of pruneNestedPaths(item.items)) {
+                    if (getParentPath(treeItem.path) == targetDir) {
+                        continue;
+                    }
+                    const destPath = joinPath(targetDir, getBaseName(treeItem.path));
+                    let srcuri = formatRemoteUri(treeItem.path, connection);
+                    if (treeItem.isdir) {
+                        srcuri += "/";
+                    }
+                    try {
+                        await model.env.rpc.FileMoveCommand(TabRpcClient, {
+                            srcuri,
+                            desturi: formatRemoteUri(destPath, connection),
+                        });
+                        renames.push({ from: treeItem.path, to: destPath });
+                    } catch (e) {
+                        failures.push(`${getBaseName(treeItem.path)}: ${e}`);
+                    }
+                }
+                refreshDir(targetDir);
+                handleItemsMoved(renames);
+                if (item.blockId != model.blockId) {
+                    item.onMoved?.(renames);
+                }
+                if (renames.length > 0) {
+                    globalStore.set(selectionAtom, {
+                        paths: new Set(renames.map((rename) => rename.to)),
+                        anchor: renames[0].to,
+                    });
+                }
+                if (failures.length > 0) {
+                    setErrorMsg({ status: t("preview.moveFailed"), text: failures.join("; ") });
+                }
+            });
+        },
+        [connection, model, refreshDir, handleItemsMoved, selectionAtom, setErrorMsg, t]
+    );
+
+    const deleteItems = useCallback(
+        (items: TreeItemRef[]) => {
+            const targets = pruneNestedPaths(items);
+            if (targets.length == 0) {
+                return;
+            }
+            const runDelete = async () => {
+                const failures: string[] = [];
+                for (const target of targets) {
+                    try {
+                        await model.env.rpc.FileDeleteCommand(TabRpcClient, {
+                            path: formatRemoteUri(target.path, connection),
+                            recursive: target.isdir,
+                        });
+                        model.handlePathRemoved(target.path);
+                    } catch (e) {
+                        failures.push(`${getBaseName(target.path)}: ${e}`);
+                    }
+                }
+                for (const dirPath of new Set(targets.map((target) => getParentPath(target.path)))) {
+                    refreshDir(dirPath);
+                }
+                if (failures.length > 0) {
+                    setErrorMsg({ status: t("preview.deleteFailed"), text: failures.join("; ") });
+                }
+            };
+            setErrorMsg({
+                status: t("preview.confirmDeleteItems", { count: targets.length }),
+                text: t("preview.confirmDeleteItemsText", {
+                    names: targets.map((target) => getBaseName(target.path)).join(", "),
+                }),
+                level: "warning",
+                buttons: [{ text: t("common.delete"), onClick: () => fireAndForget(runDelete) }],
+            });
+        },
+        [connection, model, refreshDir, setErrorMsg, t]
+    );
+
+    const [{ rootDropActive }, rootDrop] = useDrop(
+        () => ({
+            accept: TreeDragType,
+            canDrop: (item: TreeDragItem, monitor) => monitor.isOver({ shallow: true }) && canDropInto(item, rootPath),
+            drop: (item: TreeDragItem, monitor) => {
+                if (!monitor.didDrop()) {
+                    dropInto(item, rootPath);
+                }
+            },
+            collect: (monitor) => ({ rootDropActive: monitor.isOver({ shallow: true }) && monitor.canDrop() }),
+        }),
+        [rootPath, canDropInto, dropInto]
+    );
+    const setScrollRef = useCallback(
+        (node: HTMLDivElement | null) => {
+            scrollRef.current = node;
+            rootDrop(node);
+        },
+        [rootDrop]
     );
 
     const handleContextAction = useCallback(
@@ -1447,9 +1845,31 @@ export const FileTree = React.memo(function FileTree({
             rootFilter,
             sort: treeSort,
             versionAtom,
+            selectionAtom,
             onContextAction: handleContextAction,
+            onRowClick: handleRowClick,
+            getSelectedItems,
+            canDropInto,
+            dropInto,
+            onItemsMoved: handleItemsMoved,
+            onDeleteItems: deleteItems,
         }),
-        [model, connection, showHiddenFiles, rootFilter, treeSort, versionAtom, handleContextAction]
+        [
+            model,
+            connection,
+            showHiddenFiles,
+            rootFilter,
+            treeSort,
+            versionAtom,
+            selectionAtom,
+            handleContextAction,
+            handleRowClick,
+            getSelectedItems,
+            canDropInto,
+            dropInto,
+            handleItemsMoved,
+            deleteItems,
+        ]
     );
 
     const handleKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
@@ -1567,11 +1987,18 @@ export const FileTree = React.memo(function FileTree({
                         <TreeSortButton model={model} />
                     </div>
                 )}
-                <div className="min-h-0 flex-1 overflow-auto p-1 scrollbar-hide-until-hover">
+                <div
+                    ref={setScrollRef}
+                    className={cn(
+                        "min-h-0 flex-1 overflow-auto p-1 scrollbar-hide-until-hover",
+                        rootDropActive && "bg-accent/5 outline outline-accent/40 -outline-offset-2"
+                    )}
+                >
                     <FileTreeDirectory
                         key={`${connection}:${rootPath}`}
                         shared={shared}
                         path={rootPath}
+                        parentPath={parentPath}
                         onNavigateUp={onNavigateUp}
                         root
                     />

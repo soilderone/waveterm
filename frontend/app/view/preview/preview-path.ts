@@ -88,3 +88,20 @@ export function resolveTypedPath(input: string, baseDir: string): string {
     return joinPath(baseDir, path);
 }
 
+// Moving a folder already carries everything under it, so a dragged or deleted descendant of another
+// selected folder is dropped from the batch instead of being processed (and failing) on its own.
+export function pruneNestedPaths<T extends { path: string }>(items: T[]): T[] {
+    return items.filter(
+        (item) => !items.some((other) => other.path != item.path && isPathInside(item.path, other.path))
+    );
+}
+
+export function canMovePathsInto(paths: string[], targetDir: string): boolean {
+    if (paths == null || paths.length == 0 || targetDir == null || targetDir == "") {
+        return false;
+    }
+    if (paths.some((path) => isPathInside(targetDir, path))) {
+        return false;
+    }
+    return paths.some((path) => getParentPath(path) != targetDir);
+}

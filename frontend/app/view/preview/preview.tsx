@@ -270,6 +270,7 @@ function PreviewView({
         <FileTree
             model={model}
             rootPath={root.directory.path}
+            parentPath={canNavigateUp ? root.directory.dir : null}
             onNavigateUp={canNavigateUp ? handleTreeUp : null}
         />
     ) : null;

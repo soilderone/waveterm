@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
+    canMovePathsInto,
     getBaseName,
     getParentPath,
     getPathSeparator,
     isPathInside,
     joinPath,
+    pruneNestedPaths,
     remapPath,
     resolveTypedPath,
 } from "./preview-path";
@@ -111,5 +113,32 @@ describe("resolveTypedPath", () => {
     it("returns null for blank input", () => {
         expect(resolveTypedPath("   ", "~")).toBeNull();
         expect(resolveTypedPath(null, "~")).toBeNull();
+    });
+});
+
+describe("pruneNestedPaths", () => {
+    it("drops entries that live under another entry in the batch", () => {
+        const items = [{ path: "~/a" }, { path: "~/a/b.txt" }, { path: "~/c.txt" }, { path: "~/ab" }];
+        expect(pruneNestedPaths(items).map((item) => item.path)).toEqual(["~/a", "~/c.txt", "~/ab"]);
+    });
+});
+
+describe("canMovePathsInto", () => {
+    it("allows moving into a different directory", () => {
+        expect(canMovePathsInto(["~/a.txt", "~/b"], "~/dest")).toBe(true);
+    });
+
+    it("refuses moving a folder into itself or its own subtree", () => {
+        expect(canMovePathsInto(["~/a"], "~/a")).toBe(false);
+        expect(canMovePathsInto(["~/a"], "~/a/inner")).toBe(false);
+    });
+
+    it("refuses a drop where nothing would change", () => {
+        expect(canMovePathsInto(["~/dest/a.txt"], "~/dest")).toBe(false);
+        expect(canMovePathsInto([], "~/dest")).toBe(false);
+    });
+
+    it("allows a mixed batch as long as something moves", () => {
+        expect(canMovePathsInto(["~/dest/a.txt", "~/b.txt"], "~/dest")).toBe(true);
     });
 });
