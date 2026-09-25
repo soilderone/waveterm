@@ -20,7 +20,12 @@ import { loadable } from "jotai/utils";
 import type * as MonacoTypes from "monaco-editor";
 import { createRef } from "react";
 import { PreviewView } from "./preview";
-import { makeDirectoryDefaultMenuItems, type TreeSortType } from "./preview-directory-utils";
+import {
+    getDefaultSortDesc,
+    makeDirectoryDefaultMenuItems,
+    makeTreeSortMenuItems,
+    type TreeSortType,
+} from "./preview-directory-utils";
 import { getParentPath, isPathInside, remapPath } from "./preview-path";
 import type { PreviewEnv } from "./previewenv";
 
@@ -187,7 +192,7 @@ export class PreviewModel implements ViewModel {
         this.refreshVersion = atom(0);
         this.openTabs = atom<string[]>([]);
         const defaultSort = globalStore.get(this.env.getSettingsKeyAtom("preview:defaultsort")) ?? "name";
-        this.treeSort = atom<TreeSortType>({ field: defaultSort, desc: defaultSort == "modtime" });
+        this.treeSort = atom<TreeSortType>({ field: defaultSort, desc: getDefaultSortDesc(defaultSort) });
         this.directorySearchActive = atom(false);
         this.previewTextRef = createRef();
         this.openFileModal = atom(false);
@@ -897,50 +902,10 @@ export class PreviewModel implements ViewModel {
             });
         }
         if (loadableSV.state == "hasData" && loadableSV.data.specializedView == "directory") {
-            const treeSort = globalStore.get(this.treeSort);
-            const setSortField = (field: string) => globalStore.set(this.treeSort, { ...treeSort, field });
             menuItems.push({ type: "separator" });
             menuItems.push({
                 label: t("previewMenu.sortOrder"),
-                submenu: [
-                    {
-                        label: t("previewMenu.sortName"),
-                        type: "checkbox",
-                        checked: treeSort.field == "name",
-                        click: () => setSortField("name"),
-                    },
-                    {
-                        label: t("previewMenu.sortType"),
-                        type: "checkbox",
-                        checked: treeSort.field == "mimetype",
-                        click: () => setSortField("mimetype"),
-                    },
-                    {
-                        label: t("previewMenu.sortModtime"),
-                        type: "checkbox",
-                        checked: treeSort.field == "modtime",
-                        click: () => setSortField("modtime"),
-                    },
-                    {
-                        label: t("previewMenu.sortSize"),
-                        type: "checkbox",
-                        checked: treeSort.field == "size",
-                        click: () => setSortField("size"),
-                    },
-                    {
-                        label: t("previewMenu.sortPerm"),
-                        type: "checkbox",
-                        checked: treeSort.field == "modestr",
-                        click: () => setSortField("modestr"),
-                    },
-                    { type: "separator" },
-                    {
-                        label: t("previewMenu.sortDescending"),
-                        type: "checkbox",
-                        checked: treeSort.desc,
-                        click: () => globalStore.set(this.treeSort, { ...treeSort, desc: !treeSort.desc }),
-                    },
-                ],
+                submenu: makeTreeSortMenuItems(this),
             });
             menuItems.push({ type: "separator" });
             menuItems.push({ label: t("previewMenu.defaultSettings"), enabled: false });

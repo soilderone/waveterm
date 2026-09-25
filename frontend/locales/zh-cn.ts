@@ -60,6 +60,7 @@ export const zhCN: Record<string, string> = {
     "preview.saveFailed": "保存失败",
     "preview.confirmDeleteDir": "确认删除目录",
     "preview.confirmDeleteDirText": "删除目录需要递归标志，是否继续？",
+    "preview.sortBy": "排序方式：{field}",
 
     "previewMenu.copyFullPath": "复制完整路径",
     "previewMenu.editorFontSize": "编辑器字号",
@@ -73,6 +74,7 @@ export const zhCN: Record<string, string> = {
     "previewMenu.sortModtime": "修改时间",
     "previewMenu.sortSize": "大小",
     "previewMenu.sortPerm": "权限",
+    "previewMenu.sortAscending": "升序",
     "previewMenu.sortDescending": "降序",
 
     "preview.tableName": "名称",

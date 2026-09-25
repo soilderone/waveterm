@@ -40,9 +40,11 @@ import {
     getMimeTypeColor,
     getMimeTypeIcon,
     getSortIcon,
+    getTreeSortLabel,
     handleFileDelete,
     handleRename,
     makeDirectoryDefaultMenuItems,
+    makeTreeSortMenuItems,
     mergeError,
     overwriteError,
     type TreeSortType,
@@ -1270,6 +1272,33 @@ const FileTreeEntry = React.memo(function FileTreeEntry({
 
 FileTreeEntry.displayName = "FileTreeEntry";
 
+const TreeSortButton = React.memo(function TreeSortButton({ model }: { model: PreviewModel }) {
+    const t = useT();
+    const treeSort = useAtomValue(model.treeSort);
+    const label = getTreeSortLabel(treeSort.field);
+    const title = t("preview.sortBy", { field: label });
+    return (
+        <button
+            type="button"
+            title={title}
+            aria-label={title}
+            className="flex h-5 shrink-0 cursor-pointer items-center gap-1 rounded-[5px] px-1.5 text-[11px] font-medium text-secondary transition-colors hover:bg-hover hover:text-primary"
+            onClick={(e) => ContextMenuModel.getInstance().showContextMenu(makeTreeSortMenuItems(model), e)}
+        >
+            <i
+                aria-hidden="true"
+                className={cn(
+                    "fa-solid text-[10px]",
+                    treeSort.desc ? "fa-arrow-down-wide-short" : "fa-arrow-down-short-wide"
+                )}
+            />
+            <span className="hidden @min-[260px]:inline">{label}</span>
+        </button>
+    );
+});
+
+TreeSortButton.displayName = "TreeSortButton";
+
 export const FileTree = React.memo(function FileTree({
     model,
     rootPath,
@@ -1499,6 +1528,7 @@ export const FileTree = React.memo(function FileTree({
                                 }
                             }}
                         />
+                        <TreeSortButton model={model} />
                         {PLATFORM == PlatformMacOS && isLocalConnName(connection) && (
                             <span className="hidden shrink-0 items-center gap-1 text-[11px] text-muted @min-[300px]:inline-flex">
                                 <kbd className="rounded-[4px] bg-raise px-1 py-px font-sans text-[10px] shadow-[inset_0_0_0_0.5px_var(--sage-line-strong)]">
@@ -1524,15 +1554,18 @@ export const FileTree = React.memo(function FileTree({
                         </button>
                     </div>
                 ) : (
-                    <button
-                        type="button"
-                        title={rootPath}
-                        className="flex h-7 w-full shrink-0 cursor-pointer select-none items-center gap-1.5 border-b border-border px-2 text-left text-xs font-medium text-secondary transition-colors hover:bg-hover"
-                        onClick={() => fireAndForget(() => model.goHistory(rootPath))}
-                    >
-                        <i aria-hidden="true" className="fa-solid fa-folder-open shrink-0 text-[10px] opacity-70" />
-                        <span className="truncate">{getBaseName(rootPath)}</span>
-                    </button>
+                    <div className="@container flex h-7 w-full shrink-0 items-center gap-1 border-b border-border pr-1.5">
+                        <button
+                            type="button"
+                            title={rootPath}
+                            className="flex h-full min-w-0 flex-1 cursor-pointer select-none items-center gap-1.5 px-2 text-left text-xs font-medium text-secondary transition-colors hover:bg-hover"
+                            onClick={() => fireAndForget(() => model.goHistory(rootPath))}
+                        >
+                            <i aria-hidden="true" className="fa-solid fa-folder-open shrink-0 text-[10px] opacity-70" />
+                            <span className="truncate">{getBaseName(rootPath)}</span>
+                        </button>
+                        <TreeSortButton model={model} />
+                    </div>
                 )}
                 <div className="min-h-0 flex-1 overflow-auto p-1 scrollbar-hide-until-hover">
                     <FileTreeDirectory

@@ -45,6 +45,20 @@ describe("compareTreeEntries", () => {
         expect(names(entries, { field: "modtime", desc: true })).toEqual(["c", "b", "a"]);
     });
 
+    it("orders numbered names naturally and ignores case", () => {
+        const entries = [file("file10.txt"), file("File2.txt"), file("file1.txt")];
+        expect(names(entries, { field: "name", desc: false })).toEqual(["file1.txt", "File2.txt", "file10.txt"]);
+    });
+
+    it("groups files of one mimetype by extension", () => {
+        const entries = [
+            file("b.log", { mimetype: "text/plain" }),
+            file("a.txt", { mimetype: "text/plain" }),
+            file("c.log", { mimetype: "text/plain" }),
+        ];
+        expect(names(entries, { field: "mimetype", desc: false })).toEqual(["b.log", "c.log", "a.txt"]);
+    });
+
     it("breaks ties by name ascending", () => {
         const entries = [file("b", { size: 10 }), file("a", { size: 10 })];
         expect(names(entries, { field: "size", desc: false })).toEqual(["a", "b"]);
