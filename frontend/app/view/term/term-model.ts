@@ -324,6 +324,11 @@ export class TermViewModel implements ViewModel {
             const isCmd = get(this.isCmdController);
             const rtn: IconButtonDecl[] = [];
 
+            const failedCommandButton = this.getFailedCommandIconButton(get);
+            if (failedCommandButton) {
+                rtn.push(failedCommandButton);
+            }
+
             const isAIPanelOpen = get(WorkspaceLayoutModel.getInstance().panelVisibleAtom);
             if (isAIPanelOpen) {
                 const shellIntegrationButton = this.getShellIntegrationIconButton(get);
@@ -484,6 +489,51 @@ export class TermViewModel implements ViewModel {
             };
         }
         return null;
+    }
+
+    getFailedCommandIconButton(get: jotai.Getter): IconButtonDecl | null {
+        const termWrap = this.termRef.current;
+        if (termWrap?.lastCmdExitCodeAtom == null) {
+            return null;
+        }
+        const exitCode = get(termWrap.lastCmdExitCodeAtom);
+        // 130 is Ctrl-C: the user stopped the command, it did not fail
+        if (exitCode == null || exitCode === 0 || exitCode === 130) {
+            return null;
+        }
+        return {
+            elemtype: "iconbutton",
+            icon: "wand-magic-sparkles",
+            className: "text-warning",
+            title: t("term.askAiAboutFailure", { code: exitCode }),
+            click: () => this.askAIAboutLastCommand(),
+        };
+    }
+
+    askAIAboutLastCommand() {
+        const termWrap = this.termRef.current;
+        if (termWrap == null) {
+            return;
+        }
+        const exitCode = globalStore.get(termWrap.lastCmdExitCodeAtom);
+        WaveAIModel.getInstance().askAboutFailedCommand({
+            cmd: globalStore.get(termWrap.lastCommandAtom) ?? "",
+            exitCode: exitCode ?? 1,
+            output: termWrap.getLastCommandOutputLines().join("\n"),
+        });
+        globalStore.set(termWrap.lastCmdExitCodeAtom, null);
+    }
+
+    getRecentOutputText(maxLines: number = 200): string {
+        const termWrap = this.termRef.current;
+        if (termWrap?.terminal == null) {
+            return "";
+        }
+        return termWrap
+            .getRecentOutputLines(maxLines)
+            .map((line) => line.trimEnd())
+            .join("\n")
+            .trim();
     }
 
     getWebGlIconButton(get: jotai.Getter): IconButtonDecl | null {

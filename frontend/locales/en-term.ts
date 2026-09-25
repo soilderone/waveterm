@@ -59,6 +59,7 @@ export const enTerm: Record<string, string> = {
     "term.nounExitedRestart": "{noun} Exited. Click to Restart",
     "term.noShellIntegration": "No shell integration — Wave AI unable to run commands.",
     "term.shellReady": "Shell ready — Wave AI can run commands in this terminal.",
+    "term.askAiAboutFailure": "Last command failed (exit code {code}) — ask Wave AI why",
     "term.claudeCodeDetected": "Claude Code Detected",
     "term.shellBusy": "Shell busy — Wave AI unable to run commands while another command is running.",
     "term.waveAiDisabledIn": "Wave AI integration disabled while you're inside {cmd}.",

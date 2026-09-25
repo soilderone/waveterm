@@ -127,6 +127,7 @@ export class TermWrap {
     promptMarkers: TermTypes.IMarker[] = [];
     shellIntegrationStatusAtom: jotai.PrimitiveAtom<ShellIntegrationStatus | null>;
     lastCommandAtom: jotai.PrimitiveAtom<string | null>;
+    lastCmdExitCodeAtom: jotai.PrimitiveAtom<number | null>;
     claudeCodeActiveAtom: jotai.PrimitiveAtom<boolean>;
     nodeModel: BlockNodeModel; // this can be null
     hoveredLinkUri: string | null = null;
@@ -167,6 +168,7 @@ export class TermWrap {
         this.promptMarkers = [];
         this.shellIntegrationStatusAtom = jotai.atom(null) as jotai.PrimitiveAtom<ShellIntegrationStatus | null>;
         this.lastCommandAtom = jotai.atom(null) as jotai.PrimitiveAtom<string | null>;
+        this.lastCmdExitCodeAtom = jotai.atom(null) as jotai.PrimitiveAtom<number | null>;
         this.claudeCodeActiveAtom = jotai.atom(false);
         this.webglEnabledAtom = jotai.atom(false) as jotai.PrimitiveAtom<boolean>;
         this.terminal = new Terminal(options);
@@ -509,6 +511,30 @@ export class TermWrap {
             }
         });
         this.mainFileSubject.release();
+    }
+
+    // the last prompt marker is the current prompt, so the previous command starts at the one before it
+    // (with a single marker, that marker is the command that is still on screen)
+    getLastCommandBufferRange(): { start: number; end: number } {
+        const totalLines = this.terminal.buffer.active.length;
+        const markers = this.promptMarkers;
+        if (markers.length === 0) {
+            return { start: 0, end: totalLines };
+        }
+        const startMarker = markers.length > 1 ? markers[markers.length - 2] : markers[markers.length - 1];
+        const end = markers.length > 1 ? markers[markers.length - 1].line : totalLines;
+        return { start: startMarker.line, end };
+    }
+
+    getLastCommandOutputLines(): string[] {
+        const { start, end } = this.getLastCommandBufferRange();
+        return bufferLinesToText(this.terminal.buffer.active, start, end);
+    }
+
+    getRecentOutputLines(maxLines: number): string[] {
+        const buffer = this.terminal.buffer.active;
+        const lines = bufferLinesToText(buffer, Math.max(0, buffer.length - maxLines * 2), buffer.length);
+        return lines.slice(Math.max(0, lines.length - maxLines));
     }
 
     handleTermData(data: string) {

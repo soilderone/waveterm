@@ -59,6 +59,7 @@ export const zhCNTerm: Record<string, string> = {
     "term.nounExitedRestart": "{noun} 已退出，点击重启",
     "term.noShellIntegration": "无 Shell 集成 — Wave AI 无法运行命令。",
     "term.shellReady": "Shell 已就绪 — Wave AI 可在此终端中运行命令。",
+    "term.askAiAboutFailure": "上一条命令失败（退出码 {code}）— 让 Wave AI 分析原因",
     "term.claudeCodeDetected": "检测到 Claude Code",
     "term.shellBusy": "Shell 忙碌 — 另一个命令正在运行，Wave AI 无法运行命令。",
     "term.waveAiDisabledIn": "当前处于 {cmd} 中，Wave AI 集成已禁用。",
