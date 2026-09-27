@@ -12,7 +12,7 @@ import { goHistory, goHistoryBack, goHistoryForward } from "@/util/historyutil";
 import { checkKeyPressed } from "@/util/keyutil";
 import { t } from "@/util/i18n";
 import { addOpenMenuItems } from "@/util/previewutil";
-import { base64ToString, fireAndForget, isBlank, jotaiLoadableValue, stringToBase64 } from "@/util/util";
+import { base64ToString, fireAndForget, isBlank, jotaiLoadableValue, makeConnRoute, stringToBase64 } from "@/util/util";
 import { formatRemoteUri } from "@/util/waveutil";
 import clsx from "clsx";
 import { Atom, atom, Getter, PrimitiveAtom, WritableAtom } from "jotai";
@@ -26,7 +26,14 @@ import {
     makeTreeSortMenuItems,
     type TreeSortType,
 } from "./preview-directory-utils";
-import { getParentPath, isPathInside, remapPath, resolveTypedPath } from "./preview-path";
+import {
+    completeTypedPath,
+    getBaseName,
+    getParentPath,
+    isPathInside,
+    remapPath,
+    resolveTypedPath,
+} from "./preview-path";
 import type { PreviewEnv } from "./previewenv";
 
 // TODO drive this using config
@@ -142,6 +149,10 @@ export class PreviewModel implements ViewModel {
     pathEditing: PrimitiveAtom<boolean>;
     pathEditValue: PrimitiveAtom<string>;
     pathInputRef: React.RefObject<HTMLInputElement>;
+    pathSuggestions: PrimitiveAtom<SuggestionType[]>;
+    pathSuggestIndex: PrimitiveAtom<number>; // -1 until the arrow keys pick one
+    pathSuggestReqNum: number = 0;
+    pathSuggestFetched: boolean = false;
     editMode: Atom<boolean>;
     canPreview: PrimitiveAtom<boolean>;
     specializedView: Atom<Promise<{ specializedView?: string; errorStr?: string }>>;
@@ -201,6 +212,8 @@ export class PreviewModel implements ViewModel {
         this.pathEditing = atom(false);
         this.pathEditValue = atom("");
         this.pathInputRef = createRef();
+        this.pathSuggestions = atom<SuggestionType[]>([]);
+        this.pathSuggestIndex = atom(-1);
         this.openFileModal = atom(false);
         this.openFileModalDelay = atom(false);
         this.openFileError = atom(null) as PrimitiveAtom<string>;
@@ -268,7 +281,7 @@ export class PreviewModel implements ViewModel {
                                 ref: this.pathInputRef,
                                 className: "preview-path-input",
                                 onChange: (e: React.ChangeEvent<HTMLInputElement>) =>
-                                    globalStore.set(this.pathEditValue, e.target.value),
+                                    this.setPathEditValue(e.target.value),
                                 onKeyDown: (e: React.KeyboardEvent<HTMLInputElement>) => this.handlePathEditKeyDown(e),
                                 onFocus: (e: React.FocusEvent<HTMLInputElement>) => e.target.select(),
                                 onBlur: () => this.cancelPathEdit(),
@@ -603,6 +616,85 @@ export class PreviewModel implements ViewModel {
 
     cancelPathEdit() {
         globalStore.set(this.pathEditing, false);
+        this.clearPathSuggestions();
+    }
+
+    getPathEditBaseDir(): string {
+        const fileInfo = jotaiLoadableValue(globalStore.get(this.loadableFileInfo), null);
+        return fileInfo?.isdir ? fileInfo.path : fileInfo?.dir;
+    }
+
+    getPathSuggestWidgetId(): string {
+        return "pathedit:" + this.blockId;
+    }
+
+    getPathSuggestRoute(): string {
+        const conn = globalStore.get(this.connectionImmediate);
+        return isBlank(conn) ? null : makeConnRoute(conn);
+    }
+
+    setPathEditValue(value: string) {
+        globalStore.set(this.pathEditValue, value);
+        globalStore.set(this.pathSuggestIndex, -1);
+        fireAndForget(() => this.fetchPathSuggestions(value));
+    }
+
+    // The same file suggestions as the Cmd-O picker, resolved against the folder a relative path
+    // would be. Only fetched once the user edits, so opening the editor does not list the folder.
+    async fetchPathSuggestions(query: string) {
+        const reqNum = ++this.pathSuggestReqNum;
+        if (isBlank(query)) {
+            globalStore.set(this.pathSuggestions, []);
+            return;
+        }
+        this.pathSuggestFetched = true;
+        let results: FetchSuggestionsResponse = null;
+        try {
+            results = await this.env.rpc.FetchSuggestionsCommand(
+                TabRpcClient,
+                {
+                    suggestiontype: "file",
+                    "file:cwd": this.getPathEditBaseDir(),
+                    "file:connection": globalStore.get(this.connectionImmediate),
+                    query,
+                    widgetid: this.getPathSuggestWidgetId(),
+                    reqnum: reqNum,
+                },
+                { route: this.getPathSuggestRoute() }
+            );
+        } catch (e) {
+            console.log("path suggestions failed", e);
+        }
+        if (reqNum != this.pathSuggestReqNum || !globalStore.get(this.pathEditing)) {
+            return;
+        }
+        globalStore.set(this.pathSuggestions, results?.suggestions ?? []);
+    }
+
+    clearPathSuggestions() {
+        this.pathSuggestReqNum++;
+        globalStore.set(this.pathSuggestions, []);
+        globalStore.set(this.pathSuggestIndex, -1);
+        if (!this.pathSuggestFetched) {
+            return;
+        }
+        this.pathSuggestFetched = false;
+        const widgetId = this.getPathSuggestWidgetId();
+        const route = this.getPathSuggestRoute();
+        fireAndForget(() =>
+            this.env.rpc.DisposeSuggestionsCommand(TabRpcClient, widgetId, { noresponse: true, route })
+        );
+    }
+
+    acceptPathSuggestion(suggestion: SuggestionType) {
+        const isDir = suggestion["file:mimetype"] == "directory";
+        const value = completeTypedPath(
+            globalStore.get(this.pathEditValue),
+            getBaseName(suggestion["file:path"]),
+            isDir
+        );
+        this.setPathEditValue(value);
+        requestAnimationFrame(() => this.pathInputRef.current?.setSelectionRange(value.length, value.length));
     }
 
     handlePathEditKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
@@ -610,9 +702,38 @@ export class PreviewModel implements ViewModel {
         if (e.nativeEvent.isComposing) {
             return;
         }
+        const suggestions = globalStore.get(this.pathSuggestions);
+        const suggestIndex = globalStore.get(this.pathSuggestIndex);
+        if (e.key == "ArrowDown" || e.key == "ArrowUp") {
+            if (suggestions.length == 0) {
+                return;
+            }
+            e.preventDefault();
+            const next =
+                e.key == "ArrowDown"
+                    ? Math.min(suggestIndex + 1, suggestions.length - 1)
+                    : Math.max(suggestIndex - 1, -1);
+            globalStore.set(this.pathSuggestIndex, next);
+            return;
+        }
+        if (e.key == "Tab") {
+            // Tab stays in the field while a path is being edited; with nothing listed yet it asks for
+            // suggestions, so a second Tab can complete (as in a shell)
+            e.preventDefault();
+            e.stopPropagation();
+            const suggestion = suggestions[Math.max(suggestIndex, 0)];
+            if (suggestion == null) {
+                fireAndForget(() => this.fetchPathSuggestions(globalStore.get(this.pathEditValue)));
+                return;
+            }
+            this.acceptPathSuggestion(suggestion);
+            return;
+        }
         if (e.key == "Enter") {
             e.preventDefault();
-            fireAndForget(() => this.submitPathEdit());
+            // Enter opens the typed path unless the arrow keys picked a suggestion
+            const picked = suggestIndex >= 0 ? suggestions[suggestIndex] : null;
+            fireAndForget(() => this.submitPathEdit(picked?.["file:path"]));
             return;
         }
         if (e.key == "Escape") {
@@ -625,10 +746,9 @@ export class PreviewModel implements ViewModel {
 
     // The target is stat'ed before navigating: goHistory to a missing path would land in the editor
     // as a new, unsaved file, which is not what jumping to a mistyped path should do.
-    async submitPathEdit() {
+    async submitPathEdit(path?: string) {
         const fileInfo = jotaiLoadableValue(globalStore.get(this.loadableFileInfo), null);
-        const baseDir = fileInfo?.isdir ? fileInfo.path : fileInfo?.dir;
-        const target = resolveTypedPath(globalStore.get(this.pathEditValue), baseDir);
+        const target = resolveTypedPath(path ?? globalStore.get(this.pathEditValue), this.getPathEditBaseDir());
         if (target == null || target == fileInfo?.path) {
             this.cancelPathEdit();
             return;

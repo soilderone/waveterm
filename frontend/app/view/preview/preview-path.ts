@@ -88,6 +88,22 @@ export function resolveTypedPath(input: string, baseDir: string): string {
     return joinPath(baseDir, path);
 }
 
+// Tab completion keeps everything typed up to the last separator ("~/", a relative folder, an absolute
+// path) and only swaps in the chosen entry. The backend reports "~/..." queries with the home dir
+// expanded, so rebuilding from its path instead would rewrite the part the user already typed.
+export function completeTypedPath(typed: string, entryName: string, isDir: boolean): string {
+    const value = typed ?? "";
+    const sep = getPathSeparator(value);
+    let dirPart: string;
+    if (value == "~") {
+        dirPart = "~" + sep;
+    } else {
+        const idx = value.lastIndexOf(sep);
+        dirPart = idx < 0 ? "" : value.substring(0, idx + 1);
+    }
+    return dirPart + entryName + (isDir ? sep : "");
+}
+
 // Moving a folder already carries everything under it, so a dragged or deleted descendant of another
 // selected folder is dropped from the batch instead of being processed (and failing) on its own.
 export function pruneNestedPaths<T extends { path: string }>(items: T[]): T[] {

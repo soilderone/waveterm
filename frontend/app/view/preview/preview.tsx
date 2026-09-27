@@ -9,16 +9,18 @@ import { useWaveEnv } from "@/app/waveenv/waveenv";
 import { cn, fireAndForget, isBlank, makeConnRoute } from "@/util/util";
 import { useT } from "@/util/i18n-hooks";
 import { formatRemoteUri } from "@/util/waveutil";
+import { autoUpdate, FloatingPortal, offset, size, useFloating } from "@floating-ui/react";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
-import { memo, Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { memo, Suspense, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ImperativePanelHandle, Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 import { CSVView } from "./csvview";
 import { FileTree } from "./preview-directory";
+import { getMimeTypeColor, getMimeTypeIcon } from "./preview-directory-utils";
 import { CodeEditPreview } from "./preview-edit";
 import { ErrorOverlay } from "./preview-error-overlay";
 import { MarkdownPreview } from "./preview-markdown";
 import type { PreviewModel } from "./preview-model";
-import { isPathInside } from "./preview-path";
+import { getBaseName, isPathInside } from "./preview-path";
 import { StreamingPreview } from "./preview-streaming";
 import type { PreviewEnv } from "./previewenv";
 
@@ -133,6 +135,110 @@ const fetchSuggestions = async (
         route: route,
     });
 };
+
+// Suggestions come back highlighted against their display path (typed folder + name); only the name
+// is shown here, so the match positions are shifted past that folder part.
+function highlightSuggestionName(suggestion: SuggestionType, name: string): React.ReactNode[] {
+    const shift = (suggestion.display?.length ?? name.length) - name.length;
+    const positions = new Set((suggestion.matchpos ?? []).map((pos) => pos - shift));
+    return Array.from(name).map((ch, idx) =>
+        positions.has(idx) ? (
+            <span key={idx} className="font-semibold text-accent">
+                {ch}
+            </span>
+        ) : (
+            ch
+        )
+    );
+}
+
+// The header path editor's completion list. It lives in a portal under the header input so the
+// block's overflow cannot clip it, and never takes focus: rows swallow mousedown so the input keeps
+// focus (its blur would cancel the edit) while the click opens the entry.
+const PathEditSuggestions = memo(({ model }: { model: PreviewModel }) => {
+    const env = useWaveEnv<PreviewEnv>();
+    const editing = useAtomValue(model.pathEditing);
+    const suggestions = useAtomValue(model.pathSuggestions);
+    const selectedIndex = useAtomValue(model.pathSuggestIndex);
+    const fullConfig = useAtomValue(env.atoms.fullConfigAtom);
+    const listRef = useRef<HTMLDivElement>(null);
+    const open = editing && suggestions.length > 0;
+    const { refs, floatingStyles } = useFloating({
+        open,
+        placement: "bottom-start",
+        whileElementsMounted: autoUpdate,
+        middleware: [
+            offset(4),
+            size({
+                apply({ rects, elements }) {
+                    elements.floating.style.width = `${Math.max(rects.reference.width, 240)}px`;
+                },
+            }),
+        ],
+    });
+
+    useLayoutEffect(() => {
+        refs.setReference(open ? model.pathInputRef.current : null);
+    }, [open, refs, model]);
+
+    useEffect(() => {
+        if (!open || selectedIndex < 0) {
+            return;
+        }
+        listRef.current?.children[selectedIndex]?.scrollIntoView({ block: "nearest" });
+    }, [open, selectedIndex]);
+
+    const setListRef = useCallback(
+        (node: HTMLDivElement | null) => {
+            listRef.current = node;
+            refs.setFloating(node);
+        },
+        [refs]
+    );
+
+    if (!open) {
+        return null;
+    }
+    return (
+        <FloatingPortal>
+            <div
+                ref={setListRef}
+                style={floatingStyles}
+                role="listbox"
+                className="z-[var(--zindex-typeahead-modal)] max-h-72 overflow-y-auto rounded-md border border-border bg-modalbg py-1 shadow-lg"
+                onMouseDown={(e) => e.preventDefault()}
+            >
+                {suggestions.map((suggestion, idx) => {
+                    const mimeType = suggestion["file:mimetype"] ?? "";
+                    const name = getBaseName(suggestion["file:path"]) || suggestion.display;
+                    return (
+                        <div
+                            key={suggestion.suggestionid}
+                            role="option"
+                            aria-selected={idx == selectedIndex}
+                            title={suggestion["file:path"]}
+                            className={cn(
+                                "flex h-7 cursor-pointer items-center gap-2 px-3 text-[13px] text-primary",
+                                idx == selectedIndex ? "bg-accentbg" : "hover:bg-hoverbg"
+                            )}
+                            onClick={() => fireAndForget(() => model.submitPathEdit(suggestion["file:path"]))}
+                        >
+                            <i
+                                aria-hidden="true"
+                                className={cn(getMimeTypeIcon(fullConfig, mimeType), "shrink-0 text-xs")}
+                                style={{ color: getMimeTypeColor(fullConfig, mimeType) }}
+                            />
+                            <span className="truncate">{highlightSuggestionName(suggestion, name)}</span>
+                            {mimeType == "directory" && <span className="shrink-0 text-muted">/</span>}
+                        </div>
+                    );
+                })}
+            </div>
+        </FloatingPortal>
+    );
+});
+
+PathEditSuggestions.displayName = "PathEditSuggestions";
 
 const TabDirtyDot = memo(({ model }: { model: PreviewModel }) => {
     const dirty = useAtomValue(model.newFileContent) != null;
@@ -411,6 +517,7 @@ function PreviewView({
                 fetchSuggestions={fetchSuggestionsFn}
                 placeholderText={t("preview.openFilePlaceholder")}
             />
+            <PathEditSuggestions model={model} />
         </>
     );
 }

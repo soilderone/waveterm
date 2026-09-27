@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
     canMovePathsInto,
+    completeTypedPath,
     getBaseName,
     getParentPath,
     getPathSeparator,
@@ -113,6 +114,31 @@ describe("resolveTypedPath", () => {
     it("returns null for blank input", () => {
         expect(resolveTypedPath("   ", "~")).toBeNull();
         expect(resolveTypedPath(null, "~")).toBeNull();
+    });
+});
+
+describe("completeTypedPath", () => {
+    it("keeps the typed folder part and swaps in the entry", () => {
+        expect(completeTypedPath("~/Doc", "Documents", true)).toBe("~/Documents/");
+        expect(completeTypedPath("/usr/lo", "local", true)).toBe("/usr/local/");
+        expect(completeTypedPath("src/ma", "main.ts", false)).toBe("src/main.ts");
+    });
+
+    it("completes inside a folder that already ends with a separator", () => {
+        expect(completeTypedPath("~/project/", "README.md", false)).toBe("~/project/README.md");
+    });
+
+    it("treats a bare ~ as the home folder", () => {
+        expect(completeTypedPath("~", "Desktop", true)).toBe("~/Desktop/");
+    });
+
+    it("completes a bare name relative to the current folder", () => {
+        expect(completeTypedPath("pack", "package.json", false)).toBe("package.json");
+        expect(completeTypedPath("", "src", true)).toBe("src/");
+    });
+
+    it("follows backslash paths", () => {
+        expect(completeTypedPath("C:\\Us", "Users", true)).toBe("C:\\Users\\");
     });
 });
 
