@@ -64,7 +64,7 @@ const PageJumpSize = 20;
 
 // The tree is not virtualized, so a directory with thousands of entries would otherwise build
 // thousands of rows on expand. Entries past this count are held back behind a "show more" row.
-const TreeRenderChunkSize = 300;
+const TreeRenderChunkSize = 100;
 
 // Same drag type the old listing used, so the AI panel keeps accepting files dragged out of the tree.
 const TreeDragType = "FILE_ITEM";
@@ -959,14 +959,12 @@ function isSameConnection(a: string, b: string): boolean {
 }
 
 // Everything the whole subtree needs that is not per-node. Grouped into one referentially stable
-// object so FileTreeDirectory/FileTreeEntry can be memoized -- selection and refresh are delivered
+// object so FileTreeDirectory and the entry rows can be memoized -- selection and refresh are delivered
 // through atoms instead of props so changing them only re-renders the nodes that actually care.
 type FileTreeSharedProps = {
     model: PreviewModel;
     connection: string;
     showHiddenFiles: boolean;
-    // lowercased; narrows only the root directory's entries (see the filter bar in FileTree)
-    rootFilter: string;
     sort: TreeSortType;
     versionAtom: PrimitiveAtom<TreeVersionState>;
     selectionAtom: PrimitiveAtom<TreeSelection>;
@@ -986,6 +984,9 @@ type FileTreeDirectoryProps = {
     parentPath?: string;
     onNavigateUp?: () => void;
     root?: boolean;
+    // lowercased; narrows only the root directory's entries (see the filter bar in FileTree). A prop
+    // rather than part of shared, so typing in the filter does not rebuild every row in the tree.
+    rootFilter?: string;
 };
 
 const TreeParentRow = React.memo(function TreeParentRow({
@@ -1053,8 +1054,9 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
     parentPath,
     onNavigateUp,
     root,
+    rootFilter,
 }: FileTreeDirectoryProps) {
-    const { connection, showHiddenFiles, rootFilter, sort } = shared;
+    const { connection, showHiddenFiles, sort } = shared;
     const env = useWaveEnv<PreviewEnv>();
     const t = useT();
     const [entries, setEntries] = useState<FileInfo[]>([]);
@@ -1174,9 +1176,13 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
                     </span>
                 </li>
             )}
-            {shownEntries.map((entry) => (
-                <FileTreeEntry key={entry.path} shared={shared} entry={entry} />
-            ))}
+            {shownEntries.map((entry) =>
+                entry.isdir ? (
+                    <FileTreeFolderEntry key={entry.path} shared={shared} entry={entry} />
+                ) : (
+                    <FileTreeFileEntry key={entry.path} shared={shared} entry={entry} />
+                )
+            )}
             {hiddenCount > 0 && (
                 <li role="none">
                     <button
@@ -1196,17 +1202,24 @@ const FileTreeDirectory = React.memo(function FileTreeDirectory({
 
 FileTreeDirectory.displayName = "FileTreeDirectory";
 
-const FileTreeEntry = React.memo(function FileTreeEntry({
-    shared,
-    entry,
-}: {
+type FileTreeEntryProps = {
     shared: FileTreeSharedProps;
     entry: FileInfo;
-}) {
+};
+
+// What file and folder rows have in common. Folder-only state -- expansion, the drop target and
+// reveal-on-open -- lives in FileTreeFolderEntry, so file rows (usually most of a listing) do not
+// each register a react-dnd drop target and a second metaFilePath subscription. Returns the row
+// button as an element rather than rendering it through a component, which would add a fiber per row.
+function useTreeEntryRow(
+    shared: FileTreeSharedProps,
+    entry: FileInfo,
+    expanded: boolean,
+    setExpanded: React.Dispatch<React.SetStateAction<boolean>>
+) {
     const env = useWaveEnv<PreviewEnv>();
     const t = useT();
     const fullConfig = useAtomValue(env.atoms.fullConfigAtom);
-    const [expanded, setExpanded] = useState(false);
     const itemRef = useRef<HTMLLIElement>(null);
     const labelId = React.useId();
     const activeAtom = useMemo(
@@ -1222,18 +1235,6 @@ const FileTreeEntry = React.memo(function FileTreeEntry({
     // Per-entry derived atoms rather than one shared subscription: jotai bails out when the
     // computed boolean is unchanged, so opening a file only re-renders the handful of rows whose
     // selected/ancestor state actually flipped instead of the entire tree.
-    const revealAtom = useMemo(
-        () =>
-            atom((get) => {
-                if (!entry.isdir) {
-                    return false;
-                }
-                const activePath = get(shared.model.metaFilePath);
-                return activePath != entry.path && isPathInside(activePath, entry.path);
-            }),
-        [shared.model, entry.path, entry.isdir]
-    );
-    const shouldReveal = useAtomValue(revealAtom);
     const mimeType = entry.mimetype ?? "";
     const iconClass = getMimeTypeIcon(fullConfig, mimeType);
     const iconColor = getMimeTypeColor(fullConfig, mimeType);
@@ -1255,55 +1256,12 @@ const FileTreeEntry = React.memo(function FileTreeEntry({
         }),
         [entry, shared]
     );
-    // Only folders are drop targets, and a folder's target is its whole <li> (row plus expanded
-    // children). A drag over a file therefore lands on the innermost folder around it, and the
-    // shallow isOver check keeps every enclosing folder from also accepting the same drop.
-    const [{ isDropOver, canDropHere }, drop] = useDrop(
-        () => ({
-            accept: TreeDragType,
-            canDrop: (item: TreeDragItem, monitor) =>
-                entry.isdir && monitor.isOver({ shallow: true }) && shared.canDropInto(item, entry.path),
-            drop: (item: TreeDragItem, monitor) => {
-                if (!monitor.didDrop()) {
-                    shared.dropInto(item, entry.path);
-                }
-            },
-            collect: (monitor) => ({
-                isDropOver: monitor.isOver({ shallow: true }),
-                canDropHere: monitor.canDrop(),
-            }),
-        }),
-        [entry.path, entry.isdir, shared]
-    );
-    const setItemRef = useCallback(
-        (node: HTMLLIElement | null) => {
-            itemRef.current = node;
-            drop(entry.isdir ? node : null);
-        },
-        [drop, entry.isdir]
-    );
     const setRowRef = useCallback(
         (node: HTMLButtonElement | null) => {
             drag(node);
         },
         [drag]
     );
-    const dragHovering = isDropOver && !isDragging;
-
-    useEffect(() => {
-        if (!entry.isdir || expanded || !dragHovering) {
-            return;
-        }
-        const timer = setTimeout(() => setExpanded(true), DragExpandDelayMs);
-        return () => clearTimeout(timer);
-    }, [dragHovering, expanded, entry.isdir]);
-
-    // Only ever expands, so a directory the user deliberately collapsed stays collapsed.
-    useEffect(() => {
-        if (shouldReveal) {
-            setExpanded(true);
-        }
-    }, [shouldReveal]);
 
     useEffect(() => {
         if (!active) {
@@ -1410,61 +1368,136 @@ const FileTreeEntry = React.memo(function FileTreeEntry({
         }
     };
 
-    return (
-        <li
-            ref={setItemRef}
-            role="treeitem"
-            aria-labelledby={labelId}
-            aria-expanded={entry.isdir ? expanded : undefined}
-            aria-selected={selected}
+    const rowButton = (
+        <button
+            id={labelId}
+            ref={setRowRef}
+            type="button"
+            data-tree-row=""
+            data-tree-path={entry.path}
+            data-tree-isdir={entry.isdir ? "true" : "false"}
+            title={entry.path}
             className={cn(
-                isDropOver && canDropHere && "rounded-[6px] bg-accent/10 outline outline-accent/60 -outline-offset-1"
+                "flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[6px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-hover focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2",
+                selected && "bg-accentbg text-primary",
+                !selected && entry.name.startsWith(".") && "opacity-60",
+                isDragging && "opacity-50"
             )}
+            onKeyDown={handleKeyDown}
+            onClick={(e) => {
+                if (shared.onRowClick(e, entry)) {
+                    return;
+                }
+                if (entry.isdir) {
+                    setExpanded((value) => !value);
+                    return;
+                }
+                fireAndForget(() => shared.model.openTreeFile(entry.path));
+            }}
+            onContextMenu={handleContextMenu}
         >
-            <button
-                id={labelId}
-                ref={setRowRef}
-                type="button"
-                data-tree-row=""
-                data-tree-path={entry.path}
-                data-tree-isdir={entry.isdir ? "true" : "false"}
-                title={entry.path}
+            <i
+                aria-hidden="true"
                 className={cn(
-                    "flex h-[26px] w-full min-w-0 cursor-pointer select-none items-center gap-1.5 rounded-[6px] pl-1 pr-2 text-left text-[13px] transition-colors hover:bg-hover focus-visible:outline focus-visible:outline-accent focus-visible:-outline-offset-2",
-                    selected && "bg-accentbg text-primary",
-                    !selected && entry.name.startsWith(".") && "opacity-60",
-                    isDragging && "opacity-50"
+                    "fa-solid w-3 shrink-0 text-[10px] opacity-70",
+                    entry.isdir ? (expanded ? "fa-chevron-down" : "fa-chevron-right") : "invisible"
                 )}
-                onKeyDown={handleKeyDown}
-                onClick={(e) => {
-                    if (shared.onRowClick(e, entry)) {
-                        return;
-                    }
-                    if (entry.isdir) {
-                        setExpanded((value) => !value);
-                        return;
-                    }
-                    fireAndForget(() => shared.model.openTreeFile(entry.path));
-                }}
-                onContextMenu={handleContextMenu}
-            >
-                <i
-                    aria-hidden="true"
-                    className={cn(
-                        "fa-solid w-3 shrink-0 text-[10px] opacity-70",
-                        entry.isdir ? (expanded ? "fa-chevron-down" : "fa-chevron-right") : "invisible"
-                    )}
-                />
-                <i aria-hidden="true" className={cn(iconClass, "shrink-0 text-xs")} style={{ color: iconColor }} />
-                <span className="truncate">{entry.name}</span>
-            </button>
-            {entry.isdir && expanded && <FileTreeDirectory shared={shared} path={entry.path} />}
+            />
+            <i aria-hidden="true" className={cn(iconClass, "shrink-0 text-xs")} style={{ color: iconColor }} />
+            <span className="truncate">{entry.name}</span>
+        </button>
+    );
+
+    return { itemRef, labelId, selected, isDragging, rowButton };
+}
+
+const FileTreeFileEntry = React.memo(function FileTreeFileEntry({ shared, entry }: FileTreeEntryProps) {
+    const row = useTreeEntryRow(shared, entry, false, null);
+    return (
+        <li ref={row.itemRef} role="treeitem" aria-labelledby={row.labelId} aria-selected={row.selected}>
+            {row.rowButton}
         </li>
     );
 });
 
-FileTreeEntry.displayName = "FileTreeEntry";
+FileTreeFileEntry.displayName = "FileTreeFileEntry";
 
+const FileTreeFolderEntry = React.memo(function FileTreeFolderEntry({ shared, entry }: FileTreeEntryProps) {
+    const [expanded, setExpanded] = useState(false);
+    const row = useTreeEntryRow(shared, entry, expanded, setExpanded);
+    const revealAtom = useMemo(
+        () =>
+            atom((get) => {
+                const activePath = get(shared.model.metaFilePath);
+                return activePath != entry.path && isPathInside(activePath, entry.path);
+            }),
+        [shared.model, entry.path]
+    );
+    const shouldReveal = useAtomValue(revealAtom);
+
+    // Only folders are drop targets, and a folder's target is its whole <li> (row plus expanded
+    // children). A drag over a file therefore lands on the innermost folder around it, and the
+    // shallow isOver check keeps every enclosing folder from also accepting the same drop.
+    const [{ isDropOver, canDropHere }, drop] = useDrop(
+        () => ({
+            accept: TreeDragType,
+            canDrop: (item: TreeDragItem, monitor) =>
+                monitor.isOver({ shallow: true }) && shared.canDropInto(item, entry.path),
+            drop: (item: TreeDragItem, monitor) => {
+                if (!monitor.didDrop()) {
+                    shared.dropInto(item, entry.path);
+                }
+            },
+            collect: (monitor) => ({
+                isDropOver: monitor.isOver({ shallow: true }),
+                canDropHere: monitor.canDrop(),
+            }),
+        }),
+        [entry.path, shared]
+    );
+    const itemRef = row.itemRef;
+    const setItemRef = useCallback(
+        (node: HTMLLIElement | null) => {
+            itemRef.current = node;
+            drop(node);
+        },
+        [drop, itemRef]
+    );
+    const dragHovering = isDropOver && !row.isDragging;
+
+    useEffect(() => {
+        if (expanded || !dragHovering) {
+            return;
+        }
+        const timer = setTimeout(() => setExpanded(true), DragExpandDelayMs);
+        return () => clearTimeout(timer);
+    }, [dragHovering, expanded]);
+
+    // Only ever expands, so a directory the user deliberately collapsed stays collapsed.
+    useEffect(() => {
+        if (shouldReveal) {
+            setExpanded(true);
+        }
+    }, [shouldReveal]);
+
+    return (
+        <li
+            ref={setItemRef}
+            role="treeitem"
+            aria-labelledby={row.labelId}
+            aria-expanded={expanded}
+            aria-selected={row.selected}
+            className={cn(
+                isDropOver && canDropHere && "rounded-[6px] bg-accent/10 outline outline-accent/60 -outline-offset-1"
+            )}
+        >
+            {row.rowButton}
+            {expanded && <FileTreeDirectory shared={shared} path={entry.path} />}
+        </li>
+    );
+});
+
+FileTreeFolderEntry.displayName = "FileTreeFolderEntry";
 const TreeSortButton = React.memo(function TreeSortButton({ model }: { model: PreviewModel }) {
     const t = useT();
     const treeSort = useAtomValue(model.treeSort);
@@ -1842,7 +1875,6 @@ export const FileTree = React.memo(function FileTree({
             model,
             connection,
             showHiddenFiles,
-            rootFilter,
             sort: treeSort,
             versionAtom,
             selectionAtom,
@@ -1858,7 +1890,6 @@ export const FileTree = React.memo(function FileTree({
             model,
             connection,
             showHiddenFiles,
-            rootFilter,
             treeSort,
             versionAtom,
             selectionAtom,
@@ -2001,6 +2032,7 @@ export const FileTree = React.memo(function FileTree({
                         parentPath={parentPath}
                         onNavigateUp={onNavigateUp}
                         root
+                        rootFilter={rootFilter}
                     />
                 </div>
             </div>
