@@ -52,7 +52,9 @@ export const AIAccessLevelDropdown = memo(() => {
             {isOpen && (
                 <>
                     <div className="fixed inset-0 z-40" onClick={() => setIsOpen(false)} />
-                    <div className="absolute top-full right-0 mt-1 w-[280px] max-w-[calc(100vw-32px)] bg-raise border border-border rounded shadow-lg z-50 py-1">
+                    {/* whitespace-normal: the header row this sits in is nowrap, which would otherwise
+                        stop the descriptions from wrapping and push them past the panel edge */}
+                    <div className="absolute top-full right-0 mt-1 w-[280px] max-w-[calc(100vw-32px)] whitespace-normal bg-raise border border-border rounded shadow-lg z-50 py-1">
                         <div className="px-3 pt-1 pb-1.5 text-[10px] text-secondary uppercase tracking-wide">
                             {t("ai.accessLevelHeader")}
                         </div>
