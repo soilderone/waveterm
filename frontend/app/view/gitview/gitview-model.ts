@@ -17,7 +17,12 @@ export type GitViewEnv = WaveEnvSubset<{
         RemoteGitLogCommand: WaveEnv["rpc"]["RemoteGitLogCommand"];
         RemoteGitCommitCommand: WaveEnv["rpc"]["RemoteGitCommitCommand"];
         RemoteGitDiffCommand: WaveEnv["rpc"]["RemoteGitDiffCommand"];
+        RemoteFileMultiInfoCommand: WaveEnv["rpc"]["RemoteFileMultiInfoCommand"];
         SetMetaCommand: WaveEnv["rpc"]["SetMetaCommand"];
+    };
+    atoms: {
+        windowFocused: WaveEnv["atoms"]["windowFocused"];
+        tabOnScreen: WaveEnv["atoms"]["tabOnScreen"];
     };
     createBlock: WaveEnv["createBlock"];
     showContextMenu: WaveEnv["showContextMenu"];
@@ -86,6 +91,44 @@ export function groupStatusFiles(files: GitStatusFile[]): GitChangeGroups {
     return groups;
 }
 
+export function sameGitStatus(a: GitStatusResponse, b: GitStatusResponse): boolean {
+    if (a == null || b == null) {
+        return a == b;
+    }
+    if (
+        a.isrepo !== b.isrepo ||
+        a.reporoot !== b.reporoot ||
+        a.head !== b.head ||
+        a.branch !== b.branch ||
+        a.upstream !== b.upstream ||
+        a.ahead !== b.ahead ||
+        a.behind !== b.behind ||
+        a.state !== b.state ||
+        a.truncated !== b.truncated
+    ) {
+        return false;
+    }
+    const aFiles = a.files ?? [];
+    const bFiles = b.files ?? [];
+    if (aFiles.length !== bFiles.length) {
+        return false;
+    }
+    for (let i = 0; i < aFiles.length; i++) {
+        const x = aFiles[i];
+        const y = bFiles[i];
+        if (
+            x.path !== y.path ||
+            x.origpath !== y.origpath ||
+            x.index !== y.index ||
+            x.worktree !== y.worktree ||
+            x.kind !== y.kind
+        ) {
+            return false;
+        }
+    }
+    return true;
+}
+
 export function errorMessage(e: any): string {
     return e?.message ?? String(e);
 }
@@ -133,6 +176,7 @@ export class GitViewModel implements ViewModel {
     graphCommits: jotai.Atom<GitCommit[]>;
     graphLayout: jotai.Atom<GraphLayout>;
     viewText: jotai.Atom<HeaderElem[]>;
+    pollActive: jotai.Atom<boolean>;
 
     disposed = false;
     pollTimer: ReturnType<typeof setTimeout> = null;
@@ -142,6 +186,7 @@ export class GitViewModel implements ViewModel {
     logEpoch = 0;
     detailEpoch = 0;
     unsubFns: (() => void)[] = [];
+    workDiffFingerprint: string = null;
 
     constructor({ blockId, waveEnv }: ViewModelInitType) {
         this.viewType = "git";
@@ -197,7 +242,18 @@ export class GitViewModel implements ViewModel {
             return rtn;
         });
 
+        // A background tab is only parked off-screen, so document.hidden stays false there; without
+        // this every git block in every cached tab would keep polling.
+        this.pollActive = jotai.atom((get) => get(this.env.atoms.tabOnScreen) && get(this.env.atoms.windowFocused));
+
         this.unsubFns.push(globalStore.sub(this.repoKey, () => this.resetRepo()));
+        this.unsubFns.push(
+            globalStore.sub(this.pollActive, () => {
+                if (globalStore.get(this.pollActive)) {
+                    this.triggerRefresh();
+                }
+            })
+        );
         this.unsubFns.push(
             globalStore.sub(this.connStatus, () => {
                 if (globalStore.get(this.connStatus)?.connected && globalStore.get(this.statusAtom) == null) {
@@ -247,12 +303,12 @@ export class GitViewModel implements ViewModel {
         this.pollRunning = true;
         try {
             const connected = globalStore.get(this.connStatus)?.connected;
-            if (connected && !document.hidden) {
-                await this.refreshStatus();
+            if (connected && !document.hidden && globalStore.get(this.pollActive)) {
+                const statusChanged = await this.refreshStatus();
                 if (globalStore.get(this.tabAtom) === "history" && globalStore.get(this.commitsAtom) == null) {
                     await this.loadLog(true);
                 }
-                await this.refreshWorkingDiff();
+                await this.refreshWorkingDiff(statusChanged);
             }
         } finally {
             this.pollRunning = false;
@@ -262,27 +318,34 @@ export class GitViewModel implements ViewModel {
         }
     }
 
-    async refreshStatus() {
+    // returns whether the status changed; an identical poll leaves statusAtom alone so the change
+    // list and the graph layout (which derive from it) are not rebuilt every few seconds
+    async refreshStatus(): Promise<boolean> {
         const epoch = this.statusEpoch;
         const path = globalStore.get(this.repoPath);
         try {
             const status = await this.env.rpc.RemoteGitStatusCommand(TabRpcClient, { path }, this.getRpcOpts());
             if (this.disposed || epoch !== this.statusEpoch) {
-                return;
+                return false;
             }
-            const prev = globalStore.get(this.statusAtom);
-            globalStore.set(this.statusAtom, status);
             globalStore.set(this.statusErrorAtom, null);
+            const prev = globalStore.get(this.statusAtom);
+            if (sameGitStatus(prev, status)) {
+                return false;
+            }
+            globalStore.set(this.statusAtom, status);
             this.closeStaleWorkDiff();
             const headMoved = prev != null && (prev.head !== status.head || prev.branch !== status.branch);
             if (headMoved && globalStore.get(this.commitsAtom) != null) {
                 fireAndForget(() => this.loadLog(true));
             }
+            return true;
         } catch (e) {
             if (this.disposed || epoch !== this.statusEpoch) {
-                return;
+                return false;
             }
             globalStore.set(this.statusErrorAtom, errorMessage(e));
+            return false;
         } finally {
             if (epoch === this.statusEpoch) {
                 globalStore.set(this.statusLoadingAtom, false);
@@ -483,15 +546,55 @@ export class GitViewModel implements ViewModel {
         }
     }
 
-    async refreshWorkingDiff() {
+    // Status letters stay the same while an already-modified file keeps changing, or while a staged
+    // file is re-staged, so a status change alone would miss those edits. The worktree file and the
+    // index cover both sides of a working diff; null means they could not be read (for example a
+    // linked worktree, where .git is a file), and the diff is then reloaded on every poll as before.
+    async getWorkDiffFingerprint(target: GitDiffTarget): Promise<string> {
+        const indexPath = ".git/index";
+        try {
+            const infos = await this.env.rpc.RemoteFileMultiInfoCommand(
+                TabRpcClient,
+                { cwd: this.getRepoRoot(), paths: [target.file, indexPath] },
+                this.getRpcOpts()
+            );
+            const fileInfo = infos?.[target.file];
+            const indexInfo = infos?.[indexPath];
+            if (
+                fileInfo == null ||
+                indexInfo == null ||
+                fileInfo.staterror ||
+                indexInfo.staterror ||
+                indexInfo.notfound
+            ) {
+                return null;
+            }
+            const fileStamp = fileInfo.notfound ? "missing" : `${fileInfo.modtime}:${fileInfo.size}`;
+            return `${target.key}|${fileStamp}|${indexInfo.modtime}:${indexInfo.size}`;
+        } catch {
+            return null;
+        }
+    }
+
+    async refreshWorkingDiff(statusChanged: boolean) {
         const target = globalStore.get(this.workDiff.targetAtom);
         if (target == null || globalStore.get(this.tabAtom) !== "changes") {
+            return;
+        }
+        const fingerprint = await this.getWorkDiffFingerprint(target);
+        if (this.disposed || globalStore.get(this.workDiff.targetAtom) !== target) {
+            return;
+        }
+        const unchanged = !statusChanged && fingerprint != null && fingerprint === this.workDiffFingerprint;
+        this.workDiffFingerprint = fingerprint;
+        if (unchanged) {
             return;
         }
         await this.loadDiff(this.workDiff, target, true);
     }
 
     resetRepo() {
+        this.workDiffFingerprint = null;
         this.statusEpoch++;
         this.logEpoch++;
         this.detailEpoch++;
@@ -513,6 +616,7 @@ export class GitViewModel implements ViewModel {
     }
 
     refreshAll() {
+        this.workDiffFingerprint = null;
         this.triggerRefresh();
         if (globalStore.get(this.commitsAtom) != null) {
             fireAndForget(() => this.loadLog(true));

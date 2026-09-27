@@ -33,6 +33,21 @@ function initGlobalAtoms(initOpts: GlobalInitOptions) {
         console.log("failed to initialize isFullScreenAtom", e);
     }
 
+    // Both start true: a tab is created on-screen in the window being used, and emain only sends
+    // changes. Builder and preview windows never receive either event.
+    const windowFocusedAtom = atom(true) as PrimitiveAtom<boolean>;
+    const tabOnScreenAtom = atom(true) as PrimitiveAtom<boolean>;
+    try {
+        getApi().onWindowFocusChange((focused) => {
+            globalStore.set(windowFocusedAtom, focused);
+        });
+        getApi().onTabOnScreenChange((onScreen) => {
+            globalStore.set(tabOnScreenAtom, onScreen);
+        });
+    } catch (e) {
+        console.log("failed to initialize windowFocused/tabOnScreen atoms", e);
+    }
+
     const zoomFactorAtom = atom(1.0) as PrimitiveAtom<number>;
     try {
         globalStore.set(zoomFactorAtom, getApi().getZoomFactor());
@@ -145,6 +160,8 @@ function initGlobalAtoms(initOpts: GlobalInitOptions) {
         updaterStatusAtom,
         prefersReducedMotionAtom,
         documentHasFocus: documentHasFocusAtom,
+        windowFocused: windowFocusedAtom,
+        tabOnScreen: tabOnScreenAtom,
         modalOpen,
         allConnStatus: allConnStatusAtom,
         reinitVersion,

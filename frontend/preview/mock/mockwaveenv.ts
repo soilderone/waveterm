@@ -182,6 +182,8 @@ function makeMockGlobalAtoms(
         controlShiftDelayAtom: atom(false) as any,
         prefersReducedMotionAtom: atom(false),
         documentHasFocus: atom(true) as any,
+        windowFocused: atom(true) as any,
+        tabOnScreen: atom(true) as any,
         updaterStatusAtom: atom("up-to-date" as UpdaterStatus) as any,
         modalOpen: atom(false) as any,
         allConnStatus: atom([] as ConnStatus[]),

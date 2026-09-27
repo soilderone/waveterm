@@ -141,6 +141,7 @@ export class WaveTabView extends WebContentsView {
     isInitialized: boolean = false;
     isWaveReady: boolean = false;
     isDestroyed: boolean = false;
+    onScreenState: boolean = null; // last value sent over tab-onscreen-change
     keyboardChordMode: boolean = false;
     resetChordModeTimeout: NodeJS.Timeout = null;
 
@@ -212,7 +213,23 @@ export class WaveTabView extends WebContentsView {
         }
     }
 
+    // Parking a tab off-screen leaves it visible as far as Chromium is concerned, so document.hidden
+    // never flips for background tabs. Renderers that poll use this to know when nobody can see them.
+    // Waits for wave-ready: before that the renderer has not registered its listener and the message
+    // would be lost with onScreenState already updated.
+    setOnScreenState(onScreen: boolean) {
+        if (!this.isWaveReady || this.onScreenState === onScreen) {
+            return;
+        }
+        this.onScreenState = onScreen;
+        if (this.webContents == null || this.webContents.isDestroyed()) {
+            return;
+        }
+        this.webContents.send("tab-onscreen-change", onScreen);
+    }
+
     positionTabOnScreen(winBounds: Rectangle) {
+        this.setOnScreenState(true);
         const curBounds = this.getBounds();
         if (
             curBounds.width == winBounds.width &&
@@ -226,6 +243,7 @@ export class WaveTabView extends WebContentsView {
     }
 
     positionTabOffScreen(winBounds: Rectangle) {
+        this.setOnScreenState(false);
         // Guarded like positionTabOnScreen: the window polls positioning once a second, so without
         // this every background tab gets a redundant setBounds every second for the life of the app.
         const curBounds = this.getBounds();

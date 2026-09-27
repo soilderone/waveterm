@@ -25,6 +25,7 @@ const previewElectronApi: ElectronApi = {
     openExternal: (_url: string) => {},
     onFullScreenChange: (_callback: (isFullScreen: boolean) => void) => {},
     onWindowFocusChange: (_callback: (focused: boolean) => void) => {},
+    onTabOnScreenChange: (_callback: (onScreen: boolean) => void) => {},
     getSystemAccentColor: () => "",
     onSystemAccentChange: (_callback: (color: string) => void) => {},
     onZoomFactorChange: (_callback: (zoomFactor: number) => void) => {},

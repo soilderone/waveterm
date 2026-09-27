@@ -24,6 +24,8 @@ declare global {
         controlShiftDelayAtom: jotai.PrimitiveAtom<boolean>;
         prefersReducedMotionAtom: jotai.Atom<boolean>;
         documentHasFocus: jotai.PrimitiveAtom<boolean>;
+        windowFocused: jotai.PrimitiveAtom<boolean>; // BrowserWindow focus, relayed by emain (unlike documentHasFocus, not fooled by <webview> focus)
+        tabOnScreen: jotai.PrimitiveAtom<boolean>; // false while emain has this tab parked off-screen behind the active one
         updaterStatusAtom: jotai.PrimitiveAtom<UpdaterStatus>;
         modalOpen: jotai.PrimitiveAtom<boolean>;
         allConnStatus: jotai.Atom<ConnStatus[]>;
@@ -102,6 +104,7 @@ declare global {
         onFullScreenChange: (callback: (isFullScreen: boolean) => void) => void; // fullscreen-change
         onZoomFactorChange: (callback: (zoomFactor: number) => void) => void; // zoom-factor-change
         onWindowFocusChange: (callback: (focused: boolean) => void) => void; // window-focus-change
+        onTabOnScreenChange: (callback: (onScreen: boolean) => void) => void; // tab-onscreen-change
         getSystemAccentColor: () => string; // get-system-accent-color
         onSystemAccentChange: (callback: (color: string) => void) => void; // system-accent-change
         onUpdaterStatusChange: (callback: (status: UpdaterStatus) => void) => void; // app-update-status
