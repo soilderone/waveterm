@@ -60,6 +60,15 @@ export const enUS: Record<string, string> = {
     "preview.saveFailed": "Save Failed",
     "preview.confirmDeleteDir": "Confirm Delete Directory",
     "preview.confirmDeleteDirText": "Deleting a directory requires the recursive flag. Proceed?",
+    "preview.moveFailed": "Move Failed",
+    "preview.pathNotFound": "Path Not Found",
+    "preview.pathNotFoundText": "{path} does not exist.",
+    "preview.sortBy": "Sort by {field}",
+    "preview.copyFullPaths": "Copy Full Paths",
+    "preview.copyFullPathsShellQuoted": "Copy Full Paths (Shell Quoted)",
+    "preview.deleteItems": "Delete {count} Items",
+    "preview.confirmDeleteItems": "Delete {count} Items?",
+    "preview.confirmDeleteItemsText": "Folders are deleted with everything inside them: {names}",
 
     "previewMenu.copyFullPath": "Copy Full Path",
     "previewMenu.editorFontSize": "Editor Font Size",
@@ -73,6 +82,7 @@ export const enUS: Record<string, string> = {
     "previewMenu.sortModtime": "Last Modified",
     "previewMenu.sortSize": "Size",
     "previewMenu.sortPerm": "Perm",
+    "previewMenu.sortAscending": "Ascending",
     "previewMenu.sortDescending": "Descending",
 
     "preview.tableName": "Name",

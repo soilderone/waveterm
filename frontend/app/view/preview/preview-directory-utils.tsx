@@ -127,6 +127,15 @@ export type TreeSortType = {
     desc: boolean;
 };
 
+function compareNames(a: string, b: string): number {
+    return a.localeCompare(b, undefined, { numeric: true, sensitivity: "base" }) || a.localeCompare(b);
+}
+
+function getExtension(name: string): string {
+    const idx = name.lastIndexOf(".");
+    return idx > 0 ? name.substring(idx + 1).toLowerCase() : "";
+}
+
 export function compareTreeEntries(a: FileInfo, b: FileInfo, sort: TreeSortType): number {
     const dirCompare = Number(!!b.isdir) - Number(!!a.isdir);
     if (dirCompare != 0) {
@@ -134,19 +143,77 @@ export function compareTreeEntries(a: FileInfo, b: FileInfo, sort: TreeSortType)
     }
     const dirMul = sort.desc ? -1 : 1;
     if (sort.field == "modtime") {
-        return ((a.modtime ?? 0) - (b.modtime ?? 0)) * dirMul || a.name.localeCompare(b.name);
+        return ((a.modtime ?? 0) - (b.modtime ?? 0)) * dirMul || compareNames(a.name, b.name);
     }
     if (sort.field == "size") {
-        return ((a.size ?? 0) - (b.size ?? 0)) * dirMul || a.name.localeCompare(b.name);
+        return ((a.size ?? 0) - (b.size ?? 0)) * dirMul || compareNames(a.name, b.name);
     }
     if (sort.field == "modestr") {
-        return (a.modestr ?? "").localeCompare(b.modestr ?? "") * dirMul || a.name.localeCompare(b.name);
+        return (a.modestr ?? "").localeCompare(b.modestr ?? "") * dirMul || compareNames(a.name, b.name);
     }
     if (sort.field == "mimetype") {
-        const typeCompare = cleanMimetype(a.mimetype ?? "").localeCompare(cleanMimetype(b.mimetype ?? ""));
-        return typeCompare * dirMul || a.name.localeCompare(b.name);
+        // Plenty of unrelated files share a generic mimetype (text/plain, application/octet-stream),
+        // so the extension keeps e.g. all .log files together within it.
+        const typeCompare =
+            cleanMimetype(a.mimetype ?? "").localeCompare(cleanMimetype(b.mimetype ?? "")) ||
+            getExtension(a.name).localeCompare(getExtension(b.name));
+        return typeCompare * dirMul || compareNames(a.name, b.name);
     }
-    return a.name.localeCompare(b.name) * dirMul;
+    return compareNames(a.name, b.name) * dirMul;
+}
+
+export const TreeSortFields = ["name", "mimetype", "modtime", "size", "modestr"];
+
+// Newest-first and largest-first are what people want from a date or size sort, so switching to
+// one of those fields picks that direction instead of carrying over an ascending name sort.
+export function getDefaultSortDesc(field: string): boolean {
+    return field == "modtime" || field == "size";
+}
+
+export function getTreeSortLabel(field: string): string {
+    switch (field) {
+        case "mimetype":
+            return t("previewMenu.sortType");
+        case "modtime":
+            return t("previewMenu.sortModtime");
+        case "size":
+            return t("previewMenu.sortSize");
+        case "modestr":
+            return t("previewMenu.sortPerm");
+        default:
+            return t("previewMenu.sortName");
+    }
+}
+
+export function makeTreeSortMenuItems(model: PreviewModel): ContextMenuItem[] {
+    const treeSort = globalStore.get(model.treeSort);
+    const fieldItems: ContextMenuItem[] = TreeSortFields.map((field) => ({
+        label: getTreeSortLabel(field),
+        type: "checkbox",
+        checked: treeSort.field == field,
+        click: () => {
+            if (treeSort.field == field) {
+                return;
+            }
+            globalStore.set(model.treeSort, { field, desc: getDefaultSortDesc(field) });
+        },
+    }));
+    return [
+        ...fieldItems,
+        { type: "separator" },
+        {
+            label: t("previewMenu.sortAscending"),
+            type: "checkbox",
+            checked: !treeSort.desc,
+            click: () => globalStore.set(model.treeSort, { ...treeSort, desc: false }),
+        },
+        {
+            label: t("previewMenu.sortDescending"),
+            type: "checkbox",
+            checked: treeSort.desc,
+            click: () => globalStore.set(model.treeSort, { ...treeSort, desc: true }),
+        },
+    ];
 }
 
 export function handleRename(

@@ -67,3 +67,41 @@ export function remapPath(path: string, oldPrefix: string, newPrefix: string): s
     }
     return newPrefix + path.substring(oldPrefix.length);
 }
+
+export function joinPath(dir: string, name: string): string {
+    const sep = getPathSeparator(dir);
+    return dir.endsWith(sep) ? dir + name : dir + sep + name;
+}
+
+// A path typed into the block header resolves the way a shell would: "~" and absolute paths stand
+// on their own, anything else is taken relative to the directory the block is showing.
+export function resolveTypedPath(input: string, baseDir: string): string {
+    const path = input?.trim();
+    if (path == null || path == "") {
+        return null;
+    }
+    const isAbsolute =
+        path.startsWith("~") || path.startsWith("/") || path.startsWith("\\") || /^[A-Za-z]:/.test(path);
+    if (isAbsolute || baseDir == null || baseDir == "") {
+        return path;
+    }
+    return joinPath(baseDir, path);
+}
+
+// Moving a folder already carries everything under it, so a dragged or deleted descendant of another
+// selected folder is dropped from the batch instead of being processed (and failing) on its own.
+export function pruneNestedPaths<T extends { path: string }>(items: T[]): T[] {
+    return items.filter(
+        (item) => !items.some((other) => other.path != item.path && isPathInside(item.path, other.path))
+    );
+}
+
+export function canMovePathsInto(paths: string[], targetDir: string): boolean {
+    if (paths == null || paths.length == 0 || targetDir == null || targetDir == "") {
+        return false;
+    }
+    if (paths.some((path) => isPathInside(targetDir, path))) {
+        return false;
+    }
+    return paths.some((path) => getParentPath(path) != targetDir);
+}
