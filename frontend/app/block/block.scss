@@ -10,8 +10,7 @@
     height: 100%;
     overflow: hidden;
     min-height: 0;
-    border-radius: var(--block-border-radius);
-    corner-shape: var(--block-corner-shape, round);
+    border-radius: var(--block-clip-radius);
 
     .block-frame-icon {
         margin-right: 0.5em;

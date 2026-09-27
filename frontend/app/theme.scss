@@ -90,6 +90,7 @@
     --block-bg-color: var(--sage-panel);
     --block-bg-solid-color: var(--sage-panel);
     --block-border-radius: 10px;
+    --block-clip-radius: var(--block-border-radius);
 
     --keybinding-color: var(--sage-text);
     --keybinding-bg-color: var(--sage-raise);
@@ -379,9 +380,16 @@
 
 @supports (corner-shape: squircle) {
     /* A continuous-curvature corner reads tighter than a circular one at the same radius, so the
-       radius goes up with it. Everything that clips or outlines a block uses both variables. */
+       radius goes up with it. Everything that outlines a block uses both variables.
+
+       Clips (overflow: hidden) stay circular on --block-clip-radius instead: Chromium turns a
+       non-round corner-shape clip into a clip-path, which costs a render surface plus a mask
+       layer per clip around the composited WebGL terminal, and the GPU process holds on to the
+       extra buffers. A circular corner encloses a squircle of radius R while its radius is
+       <= 0.54R, so 7px sits just outside the 14px outline and never cuts it. */
     :root {
         --block-border-radius: 14px;
+        --block-clip-radius: 7px;
         --block-corner-shape: squircle;
     }
 }
