@@ -148,6 +148,9 @@ func (cs *ChatStore) TruncateAtMessage(chatId string, messageId string, keepMess
 	if keepMessage {
 		idx++
 	}
+	// reslicing alone leaves the dropped messages (attachments included) reachable through the
+	// backing array for the life of the chat, so nil them out first
+	clear(chat.NativeMessages[idx:])
 	chat.NativeMessages = chat.NativeMessages[:idx]
 	return true
 }
