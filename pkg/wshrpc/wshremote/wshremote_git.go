@@ -26,6 +26,7 @@ import (
 const (
 	GitCmdTimeout       = 30 * time.Second
 	GitMaxOutputBytes   = 32 * 1024 * 1024
+	GitMaxStatusBytes   = 4 * 1024 * 1024
 	GitMaxStderrBytes   = 16 * 1024
 	GitMaxStatusFiles   = 5000
 	GitMaxCommitFiles   = 5000
@@ -501,7 +502,10 @@ func (impl *ServerImpl) RemoteGitStatusCommand(ctx context.Context, data wshrpc.
 	if err != nil {
 		return nil, err
 	}
-	out, truncated, err := repo.run(ctx, GitMaxOutputBytes, "status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all")
+	// status is polled every few seconds and only GitMaxStatusFiles records are kept, so it gets its
+	// own cap: a big untracked tree would otherwise buffer up to GitMaxOutputBytes on every poll.
+	// Records run ~120-350 bytes, so the cap still covers the file limit with room to spare.
+	out, truncated, err := repo.run(ctx, GitMaxStatusBytes, "status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all")
 	if err != nil {
 		return nil, err
 	}
