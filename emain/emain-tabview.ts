@@ -284,6 +284,7 @@ const wcvCache = new Map<string, WaveTabView>();
 export function setMaxTabCacheSize(size: number) {
     console.log("setMaxTabCacheSize", size);
     MaxCacheSize = size;
+    checkAndEvictCache();
 }
 
 export function getWaveTabView(waveTabId: string): WaveTabView | undefined {
@@ -324,19 +325,23 @@ function checkAndEvictCache(): void {
         return;
     }
     const sorted = Array.from(wcvCache.values()).sort((a, b) => {
-        // Prioritize entries which are active
-        if (a.isActiveTab && !b.isActiveTab) {
-            return -1;
+        // Prioritize entries which are inactive
+        if (Boolean(a.isActiveTab) !== Boolean(b.isActiveTab)) {
+            return a.isActiveTab ? 1 : -1;
         }
         // Otherwise, sort by lastUsedTs
         return a.lastUsedTs - b.lastUsedTs;
     });
-    for (let i = 0; i < sorted.length - MaxCacheSize; i++) {
-        tryEvictEntry(sorted[i].waveTabId);
+    for (const tabView of sorted) {
+        if (wcvCache.size <= MaxCacheSize) {
+            break;
+        }
+        tryEvictEntry(tabView.waveTabId);
     }
 }
 
 function evictIdleTabs(): void {
+    checkAndEvictCache();
     const now = Date.now();
     for (const tabView of Array.from(wcvCache.values())) {
         if (tabView.isActiveTab) {

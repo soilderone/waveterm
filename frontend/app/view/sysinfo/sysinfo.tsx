@@ -26,6 +26,7 @@ export type SysinfoEnv = WaveEnvSubset<{
     };
     atoms: {
         fullConfigAtom: WaveEnv["atoms"]["fullConfigAtom"];
+        tabOnScreen: WaveEnv["atoms"]["tabOnScreen"];
     };
     getConnStatusAtom: WaveEnv["getConnStatusAtom"];
     getBlockMetaKeyAtom: MetaKeyAtomFnType<"graph:numpoints" | "sysinfo:type" | "connection" | "count">;
@@ -358,6 +359,7 @@ function resolveDomainBound(value: number | string, dataItem: DataItem): number 
 }
 
 function SysinfoView({ model, blockId }: SysinfoViewProps) {
+    const onScreen = jotai.useAtomValue(model.env.atoms.tabOnScreen);
     const connName = jotai.useAtomValue(model.connection);
     const lastConnName = React.useRef(connName);
     const connStatus = jotai.useAtomValue(model.connStatus);
@@ -400,7 +402,7 @@ function SysinfoView({ model, blockId }: SysinfoViewProps) {
     if (connStatus?.status != "connected") {
         return null;
     }
-    if (loading) {
+    if (loading || !onScreen) {
         return null;
     }
     return <SysinfoViewInner key={connStatus?.connection ?? "local"} blockId={blockId} model={model} />;
