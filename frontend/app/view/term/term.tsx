@@ -240,7 +240,7 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
             caseSensitive,
             decorations: searchDecorations,
         }),
-        [regex, wholeWord, caseSensitive]
+        [regex, wholeWord, caseSensitive, searchDecorations]
     );
     const handleSearchError = React.useCallback((e: Error) => {
         console.warn("search error:", e);
@@ -314,6 +314,8 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
                 fontSize: termFontSize,
                 fontFamily: termSettings?.["term:fontfamily"] ?? connFontFamily ?? "Hack",
                 drawBoldTextInBrightColors: false,
+                // CLI truecolor and 256-color output can bypass the theme's ANSI palette.
+                minimumContrastRatio: 4.5,
                 fontWeight: "normal",
                 fontWeightBold: "bold",
                 allowTransparency: termTransparency > 0,

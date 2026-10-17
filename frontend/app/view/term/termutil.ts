@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 export const DefaultTermTheme = "default-dark";
@@ -39,12 +39,13 @@ export function computeTheme(
     fullConfig: FullConfigType,
     themeName: string,
     termTransparency: number
-): [TermThemeType, string] {
+): [TermThemeType & TermTypes.ITheme, string] {
     let theme: TermThemeType = fullConfig?.termthemes?.[themeName];
     if (theme == null) {
         theme = fullConfig?.termthemes?.[DefaultTermTheme] || ({} as any);
     }
-    const themeCopy = { ...theme };
+    // xterm's default cursor accent is black, which hides text under a dark cursor in light themes.
+    const themeCopy: TermThemeType & TermTypes.ITheme = { ...theme, cursorAccent: theme.background };
     if (termTransparency != null && termTransparency > 0) {
         if (themeCopy.background) {
             themeCopy.background = applyTransparencyToColor(themeCopy.background, termTransparency);
@@ -58,7 +59,8 @@ export function computeTheme(
     // reads as blurry glyphs -- obvious with dark text on a light background. Only hand it a
     // transparent background when the terminal really is translucent and the block paints behind.
     if (termTransparency != null && termTransparency > 0) {
-        themeCopy.background = "#00000000";
+        // Preserve RGB for OSC 11 background queries and xterm's contrast calculations.
+        themeCopy.background = colord(theme.background ?? "#000000").alpha(0).toHex();
     }
     return [themeCopy, bgcolor];
 }

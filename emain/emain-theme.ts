@@ -6,15 +6,15 @@ import { nativeTheme, systemPreferences } from "electron";
 import { unamePlatform } from "./emain-platform";
 
 // These paint before the renderer loads and must match --sage-bg in theme.scss.
-const DarkChromeBgColor = "#111713";
-const LightChromeBgColor = "#e9ece5";
+const DarkChromeBgColor = "#0d0d0d";
+const LightChromeBgColor = "#f2f2f2";
 const ThemeListeners = new Set<() => void>();
 
 export function getChromeTheme() {
     const light = !nativeTheme.shouldUseDarkColors;
     return {
         background: light ? LightChromeBgColor : DarkChromeBgColor,
-        symbol: light ? "#3a453e" : "#c3c8c2",
+        symbol: light ? "#404040" : "#c8c8c8",
     };
 }
 

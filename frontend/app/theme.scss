@@ -6,24 +6,24 @@
 
     /* sage palette primitives — every semantic token below resolves to one of these,
        so a future light theme only has to redefine this block (see [data-uitheme="light"]) */
-    --sage-ink: #101613;
-    --sage-bg: #111713;
-    --sage-surface: #1c2420;
-    --sage-panel: #181f1b;
-    --sage-head: #1c2420;
-    --sage-popover: #262f29;
-    --sage-raise: #242d27;
-    --sage-text: #e3e9e1;
-    --sage-text-2: #a4b1a5;
-    --sage-text-3: #7e8c82;
-    --sage-line: #2b362e;
-    --sage-line-strong: #38443b;
-    --sage-overlay: rgba(227, 233, 225, 0.06);
-    --sage-overlay-strong: rgba(227, 233, 225, 0.11);
+    --sage-ink: #000000;
+    --sage-bg: #0d0d0d;
+    --sage-surface: #191919;
+    --sage-panel: #000000;
+    --sage-head: #191919;
+    --sage-popover: #242424;
+    --sage-raise: #262626;
+    --sage-text: #e8e8e8;
+    --sage-text-2: #b0b0b0;
+    --sage-text-3: #909090;
+    --sage-line: #303030;
+    --sage-line-strong: #404040;
+    --sage-overlay: rgba(255, 255, 255, 0.06);
+    --sage-overlay-strong: rgba(255, 255, 255, 0.11);
     /* glass: the tab track and floating chrome; rim is the specular top edge AppKit draws on it */
     --sage-glass: rgba(255, 255, 255, 0.06);
     --sage-rim: rgba(255, 255, 255, 0.09);
-    --sage-thumb: #2c3530;
+    --sage-thumb: #333333;
     --sage-accent: #9cc487;
     --sage-accent-hover: #b0d49c;
     --sage-accent-deep: #34432f;
@@ -48,8 +48,8 @@
     --ink-bg: var(--sage-panel);
     --ink-raise: var(--sage-head);
     --ink-line: var(--sage-line);
-    --ink-text: #dae1da;
-    --ink-muted: #8b9a8b;
+    --ink-text: #e8e8e8;
+    --ink-muted: #909090;
     --ink-accent: var(--sage-accent);
 
     /* ~5% overshoot over 550ms, a damping ratio of about 0.68 -- the feel of an AppKit spring */
@@ -76,7 +76,7 @@
     --base-font: normal 14px / normal var(--ui-font-family);
     --fixed-font: normal 12px / normal "Hack", monospace;
     --accent-color: var(--sage-accent);
-    --panel-bg-color: rgba(28, 36, 32, 0.5);
+    --panel-bg-color: rgba(25, 25, 25, 0.5);
     --highlight-bg-color: var(--sage-overlay-strong);
     --markdown-font-family:
         -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif, "Apple Color Emoji",
@@ -98,9 +98,9 @@
 
     /* scrollbar colors */
     --scrollbar-background-color: transparent;
-    --scrollbar-thumb-color: rgba(225, 232, 223, 0.15);
-    --scrollbar-thumb-hover-color: rgba(225, 232, 223, 0.4);
-    --scrollbar-thumb-active-color: rgba(225, 232, 223, 0.55);
+    --scrollbar-thumb-color: rgba(255, 255, 255, 0.15);
+    --scrollbar-thumb-hover-color: rgba(255, 255, 255, 0.4);
+    --scrollbar-thumb-active-color: rgba(255, 255, 255, 0.55);
 
     --header-font: 500 12px / normal var(--ui-font-family);
     --header-icon-size: 14px;
@@ -205,9 +205,9 @@
     --term-bright-cyan: #34e2e2;
     --term-bright-white: #e7e7e7;
 
-    --term-gray: #8b918a; // not an official terminal color
+    --term-gray: #909090; // not an official terminal color
     --term-cmdtext: #ffffff;
-    --term-foreground: #d3d7cf;
+    --term-foreground: #e8e8e8;
     --term-background: #000000;
     --term-selection-background: #ffffff60;
     --term-cursor-accent: #000000;
@@ -216,10 +216,10 @@
     --button-text-color: var(--sage-on-accent);
     --button-green-bg: var(--term-green);
     --button-green-border-color: #29f200;
-    --button-grey-bg: rgba(225, 232, 223, 0.05);
-    --button-grey-hover-bg: rgba(225, 232, 223, 0.1);
+    --button-grey-bg: rgba(255, 255, 255, 0.05);
+    --button-grey-hover-bg: rgba(255, 255, 255, 0.1);
     --button-grey-border-color: var(--sage-line);
-    --button-grey-outlined-color: rgba(225, 232, 223, 0.6);
+    --button-grey-outlined-color: rgba(255, 255, 255, 0.6);
     --button-red-bg: #cc0000;
     --button-red-hover-bg: #f93939;
     --button-red-border-color: #fc3131;
@@ -234,20 +234,20 @@
 :root[data-uitheme="light"] {
     color-scheme: light;
 
-    --sage-ink: #19221e;
-    --sage-bg: #e9ece5;
-    --sage-surface: #f5f7f2;
-    --sage-panel: #fcfdfa;
-    --sage-head: #f5f7f2;
+    --sage-ink: #171717;
+    --sage-bg: #f2f2f2;
+    --sage-surface: #f7f7f7;
+    --sage-panel: #ffffff;
+    --sage-head: #f7f7f7;
     --sage-popover: #ffffff;
-    --sage-raise: #edf0ea;
-    --sage-text: #1f2722;
-    --sage-text-2: #56625a;
-    --sage-text-3: #606b62;
-    --sage-line: #dbe0d6;
-    --sage-line-strong: #c7cec2;
-    --sage-overlay: rgba(31, 39, 34, 0.055);
-    --sage-overlay-strong: rgba(31, 39, 34, 0.1);
+    --sage-raise: #ebebeb;
+    --sage-text: #202020;
+    --sage-text-2: #555555;
+    --sage-text-3: #666666;
+    --sage-line: #dcdcdc;
+    --sage-line-strong: #c4c4c4;
+    --sage-overlay: rgba(0, 0, 0, 0.055);
+    --sage-overlay-strong: rgba(0, 0, 0, 0.1);
     --sage-glass: rgba(255, 255, 255, 0.5);
     --sage-rim: rgba(255, 255, 255, 0.75);
     --sage-thumb: #ffffff;
@@ -286,16 +286,16 @@
     --conn-icon-color-7: #6d7326;
     --conn-icon-color-8: #3f7a4d;
 
-    --panel-bg-color: rgba(246, 247, 243, 0.72);
+    --panel-bg-color: rgba(247, 247, 247, 0.72);
     --toggle-thumb-color: var(--sage-panel);
-    --modal-shadow-color: rgba(36, 51, 38, 0.14);
+    --modal-shadow-color: rgba(0, 0, 0, 0.14);
     --conn-status-overlay-bg-color: rgba(168, 120, 29, 0.16);
     --bulb-color: #c9a227;
     --block-bg-color: var(--sage-panel);
     --block-bg-solid-color: var(--sage-panel);
-    --scrollbar-thumb-color: rgba(37, 45, 41, 0.2);
-    --scrollbar-thumb-hover-color: rgba(37, 45, 41, 0.35);
-    --scrollbar-thumb-active-color: rgba(37, 45, 41, 0.5);
+    --scrollbar-thumb-color: rgba(0, 0, 0, 0.2);
+    --scrollbar-thumb-hover-color: rgba(0, 0, 0, 0.35);
+    --scrollbar-thumb-active-color: rgba(0, 0, 0, 0.5);
 }
 
 // The terminal and code blocks carry dark content colours while the UI is dark. In the light
@@ -314,8 +314,8 @@
         --accent-color: var(--ink-accent);
         --block-accent: var(--ink-accent);
         --border-color: var(--ink-line);
-        --highlight-bg-color: rgba(225, 232, 223, 0.16);
-        --hover-bg-color: rgba(225, 232, 223, 0.08);
+        --highlight-bg-color: rgba(255, 255, 255, 0.16);
+        --hover-bg-color: rgba(255, 255, 255, 0.08);
         --error-color: #e08c85;
         --warning-color: #e0bd72;
         --success-color: #8fbf78;
@@ -328,8 +328,8 @@
         --color-warning: #e0bd72;
         --color-error: #e08c85;
         --color-success: #8fbf78;
-        --color-hover: rgba(225, 232, 223, 0.08);
-        --color-hoverbg: rgba(225, 232, 223, 0.16);
+        --color-hover: rgba(255, 255, 255, 0.08);
+        --color-hoverbg: rgba(255, 255, 255, 0.16);
         color: var(--main-text-color);
         color-scheme: dark;
     }
