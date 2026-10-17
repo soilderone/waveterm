@@ -1,9 +1,10 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { useT } from "@/util/i18n-hooks";
+import { defaultRangeExtractor, useVirtualizer } from "@tanstack/react-virtual";
 import { useAtomValue } from "jotai";
-import { memo, useEffect, useRef, useState } from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { AIMessage } from "./aimessage";
 import { type WaveUIMessage } from "./aitypes";
 import { WaveAIModel } from "./waveai-model";
@@ -18,10 +19,45 @@ export const AIPanelMessages = memo(({ messages, status, onContextMenu }: AIPane
     const t = useT();
     const model = WaveAIModel.getInstance();
     const isPanelOpen = useAtomValue(model.getPanelVisibleAtom());
-    const messagesEndRef = useRef<HTMLDivElement>(null);
     const messagesContainerRef = useRef<HTMLDivElement>(null);
-    const prevStatusRef = useRef<string>(status);
     const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
+    const autoScrollRef = useRef(true);
+    const [focusedIndex, setFocusedIndex] = useState<number>(null);
+    const isBusy = status === "streaming" || status === "submitted";
+    const showPendingMessage = status === "streaming" && messages[messages.length - 1]?.role !== "assistant";
+    const count = messages.length + (showPendingMessage ? 1 : 0);
+    const getItemKey = useCallback(
+        (index: number) => (index < messages.length ? `message:${messages[index].id}` : "pending-assistant"),
+        [messages]
+    );
+    const rangeExtractor = useCallback(
+        (range: Parameters<typeof defaultRangeExtractor>[0]) => {
+            const indexes = new Set(defaultRangeExtractor(range));
+            // Keep focused controls and the live response mounted when the user reads older messages.
+            if (focusedIndex != null && focusedIndex < count) {
+                indexes.add(focusedIndex);
+            }
+            if (isBusy && count > 0) {
+                indexes.add(count - 1);
+            }
+            return [...indexes].sort((a, b) => a - b);
+        },
+        [focusedIndex, isBusy, count]
+    );
+    const virtualizer = useVirtualizer({
+        count,
+        getScrollElement: () => messagesContainerRef.current,
+        estimateSize: () => 200,
+        getItemKey,
+        rangeExtractor,
+        overscan: 3,
+        gap: 16,
+        paddingStart: 8,
+        paddingEnd: 8,
+        anchorTo: "end",
+        followOnAppend: shouldAutoScroll ? "auto" : false,
+        scrollEndThreshold: 50,
+    });
 
     const checkIfAtBottom = () => {
         const container = messagesContainerRef.current;
@@ -34,90 +70,110 @@ export const AIPanelMessages = memo(({ messages, status, onContextMenu }: AIPane
 
     const handleScroll = () => {
         const atBottom = checkIfAtBottom();
+        autoScrollRef.current = atBottom;
         setShouldAutoScroll(atBottom);
     };
 
-    const scrollToBottom = () => {
-        const container = messagesContainerRef.current;
-        if (container) {
-            container.scrollTop = container.scrollHeight;
-            container.scrollLeft = 0;
-            setShouldAutoScroll(true);
-        }
-    };
-
-    useEffect(() => {
-        const container = messagesContainerRef.current;
-        if (!container) return;
-
-        container.addEventListener("scroll", handleScroll);
-        return () => container.removeEventListener("scroll", handleScroll);
-    }, []);
+    const scrollToBottom = useCallback(() => {
+        autoScrollRef.current = true;
+        setShouldAutoScroll(true);
+        virtualizer.scrollToEnd();
+    }, [virtualizer]);
 
     useEffect(() => {
         model.registerScrollToBottom(scrollToBottom);
-    }, [model]);
+        return () => {
+            if (model.scrollToBottomCallback === scrollToBottom) {
+                model.registerScrollToBottom(null);
+            }
+        };
+    }, [model, scrollToBottom]);
 
     useEffect(() => {
-        if (shouldAutoScroll) {
-            scrollToBottom();
+        if (!shouldAutoScroll || !isPanelOpen) {
+            return;
         }
-    }, [messages, shouldAutoScroll]);
+        const frame = requestAnimationFrame(() => {
+            if (autoScrollRef.current) {
+                virtualizer.scrollToEnd();
+            }
+        });
+        return () => cancelAnimationFrame(frame);
+    }, [messages, status, shouldAutoScroll, isPanelOpen, virtualizer]);
 
     useEffect(() => {
         if (isPanelOpen) {
             scrollToBottom();
         }
-    }, [isPanelOpen]);
+    }, [isPanelOpen, scrollToBottom]);
 
     useEffect(() => {
-        const wasStreaming = prevStatusRef.current === "streaming";
-        const isNowNotStreaming = status !== "streaming";
-
-        if (wasStreaming && isNowNotStreaming) {
-            requestAnimationFrame(() => {
-                scrollToBottom();
-            });
+        const container = messagesContainerRef.current;
+        if (container == null) {
+            return;
         }
-
-        prevStatusRef.current = status;
-    }, [status]);
-
-    const isBusy = status === "streaming" || status === "submitted";
+        let width = container.clientWidth;
+        let frame: number = null;
+        const observer = new ResizeObserver(() => {
+            const nextWidth = container.clientWidth;
+            if (nextWidth === width || nextWidth === 0) {
+                return;
+            }
+            width = nextWidth;
+            // Off-screen messages also wrap differently after resizing the panel.
+            virtualizer.measure();
+            cancelAnimationFrame(frame);
+            if (autoScrollRef.current) {
+                frame = requestAnimationFrame(() => virtualizer.scrollToEnd());
+            }
+        });
+        observer.observe(container);
+        return () => {
+            observer.disconnect();
+            cancelAnimationFrame(frame);
+        };
+    }, [virtualizer]);
 
     return (
         <div className="flex-1 min-h-0 relative flex flex-col">
             <div
                 ref={messagesContainerRef}
-                className="flex-1 overflow-y-auto p-2 space-y-4"
+                className="flex-1 overflow-y-auto px-2"
                 onContextMenu={onContextMenu}
+                onScroll={handleScroll}
             >
-                {messages.map((message, index) => {
-                    const isLastMessage = index === messages.length - 1;
-                    const isStreaming = status === "streaming" && isLastMessage && message.role === "assistant";
-                    return (
-                        <AIMessage
-                            key={message.id}
-                            message={message}
-                            isStreaming={isStreaming}
-                            isLast={isLastMessage}
-                            isChatBusy={isBusy}
-                        />
-                    );
-                })}
-
-                {status === "streaming" &&
-                    (messages.length === 0 || messages[messages.length - 1].role !== "assistant") && (
-                        <AIMessage
-                            key="last-message"
-                            message={{ role: "assistant", parts: [], id: "last-message" } as any}
-                            isStreaming={true}
-                            isLast={true}
-                            isChatBusy={true}
-                        />
-                    )}
-
-                <div ref={messagesEndRef} />
+                <div className="relative w-full" style={{ height: virtualizer.getTotalSize(), overflowAnchor: "none" }}>
+                    {virtualizer.getVirtualItems().map((item) => {
+                        const message = messages[item.index];
+                        const isLastMessage = item.index === count - 1;
+                        return (
+                            <div
+                                key={item.key}
+                                data-index={item.index}
+                                ref={virtualizer.measureElement}
+                                className="absolute top-0 left-0 w-full"
+                                style={{ transform: `translateY(${item.start}px)` }}
+                                onFocusCapture={() => setFocusedIndex(item.index)}
+                                onBlurCapture={(event) => {
+                                    if (!event.currentTarget.contains(event.relatedTarget as Node)) {
+                                        setFocusedIndex(null);
+                                    }
+                                }}
+                            >
+                                <AIMessage
+                                    message={message ?? ({ role: "assistant", parts: [], id: "pending-assistant" } as WaveUIMessage)}
+                                    isStreaming={
+                                        status === "streaming" &&
+                                        isLastMessage &&
+                                        (message == null || message.role === "assistant")
+                                    }
+                                    isLast={isLastMessage}
+                                    isChatBusy={isBusy}
+                                />
+                            </div>
+                        );
+                    })}
+                </div>
             </div>
             {!shouldAutoScroll && (
                 <button
