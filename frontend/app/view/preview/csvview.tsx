@@ -1,7 +1,6 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
-import { useTableNav } from "@table-nav/react";
 import {
     createColumnHelper,
     flexRender,
@@ -9,11 +8,11 @@ import {
     getSortedRowModel,
     useReactTable,
 } from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import clsx from "clsx";
 import Papa from "papaparse";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 
-import { useDimensionsWithExistingRef } from "@/app/hook/useDimensions";
 import "./csvview.scss";
 
 const MAX_DATA_SIZE = 10 * 1024 * 1024; // 10MB in bytes
@@ -30,43 +29,47 @@ interface CSVViewProps {
 }
 
 interface State {
-    content: string | null;
-    showReadonly: boolean;
     tbodyHeight: number;
+    rowHeight: number;
 }
 
 const columnHelper = createColumnHelper<any>();
 
 // TODO remove parentRef dependency -- use own height
-const CSVView = ({ parentRef, filename, content }: CSVViewProps) => {
-    const csvCacheRef = useRef(new Map<string, string>());
-    const rowRef = useRef<(HTMLTableRowElement | null)[]>([]);
+const CSVView = ({ parentRef, content }: CSVViewProps) => {
     const headerRef = useRef<HTMLTableRowElement | null>(null);
     const probeRef = useRef<HTMLTableRowElement | null>(null);
     const tbodyRef = useRef<HTMLTableSectionElement | null>(null);
 
     const [state, setState] = useState<State>({
-        content,
-        showReadonly: true,
         tbodyHeight: 0,
+        rowHeight: 28,
     });
+    const [activeCell, setActiveCell] = useState({ row: 0, column: 0 });
+    const pendingFocusRef = useRef(false);
 
     const [tableLoaded, setTableLoaded] = useState(false);
 
-    const { listeners } = useTableNav();
-    const domRect = useDimensionsWithExistingRef(parentRef, 30);
-    const parentHeight = domRect?.height ?? 0;
-
-    const cacheKey = `${filename}`;
-    csvCacheRef.current.set(cacheKey, content);
+    const [parentHeight, setParentHeight] = useState(0);
+    useLayoutEffect(() => {
+        const parent = parentRef.current;
+        if (parent == null) {
+            return;
+        }
+        setParentHeight(parent.clientHeight);
+        const observer = new ResizeObserver(([entry]) => setParentHeight(entry.contentRect.height));
+        observer.observe(parent);
+        return () => observer.disconnect();
+    }, [parentRef]);
 
     // Parse the CSV data
     const parsedData = useMemo<CSVRow[]>(() => {
-        if (!state.content) return [];
+        if (!content) return [];
 
         // Trim the content and then check for headers based on the first row's content.
-        const trimmedContent = state.content.trim();
-        const firstRow = trimmedContent.split("\n")[0];
+        const trimmedContent = content.trim();
+        const firstLineEnd = trimmedContent.indexOf("\n");
+        const firstRow = firstLineEnd < 0 ? trimmedContent : trimmedContent.slice(0, firstLineEnd);
 
         // This checks if the first row starts with a letter or a quote
         const hasHeaders = !!firstRow.match(/^[a-zA-Z"]/);
@@ -99,7 +102,7 @@ const CSVView = ({ parentRef, filename, content }: CSVViewProps) => {
                 })
             ) as CSVRow;
         });
-    }, [state.content]);
+    }, [content]);
 
     // Column Definitions
     const columns = useMemo(() => {
@@ -117,13 +120,13 @@ const CSVView = ({ parentRef, filename, content }: CSVViewProps) => {
 
     useEffect(() => {
         if (probeRef.current && headerRef.current && parsedData.length && parentRef.current) {
-            const rowHeight = probeRef.current.offsetHeight;
+            const rowHeight = probeRef.current.offsetHeight || 28;
             const fullTBodyHeight = rowHeight * parsedData.length;
             const headerHeight = headerRef.current.offsetHeight;
             const maxHeightLessHeader = parentHeight - headerHeight;
-            const tbodyHeight = Math.min(maxHeightLessHeader, fullTBodyHeight) - 3; // 3 for the borders
+            const tbodyHeight = Math.max(0, Math.min(maxHeightLessHeader, fullTBodyHeight) - 3); // 3 for the borders
 
-            setState((prevState) => ({ ...prevState, tbodyHeight }));
+            setState({ tbodyHeight, rowHeight });
         }
     }, [parentHeight, parsedData]);
 
@@ -131,14 +134,14 @@ const CSVView = ({ parentRef, filename, content }: CSVViewProps) => {
     useEffect(() => {
         let tid: NodeJS.Timeout;
 
-        if (rowRef.current.length === parsedData.length) {
+        if (tbodyRef.current != null) {
             tid = setTimeout(() => {
                 setTableLoaded(true);
             }, 50); // Delay a bit to make sure the rows are rendered
         }
 
         return () => clearTimeout(tid);
-    }, [rowRef, parsedData]);
+    }, [parsedData]);
 
     const table = useReactTable({
         manualPagination: true,
@@ -147,6 +150,91 @@ const CSVView = ({ parentRef, filename, content }: CSVViewProps) => {
         getCoreRowModel: getCoreRowModel(),
         getSortedRowModel: getSortedRowModel(),
     });
+    const rows = table.getRowModel().rows;
+    const getItemKey = useCallback((index: number) => rows[index].id, [rows]);
+    const virtualizer = useVirtualizer({
+        count: rows.length,
+        getScrollElement: () => tbodyRef.current,
+        estimateSize: () => state.rowHeight,
+        getItemKey,
+        overscan: 8,
+    });
+    const virtualRows = virtualizer.getVirtualItems();
+    const paddingTop = virtualRows[0]?.start ?? 0;
+    const paddingBottom = Math.max(0, virtualizer.getTotalSize() - (virtualRows[virtualRows.length - 1]?.end ?? 0));
+
+    useEffect(() => {
+        virtualizer.measure();
+    }, [virtualizer, state.rowHeight]);
+
+    useEffect(() => {
+        setActiveCell({ row: 0, column: 0 });
+        virtualizer.scrollToOffset(0);
+    }, [content, virtualizer]);
+
+    useLayoutEffect(() => {
+        if (!pendingFocusRef.current) {
+            return;
+        }
+        const cell = tbodyRef.current?.querySelector<HTMLElement>(
+            `[data-row-index="${activeCell.row}"][data-column-index="${activeCell.column}"]`
+        );
+        if (cell != null) {
+            cell.focus({ preventScroll: true });
+            pendingFocusRef.current = false;
+        }
+    }, [activeCell, virtualRows]);
+
+    const handleKeyDown = (event: React.KeyboardEvent) => {
+        const cell = (event.target as HTMLElement).closest<HTMLElement>("td[data-row-index]");
+        if (cell == null || rows.length === 0) {
+            return;
+        }
+        let row = Number(cell.dataset.rowIndex);
+        let column = Number(cell.dataset.columnIndex);
+        const pageSize = Math.max(1, Math.floor(state.tbodyHeight / state.rowHeight));
+        switch (event.key) {
+            case "ArrowDown":
+                row++;
+                break;
+            case "ArrowUp":
+                row--;
+                break;
+            case "ArrowRight":
+                column++;
+                break;
+            case "ArrowLeft":
+                column--;
+                break;
+            case "PageDown":
+                row += pageSize;
+                break;
+            case "PageUp":
+                row -= pageSize;
+                break;
+            case "Home":
+                column = 0;
+                if (event.ctrlKey || event.metaKey) {
+                    row = 0;
+                }
+                break;
+            case "End":
+                column = columns.length - 1;
+                if (event.ctrlKey || event.metaKey) {
+                    row = rows.length - 1;
+                }
+                break;
+            default:
+                return;
+        }
+        event.preventDefault();
+        event.stopPropagation();
+        row = Math.max(0, Math.min(rows.length - 1, row));
+        column = Math.max(0, Math.min(columns.length - 1, column));
+        pendingFocusRef.current = true;
+        virtualizer.scrollToIndex(row, { align: "auto" });
+        setActiveCell({ row, column });
+    };
 
     return (
         <div className={clsx("csv-view ellipsis", { show: tableLoaded })} style={{ height: "auto" }}>
@@ -157,17 +245,27 @@ const CSVView = ({ parentRef, filename, content }: CSVViewProps) => {
                     </tr>
                 </tbody>
             </table>
-            <table {...listeners}>
+            <table
+                onKeyDown={handleKeyDown}
+                aria-rowcount={rows.length + 1}
+                style={{ width: table.getTotalSize(), minWidth: "100%" }}
+            >
                 <thead>
-                    {table.getHeaderGroups().map((headerGroup, index) => (
-                        <tr key={headerGroup.id} ref={headerRef} id={headerGroup.id} tabIndex={index}>
-                            {headerGroup.headers.map((header, index) => (
+                    {table.getHeaderGroups().map((headerGroup) => (
+                        <tr key={headerGroup.id} ref={headerRef} id={headerGroup.id}>
+                            {headerGroup.headers.map((header) => (
                                 <th
                                     key={header.id}
                                     colSpan={header.colSpan}
                                     id={header.id}
-                                    tabIndex={index}
-                                    style={{ width: header.getSize() }}
+                                    tabIndex={0}
+                                    style={{ flex: `1 0 ${header.getSize()}px` }}
+                                    onKeyDown={(event) => {
+                                        if (event.key === "Enter" || event.key === " ") {
+                                            event.preventDefault();
+                                            header.column.getToggleSortingHandler()?.(event);
+                                        }
+                                    }}
                                 >
                                     {header.isPlaceholder ? null : (
                                         <div
@@ -192,22 +290,44 @@ const CSVView = ({ parentRef, filename, content }: CSVViewProps) => {
                     ))}
                 </thead>
                 <tbody style={{ height: `${state.tbodyHeight}px` }} ref={tbodyRef}>
-                    {table.getRowModel().rows.map((row, index) => (
-                        <tr
-                            key={row.id}
-                            ref={(el) => {
-                                rowRef.current[index] = el;
-                            }}
-                            id={row.id}
-                            tabIndex={index}
-                        >
-                            {row.getVisibleCells().map((cell) => (
-                                <td className="ellipsis" key={cell.id} id={cell.id} tabIndex={index}>
-                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                                </td>
-                            ))}
+                    {paddingTop > 0 && (
+                        <tr aria-hidden="true" className="csv-spacer" style={{ height: paddingTop }}>
+                            <td colSpan={columns.length} />
                         </tr>
-                    ))}
+                    )}
+                    {virtualRows.map((virtualRow) => {
+                        const row = rows[virtualRow.index];
+                        const index = virtualRow.index;
+                        return (
+                            <tr
+                                key={row.id}
+                                id={row.id}
+                                aria-rowindex={index + 2}
+                                style={{ height: state.rowHeight }}
+                            >
+                                {row.getVisibleCells().map((cell, columnIndex) => (
+                                    <td
+                                        className="ellipsis"
+                                        key={cell.id}
+                                        id={cell.id}
+                                        data-row-index={index}
+                                        data-column-index={columnIndex}
+                                        style={{ flex: `1 0 ${cell.column.getSize()}px` }}
+                                        tabIndex={activeCell.row === index && activeCell.column === columnIndex ? 0 : -1}
+                                        onFocus={() => setActiveCell({ row: index, column: columnIndex })}
+                                        onClick={(event) => event.currentTarget.focus()}
+                                    >
+                                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                    </td>
+                                ))}
+                            </tr>
+                        );
+                    })}
+                    {paddingBottom > 0 && (
+                        <tr aria-hidden="true" className="csv-spacer" style={{ height: paddingBottom }}>
+                            <td colSpan={columns.length} />
+                        </tr>
+                    )}
                 </tbody>
             </table>
         </div>

@@ -1,4 +1,4 @@
-// Copyright 2024, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 .csv-view {
@@ -81,6 +81,11 @@
                 display: block;
                 text-align: left;
             }
+        }
+
+        tr.csv-spacer td {
+            padding: 0;
+            border: 0;
         }
     }
 }
