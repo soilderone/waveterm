@@ -112,7 +112,11 @@ export class TermWrap {
     mainFileSubject: SubjectWithRef<WSFileEventData>;
     loaded: boolean;
     heldData: Uint8Array[];
-    handleResize_debounced: () => void;
+    handleResize_debounced: (() => void) & { cancel: () => void };
+    disposed = false;
+    cacheTimeoutId: ReturnType<typeof setTimeout> = null;
+    cacheIdleId: number = null;
+    pendingWrites = new Set<() => void>();
     hasResized: boolean;
     multiInputCallback: (data: string) => void;
     sendDataHandler: (data: string) => void;
@@ -274,6 +278,9 @@ export class TermWrap {
                     this.inRepaintTransaction = false;
                     if (wasRepaint && Date.now() - this.lastClearScrollbackTs <= MaxRepaintTransactionMs) {
                         setTimeout(() => {
+                            if (this.disposed) {
+                                return;
+                            }
                             console.log("[termwrap] repaint transaction complete, scrolling to bottom");
                             this.terminal.scrollToBottom();
                         }, 20);
@@ -367,6 +374,9 @@ export class TermWrap {
     }
 
     setTermRenderer(renderer: "webgl" | "dom") {
+        if (this.disposed) {
+            return;
+        }
         if (renderer === "webgl") {
             if (this.webglAddon != null) {
                 return;
@@ -427,42 +437,46 @@ export class TermWrap {
     }
 
     async initTerminal() {
+        if (this.disposed) {
+            return;
+        }
         const copyOnSelectAtom = getSettingsKeyAtom("term:copyonselect");
         const trimTrailingWhitespaceAtom = getSettingsKeyAtom("term:trimtrailingwhitespace");
         this.toDispose.push(this.terminal.onData(this.handleTermData.bind(this)));
-        this.toDispose.push(
-            this.terminal.onSelectionChange(
-                debounce(50, () => {
-                    if (!globalStore.get(copyOnSelectAtom)) {
-                        return;
-                    }
-                    // Don't copy-on-select when the search bar has focus — navigating
-                    // search results changes the terminal selection programmatically.
-                    const active = document.activeElement;
-                    if (active != null && active.closest(".search-container") != null) {
-                        return;
-                    }
-                    let selectedText = this.terminal.getSelection();
-                    if (selectedText.length > 0) {
-                        if (globalStore.get(trimTrailingWhitespaceAtom) !== false) {
-                            selectedText = trimTerminalSelection(selectedText);
-                        }
-                        navigator.clipboard.writeText(selectedText);
-                    }
-                })
-            )
-        );
+        const copySelection = debounce(50, () => {
+            if (this.disposed || !globalStore.get(copyOnSelectAtom)) {
+                return;
+            }
+            // Don't copy-on-select when the search bar has focus — navigating
+            // search results changes the terminal selection programmatically.
+            const active = document.activeElement;
+            if (active != null && active.closest(".search-container") != null) {
+                return;
+            }
+            let selectedText = this.terminal.getSelection();
+            if (selectedText.length > 0) {
+                if (globalStore.get(trimTrailingWhitespaceAtom) !== false) {
+                    selectedText = trimTerminalSelection(selectedText);
+                }
+                navigator.clipboard.writeText(selectedText);
+            }
+        });
+        this.toDispose.push(this.terminal.onSelectionChange(copySelection), { dispose: () => copySelection.cancel() });
         if (this.onSearchResultsDidChange != null) {
             this.toDispose.push(this.searchAddon.onDidChangeResults(this.onSearchResultsDidChange.bind(this)));
         }
 
         this.mainFileSubject = getFileSubject(this.getZoneId(), TermFileName);
-        this.mainFileSubject.subscribe(this.handleNewFileSubjectData.bind(this));
+        const fileSubscription = this.mainFileSubject.subscribe(this.handleNewFileSubjectData.bind(this));
+        this.toDispose.push({ dispose: () => fileSubscription.unsubscribe() });
 
         try {
             const rtInfo = await RpcApi.GetRTInfoCommand(TabRpcClient, {
                 oref: WOS.makeORef("block", this.blockId),
             });
+            if (this.disposed) {
+                return;
+            }
             let shellState: ShellIntegrationStatus = null;
 
             if (rtInfo && rtInfo["shell:integration"]) {
@@ -480,15 +494,37 @@ export class TermWrap {
             console.log("Error loading runtime info:", e);
         }
 
+        if (this.disposed) {
+            return;
+        }
         try {
             await this.loadInitialTerminalData();
         } finally {
-            this.loaded = true;
+            this.loaded = !this.disposed;
+            this.heldData = [];
         }
         this.runProcessIdleTimeout();
     }
 
     dispose() {
+        if (this.disposed) {
+            return;
+        }
+        this.disposed = true;
+        this.loaded = false;
+        clearTimeout(this.cacheTimeoutId);
+        if (this.cacheIdleId != null) {
+            window.cancelIdleCallback(this.cacheIdleId);
+        }
+        this.cacheTimeoutId = null;
+        this.cacheIdleId = null;
+        this.handleResize_debounced.cancel();
+        for (const resolve of this.pendingWrites) {
+            resolve();
+        }
+        this.pendingWrites.clear();
+        this.heldData = [];
+        this.recentWrites = [];
         this.promptMarkers.forEach((marker) => {
             try {
                 marker.dispose();
@@ -510,7 +546,9 @@ export class TermWrap {
                 /* nothing */
             }
         });
-        this.mainFileSubject.release();
+        this.toDispose = [];
+        this.mainFileSubject?.release();
+        this.mainFileSubject = null;
     }
 
     // the last prompt marker is the current prompt, so the previous command starts at the one before it
@@ -551,6 +589,9 @@ export class TermWrap {
     }
 
     handleNewFileSubjectData(msg: WSFileEventData) {
+        if (this.disposed) {
+            return;
+        }
         if (msg.fileop == "truncate") {
             this.terminal.clear();
             this.heldData = [];
@@ -568,6 +609,9 @@ export class TermWrap {
     }
 
     doTerminalWrite(data: string | Uint8Array, setPtyOffset?: number): Promise<void> {
+        if (this.disposed) {
+            return Promise.resolve();
+        }
         if (isDev() && this.loaded) {
             const dataStr = data instanceof Uint8Array ? new TextDecoder().decode(data) : data;
             this.recentWrites.push({ idx: this.recentWritesCounter++, ts: Date.now(), data: dataStr });
@@ -579,7 +623,13 @@ export class TermWrap {
         const prtn = new Promise<void>((presolve, _) => {
             resolve = presolve;
         });
+        this.pendingWrites.add(resolve);
         this.terminal.write(data, () => {
+            this.pendingWrites.delete(resolve);
+            if (this.disposed) {
+                resolve();
+                return;
+            }
             if (setPtyOffset != null) {
                 this.ptyOffset = setPtyOffset;
             } else {
@@ -596,6 +646,9 @@ export class TermWrap {
         const startTs = Date.now();
         const zoneId = this.getZoneId();
         const { data: cacheData, fileInfo: cacheFile } = await fetchWaveFile(zoneId, TermCacheFileName);
+        if (this.disposed) {
+            return;
+        }
         let ptyOffset = 0;
         if (cacheFile != null) {
             ptyOffset = cacheFile.meta["ptyoffset"] ?? 0;
@@ -611,13 +664,19 @@ export class TermWrap {
                     this.terminal.resize(fileTermSize.cols, fileTermSize.rows);
                     didResize = true;
                 }
-                this.doTerminalWrite(cacheData, ptyOffset);
+                await this.doTerminalWrite(cacheData, ptyOffset);
+                if (this.disposed) {
+                    return;
+                }
                 if (didResize) {
                     this.terminal.resize(curTermSize.cols, curTermSize.rows);
                 }
             }
         }
         const { data: mainData, fileInfo: mainFile } = await fetchWaveFile(zoneId, TermFileName, ptyOffset);
+        if (this.disposed) {
+            return;
+        }
         console.log(
             `terminal loaded cachefile:${cacheData?.byteLength ?? 0} main:${mainData?.byteLength ?? 0} bytes, ${Date.now() - startTs}ms`
         );
@@ -627,6 +686,9 @@ export class TermWrap {
     }
 
     async resyncController(reason: string) {
+        if (this.disposed) {
+            return;
+        }
         dlog("resync controller", this.blockId, reason);
         const rtOpts: RuntimeOpts = { termsize: { rows: this.terminal.rows, cols: this.terminal.cols } };
         try {
@@ -641,6 +703,9 @@ export class TermWrap {
     }
 
     handleResize() {
+        if (this.disposed) {
+            return;
+        }
         const oldRows = this.terminal.rows;
         const oldCols = this.terminal.cols;
         this.fitAddon.fit();
@@ -662,7 +727,7 @@ export class TermWrap {
     }
 
     processAndCacheData() {
-        if (this.dataBytesProcessed < MinDataProcessedForCache) {
+        if (this.disposed || this.dataBytesProcessed < MinDataProcessedForCache) {
             return;
         }
         const serializedOutput = this.serializeAddon.serialize();
@@ -675,8 +740,19 @@ export class TermWrap {
     }
 
     runProcessIdleTimeout() {
-        setTimeout(() => {
-            window.requestIdleCallback(() => {
+        if (this.disposed || this.cacheTimeoutId != null || this.cacheIdleId != null) {
+            return;
+        }
+        this.cacheTimeoutId = setTimeout(() => {
+            this.cacheTimeoutId = null;
+            if (this.disposed) {
+                return;
+            }
+            this.cacheIdleId = window.requestIdleCallback(() => {
+                this.cacheIdleId = null;
+                if (this.disposed) {
+                    return;
+                }
                 this.processAndCacheData();
                 this.runProcessIdleTimeout();
             });
@@ -690,6 +766,9 @@ export class TermWrap {
 
         try {
             const clipboardData = await extractAllClipboardData(e);
+            if (this.disposed) {
+                return;
+            }
             let firstImage = true;
             for (const data of clipboardData) {
                 if (data.image && SupportsImageInput) {
@@ -697,6 +776,9 @@ export class TermWrap {
                         await new Promise((r) => setTimeout(r, 150));
                     }
                     const tempPath = await createTempFileFromBlob(data.image);
+                    if (this.disposed) {
+                        return;
+                    }
                     this.terminal.paste(tempPath + " ");
                     firstImage = false;
                 }

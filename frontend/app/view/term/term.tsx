@@ -194,8 +194,16 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
 
     const tabModel = useTabModel();
     const termFontSize = jotai.useAtomValue(model.fontSizeAtom);
-    const fullConfig = globalStore.get(atoms.fullConfigAtom);
+    const fullConfig = jotai.useAtomValue(atoms.fullConfigAtom);
     const connFontFamily = fullConfig.connections?.[blockData?.meta?.connection]?.["term:fontfamily"];
+    const termFontFamily = termSettings?.["term:fontfamily"] ?? connFontFamily ?? "Hack";
+    const termTransparency = jotai.useAtomValue(model.termTransparencyAtom);
+    const allowTransparency = termTransparency > 0;
+    const scrollbackSetting = jotai.useAtomValue(getOverrideConfigAtom(blockId, "term:scrollback")) ?? 2000;
+    const termScrollback = Number.isFinite(scrollbackSetting)
+        ? Math.min(50000, Math.max(0, Math.floor(scrollbackSetting)))
+        : 2000;
+    const termMacOptionIsMeta = jotai.useAtomValue(getOverrideConfigAtom(blockId, "term:macoptionismeta")) ?? false;
     const isFocused = jotai.useAtomValue(model.nodeModel.isFocused);
     const isMI = jotai.useAtomValue(tabModel.isTermMultiInput);
     const isBasicTerm = termMode != "vdom" && blockData?.meta?.controller != "cmd"; // needs to match isBasicTerm
@@ -281,30 +289,16 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
     }, [searchOpts]);
     // end search
 
+    // xterm requires transparency to be chosen before open(); other settings can change in place.
     React.useEffect(() => {
         const fullConfig = globalStore.get(atoms.fullConfigAtom);
         const termThemeName = globalStore.get(model.termThemeNameAtom);
         const termTransparency = globalStore.get(model.termTransparencyAtom);
-        const termMacOptionIsMetaAtom = getOverrideConfigAtom(blockId, "term:macoptionismeta");
         const [termTheme, _] = computeTheme(fullConfig, termThemeName, termTransparency);
-        let termScrollback = 2000;
-        if (termSettings?.["term:scrollback"]) {
-            termScrollback = Math.floor(termSettings["term:scrollback"]);
-        }
-        if (blockData?.meta?.["term:scrollback"]) {
-            termScrollback = Math.floor(blockData.meta["term:scrollback"]);
-        }
-        if (termScrollback < 0) {
-            termScrollback = 0;
-        }
-        if (termScrollback > 50000) {
-            termScrollback = 50000;
-        }
         const termAllowBPM = globalStore.get(model.termBPMAtom) ?? true;
-        const termMacOptionIsMeta = globalStore.get(termMacOptionIsMetaAtom) ?? false;
         const termCursorStyle = normalizeCursorStyle(globalStore.get(getOverrideConfigAtom(blockId, "term:cursor")));
         const termCursorBlink = globalStore.get(getOverrideConfigAtom(blockId, "term:cursorblink")) ?? false;
-        const wasFocused = model.termRef.current != null && globalStore.get(model.nodeModel.isFocused);
+        const wasFocused = globalStore.get(model.nodeModel.isFocused);
         const termWrap = new TermWrap(
             tabModel.tabId,
             blockId,
@@ -312,13 +306,13 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
             {
                 theme: termTheme,
                 fontSize: termFontSize,
-                fontFamily: termSettings?.["term:fontfamily"] ?? connFontFamily ?? "Hack",
+                fontFamily: termFontFamily,
                 drawBoldTextInBrightColors: false,
                 // CLI truecolor and 256-color output can bypass the theme's ANSI palette.
                 minimumContrastRatio: 4.5,
                 fontWeight: "normal",
                 fontWeightBold: "bold",
-                allowTransparency: termTransparency > 0,
+                allowTransparency,
                 scrollback: termScrollback,
                 allowProposedApi: true, // Required by @xterm/addon-search to enable search functionality and decorations
                 ignoreBracketedPasteMode: !termAllowBPM,
@@ -346,20 +340,43 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
             globalStore.set(searchProps.resultsCount, results.resultCount);
         };
         fireAndForget(termWrap.initTerminal.bind(termWrap));
-        if (wasFocused) {
-            setTimeout(() => {
-                model.giveFocus();
-            }, 10);
-        }
+        const focusTimeout = wasFocused
+            ? setTimeout(() => {
+                  model.giveFocus();
+              }, 10)
+            : null;
         return () => {
-            termWrap.dispose();
+            clearTimeout(focusTimeout);
             rszObs.disconnect();
+            termWrap.dispose();
+            if (model.termRef.current === termWrap) {
+                model.termRef.current = null;
+            }
             setTermWrapInst(null);
             if ((window as any).term === termWrap) {
                 (window as any).term = null;
             }
         };
-    }, [blockId, termSettings, termFontSize, connFontFamily]);
+    }, [blockId, model, tabModel.tabId, allowTransparency]);
+
+    React.useEffect(() => {
+        if (termWrapInst == null || termWrapInst.disposed) {
+            return;
+        }
+        const options = termWrapInst.terminal.options;
+        const fontChanged = options.fontSize !== termFontSize || options.fontFamily !== termFontFamily;
+        options.fontSize = termFontSize;
+        options.fontFamily = termFontFamily;
+        options.scrollback = termScrollback;
+        options.macOptionIsMeta = termMacOptionIsMeta;
+        if (fontChanged) {
+            termWrapInst.handleResize_debounced();
+        }
+    }, [termWrapInst, termFontSize, termFontFamily, termScrollback, termMacOptionIsMeta]);
+
+    React.useEffect(() => {
+        termWrapInst?.setTermRenderer(termSettings?.["term:disablewebgl"] ? "dom" : "webgl");
+    }, [termWrapInst, termSettings?.["term:disablewebgl"]]);
 
     React.useEffect(() => {
         if (termModeRef.current == "vdom" && termMode == "term") {
@@ -379,7 +396,7 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
                 model.termRef.current.multiInputCallback = null;
             }
         }
-    }, [isMI, isBasicTerm, isFocused]);
+    }, [isMI, isBasicTerm, isFocused, termWrapInst]);
 
     const stickerConfig = {
         charWidth: 8,
@@ -405,7 +422,7 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
         <div className={clsx("view-term", "term-mode-" + termMode)} ref={viewRef} onContextMenu={handleContextMenu}>
             {termBg && <div key="term-bg" className="absolute inset-0 z-0 pointer-events-none" style={termBg} />}
             <TermResyncHandler blockId={blockId} model={model} />
-            <TermThemeUpdater blockId={blockId} model={model} termRef={model.termRef} />
+            <TermThemeUpdater model={model} termWrap={termWrapInst} />
             <TermStickers config={stickerConfig} />
             <TermToolbarVDomNode key="vdom-toolbar" blockId={blockId} model={model} />
             <TermVDomNode key="vdom" blockId={blockId} model={model} />
