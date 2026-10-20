@@ -68,6 +68,8 @@ jobs:
                   go-version: ${{env.GO_VERSION}}
                   cache-dependency-path: |
                       go.sum
+            - name: Check SSH disconnect regression
+              run: go test -mod=readonly golang.org/x/crypto/ssh -run '^TestMuxSendRequestAfterCloseNoSpinloop$' -count=10 -timeout=60s
             - uses: actions/setup-node@v6
               with:
                   node-version: ${{env.NODE_VERSION}}
