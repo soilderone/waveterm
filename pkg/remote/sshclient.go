@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 package remote
@@ -41,6 +41,7 @@ import (
 )
 
 const SshProxyJumpMaxDepth = 10
+const SshConnectTimeout = 60 * time.Second
 
 const (
 	ConnErrCode_ConfigParse    = "config-parse"
@@ -839,6 +840,8 @@ func createClientConfig(connCtx context.Context, sshKeywords *wconfig.ConnKeywor
 }
 
 func connectInternal(ctx context.Context, networkAddr string, clientConfig *ssh.ClientConfig, currentClient *ssh.Client) (*ssh.Client, error) {
+	ctx, cancel := context.WithTimeout(ctx, SshConnectTimeout)
+	defer cancel()
 	var clientConn net.Conn
 	var err error
 	if currentClient == nil {
@@ -859,7 +862,20 @@ func connectInternal(ctx context.Context, networkAddr string, clientConfig *ssh.
 			return nil, utilds.MakeSubCodedError(ConnErrCode_ProxyJumpDial, subCode, err)
 		}
 	}
+	cancelDone := make(chan struct{})
+	stopCancel := context.AfterFunc(ctx, func() {
+		clientConn.Close()
+		close(cancelDone)
+	})
 	c, chans, reqs, err := ssh.NewClientConn(clientConn, networkAddr, clientConfig)
+	if !stopCancel() {
+		// Wait for the cancellation callback before handing ownership to the SSH client.
+		<-cancelDone
+	}
+	if ctx.Err() != nil {
+		clientConn.Close()
+		return nil, ctx.Err()
+	}
 	if err != nil {
 		blocklogger.Infof(ctx, "[conndebug] ERROR ssh auth/negotiation: %s\n", SimpleMessageFromPossibleConnectionError(err))
 		return nil, err
