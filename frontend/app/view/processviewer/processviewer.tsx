@@ -23,6 +23,9 @@ type ActionStatus = {
 };
 
 type ProcessViewerEnv = WaveEnvSubset<{
+    atoms: {
+        tabOnScreen: WaveEnv["atoms"]["tabOnScreen"];
+    };
     rpc: {
         RemoteProcessListCommand: WaveEnv["rpc"]["RemoteProcessListCommand"];
         RemoteProcessSignalCommand: WaveEnv["rpc"]["RemoteProcessSignalCommand"];
@@ -104,6 +107,8 @@ export class ProcessViewerViewModel implements ViewModel {
     disposed = false;
     cancelPoll: (() => void) | null = null;
     fetchEpoch = 0;
+    unsubscribeOnScreen: () => void;
+    visibilityChangeHandler = () => this.syncPolling();
 
     constructor({ blockId, waveEnv }: ViewModelInitType) {
         this.viewType = "processviewer";
@@ -139,15 +144,21 @@ export class ProcessViewerViewModel implements ViewModel {
             return get(connAtom);
         });
 
-        this.startPolling();
+        this.unsubscribeOnScreen = globalStore.sub(this.env.atoms.tabOnScreen, () => this.syncPolling());
+        globalThis.document?.addEventListener("visibilitychange", this.visibilityChangeHandler);
+        this.syncPolling();
     }
 
     get viewComponent(): ViewComponent {
         return ProcessViewerView;
     }
 
+    isVisible() {
+        return globalStore.get(this.env.atoms.tabOnScreen) && globalThis.document?.visibilityState !== "hidden";
+    }
+
     async doOneFetch(lastPidOrder: boolean, cancelledFn?: () => boolean) {
-        if (this.disposed) return;
+        if (this.disposed || !this.isVisible()) return;
         const epoch = ++this.fetchEpoch;
         const sortBy = globalStore.get(this.sortByAtom);
         const sortDesc = globalStore.get(this.sortDescAtom);
@@ -195,7 +206,7 @@ export class ProcessViewerViewModel implements ViewModel {
     }
 
     async doKeepAlive() {
-        if (this.disposed) return;
+        if (this.disposed || !this.isVisible()) return;
         const connStatus = globalStore.get(this.connStatus);
         if (!connStatus?.connected) {
             return;
@@ -214,6 +225,7 @@ export class ProcessViewerViewModel implements ViewModel {
     }
 
     startPolling() {
+        if (this.disposed || !this.isVisible() || globalStore.get(this.pausedAtom)) return;
         let cancelled = false;
         this.cancelPoll = () => {
             cancelled = true;
@@ -247,6 +259,7 @@ export class ProcessViewerViewModel implements ViewModel {
     }
 
     startKeepAlive() {
+        if (this.disposed || !this.isVisible()) return;
         let cancelled = false;
         this.cancelPoll = () => {
             cancelled = true;
@@ -278,14 +291,25 @@ export class ProcessViewerViewModel implements ViewModel {
         keepAliveLoop();
     }
 
-    triggerRefresh() {
+    syncPolling() {
         if (this.cancelPoll) {
             this.cancelPoll();
         }
         this.cancelPoll = null;
-        if (!globalStore.get(this.pausedAtom)) {
+        this.fetchEpoch++;
+        if (this.disposed || !this.isVisible()) return;
+        if (globalStore.get(this.pausedAtom)) {
+            if (globalStore.get(this.dataAtom) == null) {
+                this.doOneFetch(false);
+            }
+            this.startKeepAlive();
+        } else {
             this.startPolling();
         }
+    }
+
+    triggerRefresh() {
+        this.syncPolling();
     }
 
     forceRefreshOnConnectionChange() {
@@ -293,6 +317,7 @@ export class ProcessViewerViewModel implements ViewModel {
             this.cancelPoll();
         }
         this.cancelPoll = null;
+        this.fetchEpoch++;
         globalStore.set(this.dataAtom, null);
         globalStore.set(this.loadingAtom, true);
         globalStore.set(this.errorAtom, null);
@@ -306,19 +331,7 @@ export class ProcessViewerViewModel implements ViewModel {
 
     setPaused(paused: boolean) {
         globalStore.set(this.pausedAtom, paused);
-        if (paused) {
-            if (this.cancelPoll) {
-                this.cancelPoll();
-            }
-            this.cancelPoll = null;
-            this.startKeepAlive();
-        } else {
-            if (this.cancelPoll) {
-                this.cancelPoll();
-            }
-            this.cancelPoll = null;
-            this.startPolling();
-        }
+        this.syncPolling();
     }
 
     setTextSearch(text: string) {
@@ -392,9 +405,7 @@ export class ProcessViewerViewModel implements ViewModel {
     async sendSignal(pid: number, signal: string, killLabel?: boolean) {
         const conn = globalStore.get(this.connection);
         const route = makeConnRoute(conn);
-        const message = killLabel
-            ? t("view.processKilled", { pid })
-            : t("view.processSignalSent", { pid, signal });
+        const message = killLabel ? t("view.processKilled", { pid }) : t("view.processSignalSent", { pid, signal });
         try {
             await this.env.rpc.RemoteProcessSignalCommand(TabRpcClient, { pid, signal }, { route });
             this.setActionStatus({ pid, message, isError: false });
@@ -456,10 +467,9 @@ export class ProcessViewerViewModel implements ViewModel {
 
     dispose() {
         this.disposed = true;
-        if (this.cancelPoll) {
-            this.cancelPoll();
-            this.cancelPoll = null;
-        }
+        this.unsubscribeOnScreen?.();
+        globalThis.document?.removeEventListener("visibilitychange", this.visibilityChangeHandler);
+        this.syncPolling();
     }
 }
 
@@ -514,15 +524,16 @@ SortIndicator.displayName = "SortIndicator";
 const StatusIndicator = React.memo(function StatusIndicator({ model }: { model: ProcessViewerViewModel }) {
     const t = useT();
     const paused = jotai.useAtomValue(model.pausedAtom);
+    const onScreen = jotai.useAtomValue(model.env.atoms.tabOnScreen);
     const error = jotai.useAtomValue(model.errorAtom);
     const lastSuccess = jotai.useAtomValue(model.lastSuccessAtom);
     const [now, setNow] = React.useState(() => Date.now());
 
     React.useEffect(() => {
-        if (paused) return;
+        if (paused || !onScreen) return;
         const id = setInterval(() => setNow(Date.now()), 1000);
         return () => clearInterval(id);
-    }, [paused]);
+    }, [paused, onScreen]);
 
     if (paused) {
         const tooltipContent = (
@@ -548,7 +559,8 @@ const StatusIndicator = React.memo(function StatusIndicator({ model }: { model: 
 
     const stalled = lastSuccess > 0 && now - lastSuccess > 5000;
     const circleColor = error != null ? "text-error" : stalled ? "text-warning" : "text-success";
-    const statusLabel = error != null ? t("view.statusError") : stalled ? t("view.statusStalled") : t("view.statusUpdating");
+    const statusLabel =
+        error != null ? t("view.statusError") : stalled ? t("view.statusStalled") : t("view.statusUpdating");
     const tooltipContent = (
         <div className="flex flex-col gap-0.5">
             <span>{statusLabel}</span>

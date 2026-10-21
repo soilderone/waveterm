@@ -25,10 +25,11 @@ import (
 )
 
 const (
-	ProcCacheIdleTimeout  = 60 * time.Second
-	ProcCachePollInterval = 1 * time.Second
-	ProcCacheMinSleep     = 500 * time.Millisecond
-	ProcViewerMaxLimit    = 500
+	ProcCacheIdleTimeout         = 60 * time.Second
+	ProcCacheSamplingIdleTimeout = 15 * time.Second
+	ProcCachePollInterval        = 1 * time.Second
+	ProcCacheMinSleep            = 500 * time.Millisecond
+	ProcViewerMaxLimit           = 500
 )
 
 // cpuSample records a single CPU time measurement for a process.
@@ -110,10 +111,19 @@ func (s *procCacheState) touchWidgetPidOrder(widgetId string) {
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
-	s.lastRequest = time.Now()
+	// Paused widgets retain their row order without extending the sampling lease.
+	s.pruneWidgetPidOrders_withLock()
 	if s.widgetPidOrders != nil {
 		if entry, ok := s.widgetPidOrders[widgetId]; ok {
 			entry.lastRequest = time.Now()
+		}
+	}
+}
+
+func (s *procCacheState) pruneWidgetPidOrders_withLock() {
+	for widgetId, entry := range s.widgetPidOrders {
+		if time.Since(entry.lastRequest) >= ProcCacheIdleTimeout {
+			delete(s.widgetPidOrders, widgetId)
 		}
 	}
 }
@@ -124,6 +134,7 @@ func (s *procCacheState) storeWidgetPidOrder(widgetId string, pids []int32, tota
 	}
 	s.lock.Lock()
 	defer s.lock.Unlock()
+	s.pruneWidgetPidOrders_withLock()
 	if s.widgetPidOrders == nil {
 		s.widgetPidOrders = make(map[string]*widgetPidOrder)
 	}
@@ -168,7 +179,7 @@ func (s *procCacheState) updateCacheAndCheckIdle(result *wshrpc.ProcessListRespo
 		close(firstReadyCh)
 		s.ready = nil
 	}
-	if time.Since(s.lastRequest) < ProcCacheIdleTimeout {
+	if time.Since(s.lastRequest) < ProcCacheSamplingIdleTimeout {
 		return false
 	}
 	s.cached = nil
@@ -176,7 +187,7 @@ func (s *procCacheState) updateCacheAndCheckIdle(result *wshrpc.ProcessListRespo
 	s.lastCPUSamples = nil
 	s.lastCPUEpoch = 0
 	s.uidCache = nil
-	s.widgetPidOrders = nil
+	s.pruneWidgetPidOrders_withLock()
 	return true
 }
 
