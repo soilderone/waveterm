@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 package conncontroller
@@ -291,15 +291,18 @@ func (conn *SSHConn) OpenDomainSocketListener(ctx context.Context) error {
 		conn.DomainSockListener = listener
 	})
 	conn.Infof(ctx, "successfully connected domain socket\n")
+	monitor := conn.GetMonitor()
 	go func() {
 		defer func() {
 			panichandler.PanicHandler("conncontroller:OpenDomainSocketListener", recover())
 		}()
 		defer conn.WithLock(func() {
+			if conn.DomainSockListener != listener {
+				return
+			}
 			conn.DomainSockListener = nil
 			conn.DomainSockName = ""
 		})
-		monitor := conn.GetMonitor()
 		var updateCallback func()
 		if monitor != nil {
 			updateCallback = monitor.UpdateLastActivityTime
@@ -534,6 +537,9 @@ func (conn *SSHConn) StartConnServer(ctx context.Context, afterUpdate bool, useR
 		// wait for termination, clear the controller
 		var waitErr error
 		defer conn.WithLock(func() {
+			if conn.ConnController != sshSession {
+				return
+			}
 			if conn.ConnController != nil {
 				conn.WshEnabled.Store(false)
 				conn.NoWshReason = "connserver terminated"
@@ -546,6 +552,7 @@ func (conn *SSHConn) StartConnServer(ctx context.Context, afterUpdate bool, useR
 		waitErr = sshSession.Wait()
 		log.Printf("conn controller (%q) terminated: %v", conn.GetName(), waitErr)
 	}()
+	monitor := conn.GetMonitor()
 	go func() {
 		defer func() {
 			panichandler.PanicHandler("conncontroller:sshSession-output", recover())
@@ -555,7 +562,6 @@ func (conn *SSHConn) StartConnServer(ctx context.Context, afterUpdate bool, useR
 				log.Printf("[conncontroller:%s:output] error: %v\n", conn.GetName(), output.Error)
 				continue
 			}
-			monitor := conn.GetMonitor()
 			if monitor != nil {
 				monitor.UpdateLastActivityTime()
 			}
@@ -971,7 +977,7 @@ func (conn *SSHConn) connectInternal(ctx context.Context, connFlags *wconfig.Con
 		defer func() {
 			panichandler.PanicHandler("conncontroller:waitForDisconnect", recover())
 		}()
-		conn.waitForDisconnect()
+		conn.waitForDisconnect(client)
 	}()
 	fmtAddr := knownhosts.Normalize(fmt.Sprintf("%s@%s", client.User(), client.RemoteAddr().String()))
 	conn.Infof(ctx, "normalized knownhosts address: %s\n", fmtAddr)
@@ -996,9 +1002,7 @@ func (conn *SSHConn) connectInternal(ctx context.Context, connFlags *wconfig.Con
 	return nil
 }
 
-func (conn *SSHConn) waitForDisconnect() {
-	defer conn.FireConnChangeEvent()
-	client := conn.GetClient()
+func (conn *SSHConn) waitForDisconnect(client *ssh.Client) {
 	if client == nil {
 		return
 	}
@@ -1010,6 +1014,10 @@ func (conn *SSHConn) waitForDisconnect() {
 	}
 	conn.lifecycleLock.Lock()
 	defer conn.lifecycleLock.Unlock()
+	if conn.GetClient() != client {
+		return
+	}
+	defer conn.FireConnChangeEvent()
 	conn.WithLock(func() {
 		// disconnects happen for a variety of reasons (like network, etc. and are typically transient)
 		// so we just set the status to "disconnected" here (not error)
