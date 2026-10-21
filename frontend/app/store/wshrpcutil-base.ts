@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { setWpsRpcClient, wpsReconnectHandler } from "@/app/store/wps";
@@ -25,6 +25,7 @@ async function* rpcResponseGenerator(
     let timeoutId: NodeJS.Timeout = null;
     if (timeout > 0) {
         timeoutId = setTimeout(() => {
+            sendRpcCancel(reqid);
             msgQueue.push({ resid: reqid, error: "EC-TIME: timeout waiting for response" });
             signalFn();
         }, timeout);

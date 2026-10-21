@@ -1,4 +1,4 @@
-// Copyright 2025, Command Line Inc.
+// Copyright 2026, Command Line Inc.
 // SPDX-License-Identifier: Apache-2.0
 
 import { type WebSocket, newWebSocket } from "@/util/wsutil";
@@ -13,6 +13,18 @@ const WarnWebSocketSendSize = 1024 * 1024; // 1MB
 const MaxWebSocketSendSize = 5 * 1024 * 1024; // 5MB
 const reconnectHandlers: (() => void)[] = [];
 const StableConnTime = 2000;
+const MaxQueuedMessages = 256;
+const MaxQueuedBytes = 5 * 1024 * 1024;
+const MaxQueueAge = 30000;
+const QueueBatchSize = 64;
+const SendBufferHighWater = 1024 * 1024;
+
+type QueuedMessage = {
+    data: WSCommandType;
+    serialized: string;
+    byteSize: number;
+    expiresAt: number;
+};
 
 function addWSReconnectHandler(handler: () => void) {
     reconnectHandlers.push(handler);
@@ -36,7 +48,8 @@ class WSControl {
     open: boolean;
     opening: boolean = false;
     reconnectTimes: number = 0;
-    msgQueue: any[] = [];
+    msgQueue: QueuedMessage[] = [];
+    queuedBytes = 0;
     stableId: string;
     messageCallback: WSEventCallback;
     watchSessionId: string = null;
@@ -48,6 +61,9 @@ class WSControl {
     noReconnect: boolean = false;
     onOpenTimeoutId: NodeJS.Timeout = null;
     pingIntervalId: NodeJS.Timeout = null;
+    reconnectTimeoutId: NodeJS.Timeout = null;
+    queueTimeoutId: NodeJS.Timeout = null;
+    flushTimeoutId: NodeJS.Timeout = null;
 
     constructor(
         baseHostPort: string,
@@ -69,17 +85,28 @@ class WSControl {
             clearInterval(this.pingIntervalId);
             this.pingIntervalId = null;
         }
-        this.wsConn.close();
+        clearTimeout(this.reconnectTimeoutId);
+        clearTimeout(this.onOpenTimeoutId);
+        clearTimeout(this.flushTimeoutId);
+        clearTimeout(this.queueTimeoutId);
+        this.reconnectTimeoutId = null;
+        this.onOpenTimeoutId = null;
+        this.flushTimeoutId = null;
+        this.queueTimeoutId = null;
+        this.open = false;
+        this.opening = false;
+        this.failQueue("WebSocket shut down");
+        this.wsConn?.close();
     }
 
     connectNow(desc: string) {
-        if (this.open || this.noReconnect) {
+        if (this.open || this.opening || this.noReconnect) {
             return;
         }
         this.lastReconnectTime = Date.now();
         dlog("try reconnect:", desc);
         this.opening = true;
-        this.wsConn = newWebSocket(
+        const socket = newWebSocket(
             this.baseHostPort + "/ws?stableid=" + encodeURIComponent(this.stableId),
             this.eoOpts
                 ? {
@@ -87,14 +114,15 @@ class WSControl {
                   }
                 : null
         );
-        this.wsConn.onopen = (e: Event) => {
-            this.onopen(e);
+        this.wsConn = socket;
+        socket.onopen = (e: Event) => {
+            if (this.wsConn === socket && !this.noReconnect) this.onopen(e);
         };
-        this.wsConn.onmessage = (e: MessageEvent) => {
-            this.onmessage(e);
+        socket.onmessage = (e: MessageEvent) => {
+            if (this.wsConn === socket && !this.noReconnect) this.onmessage(e);
         };
-        this.wsConn.onclose = (e: CloseEvent) => {
-            this.onclose(e);
+        socket.onclose = (e: CloseEvent) => {
+            if (this.wsConn === socket) this.onclose(e);
         };
         // turns out onerror is not necessary (onclose always follows onerror)
         // this.wsConn.onerror = this.onerror;
@@ -102,6 +130,9 @@ class WSControl {
 
     reconnect(forceClose?: boolean) {
         if (this.noReconnect) {
+            return;
+        }
+        if (this.reconnectTimeoutId != null || this.opening) {
             return;
         }
         if (this.open) {
@@ -113,6 +144,7 @@ class WSControl {
         this.reconnectTimes++;
         if (this.reconnectTimes > 20) {
             dlog("cannot connect, giving up");
+            this.failQueue("WebSocket reconnect limit reached");
             return;
         }
         const timeoutArr = [0, 0, 2, 5, 10, 10, 30, 60];
@@ -126,7 +158,8 @@ class WSControl {
         if (timeout > 0) {
             dlog(sprintf("sleeping %ds", timeout));
         }
-        setTimeout(() => {
+        this.reconnectTimeoutId = setTimeout(() => {
+            this.reconnectTimeoutId = null;
             this.connectNow(String(this.reconnectTimes));
         }, timeout * 1000);
     }
@@ -135,7 +168,10 @@ class WSControl {
         // console.log("close", event);
         if (this.onOpenTimeoutId) {
             clearTimeout(this.onOpenTimeoutId);
+            this.onOpenTimeoutId = null;
         }
+        clearTimeout(this.flushTimeoutId);
+        this.flushTimeoutId = null;
         if (event.wasClean) {
             dlog("connection closed");
         } else {
@@ -163,17 +199,75 @@ class WSControl {
     }
 
     runMsgQueue() {
-        if (!this.open) {
+        this.pruneQueue();
+        if (!this.open || this.wsConn?.readyState !== 1 || this.flushTimeoutId != null) {
             return;
         }
-        if (this.msgQueue.length == 0) {
-            return;
+        for (let sent = 0; sent < QueueBatchSize && this.msgQueue.length > 0; sent++) {
+            if (this.wsConn.bufferedAmount >= SendBufferHighWater) break;
+            const entry = this.msgQueue[0];
+            try {
+                this.wsConn.send(entry.serialized);
+            } catch {
+                this.wsConn.close();
+                break;
+            }
+            this.msgQueue.shift();
+            this.queuedBytes -= entry.byteSize;
         }
-        const msg = this.msgQueue.shift();
-        this.sendMessage(msg);
-        setTimeout(() => {
-            this.runMsgQueue();
-        }, 100);
+        this.scheduleQueueExpiry();
+        if (this.msgQueue.length > 0) {
+            this.flushTimeoutId = setTimeout(() => {
+                this.flushTimeoutId = null;
+                this.runMsgQueue();
+            }, 10);
+        }
+    }
+
+    rejectMessage(data: WSCommandType, error: string) {
+        const msg = data.message;
+        if (!msg?.command || !msg.reqid) return;
+        // The caller registers its response handler after sending the request.
+        queueMicrotask(() => {
+            this.messageCallback?.({
+                eventtype: "rpc",
+                data: { resid: msg.reqid, error },
+            });
+        });
+    }
+
+    failQueue(error: string) {
+        const queued = this.msgQueue;
+        this.msgQueue = [];
+        this.queuedBytes = 0;
+        clearTimeout(this.queueTimeoutId);
+        this.queueTimeoutId = null;
+        for (const entry of queued) this.rejectMessage(entry.data, error);
+    }
+
+    pruneQueue() {
+        const now = Date.now();
+        this.msgQueue = this.msgQueue.filter((entry) => {
+            if (entry.expiresAt > now) return true;
+            this.queuedBytes -= entry.byteSize;
+            this.rejectMessage(entry.data, "EC-TIME: queued request expired");
+            return false;
+        });
+    }
+
+    scheduleQueueExpiry() {
+        clearTimeout(this.queueTimeoutId);
+        this.queueTimeoutId = null;
+        if (this.msgQueue.length === 0) return;
+        const expiresAt = Math.min(...this.msgQueue.map((entry) => entry.expiresAt));
+        this.queueTimeoutId = setTimeout(
+            () => {
+                this.queueTimeoutId = null;
+                this.pruneQueue();
+                this.scheduleQueueExpiry();
+            },
+            Math.max(1, expiresAt - Date.now())
+        );
     }
 
     onmessage(event: MessageEvent) {
@@ -202,7 +296,7 @@ class WSControl {
     }
 
     sendPing() {
-        if (!this.open) {
+        if (!this.open || this.wsConn?.readyState !== 1 || this.wsConn.bufferedAmount >= SendBufferHighWater) {
             return;
         }
         this.wsConn.send(JSON.stringify({ type: "ping", stime: Date.now() }));
@@ -216,6 +310,7 @@ class WSControl {
         const byteSize = new Blob([msg]).size;
         if (byteSize > MaxWebSocketSendSize) {
             console.log("ws message too large", byteSize, data.wscommand, msg.substring(0, 100));
+            this.rejectMessage(data, "WebSocket message too large");
             return;
         }
         if (byteSize > WarnWebSocketSendSize) {
@@ -225,17 +320,46 @@ class WSControl {
     }
 
     pushMessage(data: WSCommandType) {
-        if (!this.open) {
-            if (data.wscommand === "rpc" && data.message) {
-                const cmd = data.message.command;
-                if (cmd === "routeannounce" || cmd === "routeunannounce") {
-                    return;
-                }
-            }
-            this.msgQueue.push(data);
+        if (this.noReconnect) {
+            this.rejectMessage(data, "WebSocket shut down");
             return;
         }
-        this.sendMessage(data);
+        this.pruneQueue();
+        const msg = data.message;
+        if (msg?.cancel && msg.reqid) {
+            let removed = false;
+            this.msgQueue = this.msgQueue.filter((entry) => {
+                if (!entry.data.message?.command || entry.data.message.reqid !== msg.reqid) return true;
+                this.queuedBytes -= entry.byteSize;
+                this.rejectMessage(entry.data, "RPC cancelled before sending");
+                removed = true;
+                return false;
+            });
+            if (removed) {
+                this.scheduleQueueExpiry();
+                return;
+            }
+        }
+        const canSend = this.open && this.wsConn?.readyState === 1;
+        if (msg?.command === "routeannounce" || msg?.command === "routeunannounce") {
+            if (canSend) this.sendMessage(data);
+            return;
+        }
+        if (canSend && this.msgQueue.length === 0 && this.wsConn.bufferedAmount < SendBufferHighWater) {
+            this.sendMessage(data);
+            return;
+        }
+        const serialized = JSON.stringify(data);
+        const byteSize = new Blob([serialized]).size;
+        if (this.msgQueue.length >= MaxQueuedMessages || this.queuedBytes + byteSize > MaxQueuedBytes) {
+            this.rejectMessage(data, "WebSocket send queue is full");
+            return;
+        }
+        const maxAge = msg?.timeout > 0 ? Math.min(msg.timeout, MaxQueueAge) : MaxQueueAge;
+        this.msgQueue.push({ data, serialized, byteSize, expiresAt: Date.now() + maxAge });
+        this.queuedBytes += byteSize;
+        this.scheduleQueueExpiry();
+        if (canSend) this.runMsgQueue();
     }
 }
 
