@@ -170,3 +170,78 @@ describe("terminal teardown", () => {
         expect(term.dataBytesProcessed).toBe(0);
     });
 });
+
+describe("WebGL atlas recovery", () => {
+    function makeRenderer() {
+        const term = makeTermWrap();
+        let cachedCoordinates = "old-atlas";
+        let texture = "old-atlas";
+        let rendered: string;
+        const atlas = { clearTexture: vi.fn() };
+        const renderer = {
+            _charAtlas: atlas,
+            _clearModel: vi.fn(() => {
+                cachedCoordinates = null;
+            }),
+            _glyphRenderer: {
+                value: {
+                    setAtlas: vi.fn(() => {
+                        texture = "current-atlas";
+                    }),
+                },
+            },
+        };
+        term.webglAddon = { _renderer: renderer } as any;
+        Object.assign(term.terminal, {
+            rows: 24,
+            refresh: vi.fn(() => {
+                cachedCoordinates ??= "current-atlas";
+                rendered = `${cachedCoordinates}:${texture}`;
+            }),
+        });
+        return { term, renderer, atlas, rendered: () => rendered };
+    }
+
+    it("rebuilds unchanged cells as well as textures without clearing the shared atlas", () => {
+        const { term, renderer, atlas, rendered } = makeRenderer();
+
+        term.resetAtlasTextures();
+
+        expect(rendered()).toBe("current-atlas:current-atlas");
+        expect(renderer._clearModel).toHaveBeenCalledWith(true);
+        expect(renderer._glyphRenderer.value.setAtlas).toHaveBeenCalledWith(atlas);
+        expect(term.terminal.refresh).toHaveBeenCalledWith(0, 23);
+        expect(atlas.clearTexture).not.toHaveBeenCalled();
+        expect(term.terminal.write).not.toHaveBeenCalled();
+    });
+
+    it("ignores a queued recovery after terminal disposal", () => {
+        const { term, renderer } = makeRenderer();
+        term.dispose();
+
+        term.resetAtlasTextures();
+
+        expect(renderer._clearModel).not.toHaveBeenCalled();
+        expect(term.terminal.refresh).not.toHaveBeenCalled();
+    });
+
+    it("does nothing after falling back to the DOM renderer", () => {
+        const { term, renderer } = makeRenderer();
+        term.webglAddon = null;
+
+        term.resetAtlasTextures();
+
+        expect(renderer._clearModel).not.toHaveBeenCalled();
+        expect(term.terminal.refresh).not.toHaveBeenCalled();
+    });
+
+    it("tolerates unavailable addon internals during activation or after an upgrade", () => {
+        const { term, renderer } = makeRenderer();
+        renderer._glyphRenderer.value = null;
+        expect(() => term.resetAtlasTextures()).not.toThrow();
+        renderer._glyphRenderer.value = { setAtlas: vi.fn() };
+        renderer._clearModel = null;
+        expect(() => term.resetAtlasTextures()).not.toThrow();
+        expect(term.terminal.refresh).not.toHaveBeenCalled();
+    });
+});

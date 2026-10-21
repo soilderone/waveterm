@@ -426,11 +426,17 @@ export class TermWrap {
 
     // Reaches into addon-webgl 0.19.0 internals (see scheduleAtlasTextureReset); a no-op if they move.
     resetAtlasTextures() {
-        const renderer = (this.webglAddon as any)?._renderer;
-        const glyphRenderer = renderer?._glyphRenderer?.value;
-        if (glyphRenderer == null || renderer._charAtlas == null) {
+        if (this.disposed) {
             return;
         }
+        const renderer = (this.webglAddon as any)?._renderer;
+        const glyphRenderer = renderer?._glyphRenderer?.value;
+        if (glyphRenderer == null || renderer._charAtlas == null || typeof renderer._clearModel !== "function") {
+            return;
+        }
+        // Unchanged cells otherwise retain coordinates into the old atlas, even after a full refresh.
+        // Clear only this renderer's model; clearing the shared atlas would invalidate sibling terminals.
+        renderer._clearModel(true);
         // setAtlas marks every texture slot stale, so the next frame re-uploads all atlas pages
         glyphRenderer.setAtlas(renderer._charAtlas);
         this.terminal.refresh(0, this.terminal.rows - 1);

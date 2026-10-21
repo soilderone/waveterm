@@ -204,6 +204,8 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
         ? Math.min(50000, Math.max(0, Math.floor(scrollbackSetting)))
         : 2000;
     const termMacOptionIsMeta = jotai.useAtomValue(getOverrideConfigAtom(blockId, "term:macoptionismeta")) ?? false;
+    const tabOnScreen = jotai.useAtomValue(atoms.tabOnScreen);
+    const windowFocused = jotai.useAtomValue(atoms.windowFocused);
     const isFocused = jotai.useAtomValue(model.nodeModel.isFocused);
     const isMI = jotai.useAtomValue(tabModel.isTermMultiInput);
     const isBasicTerm = termMode != "vdom" && blockData?.meta?.controller != "cmd"; // needs to match isBasicTerm
@@ -377,6 +379,33 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
     React.useEffect(() => {
         termWrapInst?.setTermRenderer(termSettings?.["term:disablewebgl"] ? "dom" : "webgl");
     }, [termWrapInst, termSettings?.["term:disablewebgl"]]);
+
+    React.useEffect(() => {
+        if (termWrapInst == null || !tabOnScreen || !windowFocused) {
+            return;
+        }
+        let frameId: number = null;
+        const refreshRenderer = () => {
+            cancelAnimationFrame(frameId);
+            frameId = null;
+            if (document.visibilityState === "hidden") {
+                return;
+            }
+            frameId = requestAnimationFrame(() => {
+                frameId = null;
+                termWrapInst.handleResize();
+                termWrapInst.resetAtlasTextures();
+            });
+        };
+        // Offscreen Electron tabs keep their dimensions and document visibility, so fitting alone
+        // cannot recover stale GPU content when the tab returns to the screen.
+        refreshRenderer();
+        document.addEventListener("visibilitychange", refreshRenderer);
+        return () => {
+            cancelAnimationFrame(frameId);
+            document.removeEventListener("visibilitychange", refreshRenderer);
+        };
+    }, [termWrapInst, tabOnScreen, windowFocused]);
 
     React.useEffect(() => {
         if (termModeRef.current == "vdom" && termMode == "term") {
