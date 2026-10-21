@@ -91,8 +91,8 @@ jobs:
               env:
                   GIT_ASKPASS: "echo"
                   GIT_TERMINAL_PROMPT: "0"
-            - name: Check background polling and WebSocket queue
-              run: npx vitest run frontend/app/store/ws.test.ts frontend/app/view/processviewer/processviewer.test.tsx
+            - name: Check terminal rendering, background polling and WebSocket queue
+              run: npx vitest run frontend/app/view/term/termwrap.test.ts frontend/app/store/ws.test.ts frontend/app/view/processviewer/processviewer.test.tsx
             - name: Install Task
               uses: arduino/setup-task@v2
               with:
