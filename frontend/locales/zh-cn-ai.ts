@@ -148,7 +148,10 @@ export const zhCNAi: Record<string, string> = {
 
     "ai.accessLevelHeader": "Wave AI 在此标签页的访问范围",
     "ai.accessLevelTitle": "Wave AI 访问级别：{level}",
-    "ai.accessLevelFooter": "仅对当前标签页生效。新标签页的默认值由 waveai:defaultaccesslevel 设置决定。",
+    "ai.accessLevelFooter": "仅对当前标签页生效。未单独设置过级别的标签页使用默认级别。",
+    "ai.accessLevelDefault": "默认",
+    "ai.accessLevelSetDefault": "设为默认",
+    "ai.accessLevelSetDefaultTitle": "当前标签页以及所有未单独设置过级别的标签页（包括新标签页）都使用此级别",
     "ai.accessLevel.off": "关闭",
     "ai.accessLevel.readonly": "只读",
     "ai.accessLevel.collab": "协作",

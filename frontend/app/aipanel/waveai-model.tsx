@@ -118,6 +118,7 @@ export class WaveAIModel {
     isAIStreaming = jotai.atom(false);
 
     accessLevelAtom!: jotai.Atom<WaveAIAccessLevel>;
+    defaultAccessLevelAtom!: jotai.Atom<WaveAIAccessLevel>;
     widgetAccessAtom!: jotai.Atom<boolean>;
     tabBlocksAtom!: jotai.Atom<Block[]>;
     focusedBlockIdAtom!: jotai.Atom<string>;
@@ -166,6 +167,10 @@ export class WaveAIModel {
             const defaultLevel = get(getSettingsKeyAtom("waveai:defaultaccesslevel"));
             return normalizeAccessLevel(tabLevel ?? defaultLevel);
         });
+
+        this.defaultAccessLevelAtom = jotai.atom((get) =>
+            normalizeAccessLevel(get(getSettingsKeyAtom("waveai:defaultaccesslevel")))
+        );
 
         this.widgetAccessAtom = jotai.atom((get) => get(this.accessLevelAtom) !== "off");
 
@@ -535,6 +540,16 @@ export class WaveAIModel {
         RpcApi.SetMetaCommand(TabRpcClient, {
             oref: this.orefContext,
             meta: { "waveai:accesslevel": level },
+        });
+    }
+
+    async setDefaultAccessLevel(level: WaveAIAccessLevel) {
+        await RpcApi.SetConfigCommand(TabRpcClient, { "waveai:defaultaccesslevel": level });
+        // The tab the default was picked from follows it rather than keeping its own override. The
+        // override is cleared after the config write so the tab never flips back to the old default.
+        await RpcApi.SetMetaCommand(TabRpcClient, {
+            oref: this.orefContext,
+            meta: { "waveai:accesslevel": null },
         });
     }
 

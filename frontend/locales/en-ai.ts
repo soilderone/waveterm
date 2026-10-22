@@ -154,7 +154,10 @@ export const enAi: Record<string, string> = {
 
     "ai.accessLevelHeader": "What Wave AI can access in this tab",
     "ai.accessLevelTitle": "Wave AI access: {level}",
-    "ai.accessLevelFooter": "Applies to this tab. The default for new tabs is the waveai:defaultaccesslevel setting.",
+    "ai.accessLevelFooter": "Applies to this tab. Tabs you haven't set a level for use the default.",
+    "ai.accessLevelDefault": "Default",
+    "ai.accessLevelSetDefault": "Set as default",
+    "ai.accessLevelSetDefaultTitle": "Use this level in this tab and in every tab you haven't set a level for, including new tabs",
     "ai.accessLevel.off": "Off",
     "ai.accessLevel.readonly": "Read-only",
     "ai.accessLevel.collab": "Collaborate",
