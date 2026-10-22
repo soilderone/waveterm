@@ -307,14 +307,18 @@ class WSControl {
             return;
         }
         const msg = JSON.stringify(data);
-        const byteSize = new Blob([msg]).size;
-        if (byteSize > MaxWebSocketSendSize) {
-            console.log("ws message too large", byteSize, data.wscommand, msg.substring(0, 100));
-            this.rejectMessage(data, "WebSocket message too large");
-            return;
-        }
-        if (byteSize > WarnWebSocketSendSize) {
-            console.log("ws message large", byteSize, data.wscommand, msg.substring(0, 100));
+        // UTF-8 needs at most 3 bytes per UTF-16 code unit, so most messages (every keystroke, for
+        // one) are provably under both limits without copying them into a Blob to count exactly.
+        if (msg.length * 3 > WarnWebSocketSendSize) {
+            const byteSize = new Blob([msg]).size;
+            if (byteSize > MaxWebSocketSendSize) {
+                console.log("ws message too large", byteSize, data.wscommand, msg.substring(0, 100));
+                this.rejectMessage(data, "WebSocket message too large");
+                return;
+            }
+            if (byteSize > WarnWebSocketSendSize) {
+                console.log("ws message large", byteSize, data.wscommand, msg.substring(0, 100));
+            }
         }
         this.wsConn.send(msg);
     }
