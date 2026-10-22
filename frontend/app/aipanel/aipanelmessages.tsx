@@ -120,8 +120,12 @@ export const AIPanelMessages = memo(({ messages, status, onContextMenu }: AIPane
                 return;
             }
             width = nextWidth;
-            // Off-screen messages also wrap differently after resizing the panel.
-            virtualizer.measure();
+            // Don't call virtualizer.measure() here. It drops every cached size, and when the
+            // virtualizer's item observer already reported this same width change (it usually
+            // runs first: the 4px scrollbar appearing is enough), mounted messages never report
+            // again and fall back to estimateSize, stacking on top of each other. Mounted
+            // messages re-measure through that observer; off-screen ones keep their last size,
+            // a closer guess than the estimate, and are corrected when they mount.
             cancelAnimationFrame(frame);
             if (autoScrollRef.current) {
                 frame = requestAnimationFrame(() => virtualizer.scrollToEnd());
