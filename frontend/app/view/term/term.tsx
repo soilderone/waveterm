@@ -31,6 +31,11 @@ import "./xterm.css";
 
 const dlog = debug("wave:term");
 
+// Rebuilding the WebGL glyph state re-uploads every atlas page in every visible terminal, and app
+// switches are frequent. A window unfocused for less than this skips the rebuild; tab returns,
+// visibility changes and longer absences still do it.
+const BriefWindowBlurMs = 30000;
+
 interface TerminalViewProps {
     blockId: string;
     model: TermViewModel;
@@ -183,6 +188,11 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
     const viewRef = React.useRef<HTMLDivElement>(null);
     const connectElemRef = React.useRef<HTMLDivElement>(null);
     const [termWrapInst, setTermWrapInst] = React.useState<TermWrap | null>(null);
+    const rendererRefreshRef = React.useRef({
+        termWrap: null as TermWrap,
+        pending: true,
+        windowBlurTs: null as number,
+    });
     const [blockData] = WOS.useWaveObjectValue<Block>(WOS.makeORef("block", blockId));
     const termSettingsAtom = getSettingsPrefixAtom("term");
     const termSettings = jotai.useAtomValue(termSettingsAtom);
@@ -381,8 +391,35 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
     }, [termWrapInst, termSettings?.["term:disablewebgl"]]);
 
     React.useEffect(() => {
-        if (termWrapInst == null || !tabOnScreen || !windowFocused) {
+        const refreshState = rendererRefreshRef.current;
+        if (refreshState.termWrap !== termWrapInst) {
+            refreshState.termWrap = termWrapInst;
+            refreshState.pending = true;
+        }
+        if (termWrapInst == null) {
             return;
+        }
+        if (!tabOnScreen) {
+            refreshState.pending = true;
+            return;
+        }
+        if (!windowFocused) {
+            if (refreshState.windowBlurTs == null) {
+                refreshState.windowBlurTs = Date.now();
+            }
+            // a window minimized and restored inside the brief window still needs the rebuild
+            const markHidden = () => {
+                if (document.visibilityState === "hidden") {
+                    refreshState.pending = true;
+                }
+            };
+            document.addEventListener("visibilitychange", markHidden);
+            return () => document.removeEventListener("visibilitychange", markHidden);
+        }
+        const blurTs = refreshState.windowBlurTs;
+        refreshState.windowBlurTs = null;
+        if (blurTs == null || Date.now() - blurTs >= BriefWindowBlurMs) {
+            refreshState.pending = true;
         }
         let frameId: number = null;
         const refreshRenderer = () => {
@@ -393,13 +430,17 @@ const TerminalView = ({ blockId, model }: ViewComponentProps<TermViewModel>) => 
             }
             frameId = requestAnimationFrame(() => {
                 frameId = null;
+                // cleared only once the rebuild runs, so a frame cancelled by a quick blur is not lost
+                refreshState.pending = false;
                 termWrapInst.handleResize();
                 termWrapInst.resetAtlasTextures();
             });
         };
         // Offscreen Electron tabs keep their dimensions and document visibility, so fitting alone
         // cannot recover stale GPU content when the tab returns to the screen.
-        refreshRenderer();
+        if (refreshState.pending) {
+            refreshRenderer();
+        }
         document.addEventListener("visibilitychange", refreshRenderer);
         return () => {
             cancelAnimationFrame(frameId);
