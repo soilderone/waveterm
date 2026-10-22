@@ -16,7 +16,7 @@ import { useT } from "@/util/i18n-hooks";
 import { checkKeyPressed, keydownWrapper } from "@/util/keyutil";
 import { isMacOS, isWindows } from "@/util/platformutil";
 import { cn, fireAndForget, makeIconClass } from "@/util/util";
-import { useChat } from "@ai-sdk/react";
+import { Chat, useChat } from "@ai-sdk/react";
 import { DefaultChatTransport } from "ai";
 import * as jotai from "jotai";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
@@ -32,6 +32,10 @@ import { WaveUIMessage } from "./aitypes";
 import { BYOKAnnouncement } from "./byokannouncement";
 import { TelemetryRequiredMessage } from "./telemetryrequired";
 import { WaveAIModel } from "./waveai-model";
+
+// Without a throttle every streamed token re-renders the whole panel and re-parses the reply's
+// markdown. The SDK's throttle always delivers the last update once the window closes.
+const ChatStreamThrottleMs = 50;
 
 const AIBlockMask = memo(() => {
     return (
@@ -341,34 +345,44 @@ const AIPanelComponentInner = memo(({ roundTopLeft }: AIPanelComponentInnerProps
     const isUsingCustomMode = !defaultMode.startsWith("waveai@");
     const allowAccess = telemetryEnabled || (hasCustomModes && isUsingCustomMode);
 
+    // useChat builds `new Chat(options)` on every render and keeps only the first one, so passing
+    // init options would allocate a Chat and a transport per streamed update. Only the first render's
+    // options were ever used, so building it once here behaves the same.
+    const [chat] = useState(
+        () =>
+            new Chat<WaveUIMessage>({
+                transport: new DefaultChatTransport({
+                    api: model.getUseChatEndpointUrl(),
+                    prepareSendMessagesRequest: (_opts) => {
+                        const msg = model.getAndClearMessage();
+                        const body: any = {
+                            msg,
+                            chatid: globalStore.get(model.chatId),
+                            accesslevel: globalStore.get(model.accessLevelAtom),
+                            aimode: globalStore.get(model.currentAIMode),
+                        };
+                        if (model.getAndClearRegenerate()) {
+                            body.regenerate = true;
+                        }
+                        if (isBuilderWindow()) {
+                            body.builderid = globalStore.get(atoms.builderId);
+                            body.builderappid = globalStore.get(atoms.builderAppId);
+                        } else {
+                            body.tabid = tabModel.tabId;
+                            body.focusedblockid = globalStore.get(model.focusedBlockIdAtom);
+                        }
+                        return { body };
+                    },
+                }),
+                onError: (error) => {
+                    console.error("AI Chat error:", error);
+                    model.setError(error.message || t("ai.errorOccurred"));
+                },
+            })
+    );
     const { messages, sendMessage, status, setMessages, error, stop } = useChat<WaveUIMessage>({
-        transport: new DefaultChatTransport({
-            api: model.getUseChatEndpointUrl(),
-            prepareSendMessagesRequest: (_opts) => {
-                const msg = model.getAndClearMessage();
-                const body: any = {
-                    msg,
-                    chatid: globalStore.get(model.chatId),
-                    accesslevel: globalStore.get(model.accessLevelAtom),
-                    aimode: globalStore.get(model.currentAIMode),
-                };
-                if (model.getAndClearRegenerate()) {
-                    body.regenerate = true;
-                }
-                if (isBuilderWindow()) {
-                    body.builderid = globalStore.get(atoms.builderId);
-                    body.builderappid = globalStore.get(atoms.builderAppId);
-                } else {
-                    body.tabid = tabModel.tabId;
-                    body.focusedblockid = globalStore.get(model.focusedBlockIdAtom);
-                }
-                return { body };
-            },
-        }),
-        onError: (error) => {
-            console.error("AI Chat error:", error);
-            model.setError(error.message || t("ai.errorOccurred"));
-        },
+        chat,
+        experimental_throttle: ChatStreamThrottleMs,
     });
 
     model.registerUseChatData(sendMessage, setMessages, status, stop, messages);

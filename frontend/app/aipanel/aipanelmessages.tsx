@@ -94,7 +94,13 @@ export const AIPanelMessages = memo(({ messages, status, onContextMenu }: AIPane
             return;
         }
         const frame = requestAnimationFrame(() => {
-            if (autoScrollRef.current) {
+            // anchorTo "end" already keeps a pinned view at the bottom while a reply grows; this only
+            // catches what it misses (e.g. the pending placeholder swapping keys), so it must not start
+            // a scroll-and-reconcile pass on every streamed update when nothing needs moving.
+            const container = messagesContainerRef.current;
+            const atEnd =
+                container != null && container.scrollHeight - container.scrollTop - container.clientHeight <= 1;
+            if (autoScrollRef.current && !atEnd) {
                 virtualizer.scrollToEnd();
             }
         });
