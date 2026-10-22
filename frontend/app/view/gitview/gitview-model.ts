@@ -64,6 +64,10 @@ export type GitChangeGroups = {
 };
 
 const StatusPollMs = 4000;
+// An untouched repo still costs a full `git status` walk per poll, which dominates in large trees.
+// After this many quiet polls the interval doubles up to the cap; any change or refresh resets it.
+const StatusPollQuietPolls = 3;
+const StatusPollMaxMs = 16000;
 const LogPageSize = 200;
 const LogMaxReload = 1000;
 const RpcTimeoutMs = 30000;
@@ -182,6 +186,7 @@ export class GitViewModel implements ViewModel {
     pollTimer: ReturnType<typeof setTimeout> = null;
     pollRunning = false;
     pollAgain = false;
+    quietPolls = 0;
     statusEpoch = 0;
     logEpoch = 0;
     detailEpoch = 0;
@@ -284,7 +289,13 @@ export class GitViewModel implements ViewModel {
         this.pollTimer = setTimeout(() => fireAndForget(() => this.pollOnce()), delayMs);
     }
 
+    getPollDelayMs(): number {
+        const doublings = Math.max(0, this.quietPolls - StatusPollQuietPolls);
+        return Math.min(StatusPollMs * Math.pow(2, doublings), StatusPollMaxMs);
+    }
+
     triggerRefresh() {
+        this.quietPolls = 0;
         if (this.pollRunning) {
             this.pollAgain = true;
             return;
@@ -308,13 +319,14 @@ export class GitViewModel implements ViewModel {
                 if (globalStore.get(this.tabAtom) === "history" && globalStore.get(this.commitsAtom) == null) {
                     await this.loadLog(true);
                 }
-                await this.refreshWorkingDiff(statusChanged);
+                const diffChanged = await this.refreshWorkingDiff(statusChanged);
+                this.quietPolls = statusChanged || diffChanged ? 0 : this.quietPolls + 1;
             }
         } finally {
             this.pollRunning = false;
             const again = this.pollAgain;
             this.pollAgain = false;
-            this.schedulePoll(again ? 0 : StatusPollMs);
+            this.schedulePoll(again ? 0 : this.getPollDelayMs());
         }
     }
 
@@ -576,21 +588,23 @@ export class GitViewModel implements ViewModel {
         }
     }
 
-    async refreshWorkingDiff(statusChanged: boolean) {
+    // returns whether the open diff was reloaded, so edits to it keep the status poll at full speed
+    async refreshWorkingDiff(statusChanged: boolean): Promise<boolean> {
         const target = globalStore.get(this.workDiff.targetAtom);
         if (target == null || globalStore.get(this.tabAtom) !== "changes") {
-            return;
+            return false;
         }
         const fingerprint = await this.getWorkDiffFingerprint(target);
         if (this.disposed || globalStore.get(this.workDiff.targetAtom) !== target) {
-            return;
+            return false;
         }
         const unchanged = !statusChanged && fingerprint != null && fingerprint === this.workDiffFingerprint;
         this.workDiffFingerprint = fingerprint;
         if (unchanged) {
-            return;
+            return false;
         }
         await this.loadDiff(this.workDiff, target, true);
+        return true;
     }
 
     resetRepo() {
